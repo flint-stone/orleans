@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Orleans.Runtime.Scheduler
@@ -45,6 +46,7 @@ namespace Orleans.Runtime.Scheduler
                 var grain = activation.GrainInstance;
                 var runtimeClient = (ISiloRuntimeClient)grain.GrainReference.RuntimeClient;
                 Task task = runtimeClient.Invoke(grain, this.activation, this.message);
+                
                 task.ContinueWith(t =>
                 {
                     // Note: This runs for all outcomes of resultPromiseTask - both Success or Fault

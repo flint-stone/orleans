@@ -280,7 +280,6 @@ namespace Orleans.Runtime
                     message.DropExpiredMessage(MessagingStatisticsGroup.Phase.Invoke);
                     return;
                 }
-
                 RequestContext.Import(message.RequestContextData);
                 if (Config.Globals.PerformDeadlockDetection && !message.TargetGrain.IsSystemTarget)
                 {
@@ -293,6 +292,7 @@ namespace Orleans.Runtime
                 try
                 {
                     var request = (InvokeMethodRequest) message.GetDeserializedBody(this.SerializationManager);
+
                     if (request.Arguments != null)
                     {
                         CancellationSourcesExtension.RegisterCancellationTokens(target, request, logger, this);

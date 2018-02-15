@@ -171,6 +171,7 @@ namespace Orleans.Runtime
             this.deserializationContext.Reset();
             this.deserializationContext.StreamReader.Reset(header);
 
+
             msg = new Message
             {
                 Headers = SerializationManager.DeserializeMessageHeaders(this.deserializationContext)
@@ -204,6 +205,10 @@ namespace Orleans.Runtime
                         msg.ToString());
                     if (Log.IsVerbose3) Log.Verbose3("Received large message {0}", msg.ToLongString());
                 }
+
+                // LX: set body length and header length
+                msg.headerSize = headerLength;
+                msg.bodySize = bodyLength;
 
                 // update parse receiveOffset and clear lengths
                 decodeOffset = bodyOffset + bodyLength;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -289,6 +290,7 @@ namespace Orleans.Runtime.Scheduler
             {
                 // Process multiple items -- drain the applicationMessageQueue (up to max items) for this physical activation
                 int count = 0;
+                int totalSize = 0;
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
                 do 
@@ -343,6 +345,17 @@ namespace Orleans.Runtime.Scheduler
                         if (StatisticsCollector.CollectTurnsStats)
                             SchedulerStatisticsGroup.OnTurnExecutionStartsByWorkGroup(workItemGroupStatisticsNumber, thread.WorkerThreadStatisticsNumber, SchedulingContext);
 #endif
+
+                        if (task.AsyncState != null)
+                        {
+                            var context = task.AsyncState as SchedulingContext;
+                            var bodySize =  context?.Activation?.Running==null? 0 : context.Activation.Running.bodySize;
+                            var headerSize = context?.Activation?.Running == null ? 0 : context.Activation.Running.headerSize;
+                            // log.Info("Message in the context: {0}", context?.Activation?.Running?.BodyObject ==null? "null": context?.Activation?.Running );
+                            totalSize += bodySize;
+                            totalSize += headerSize;
+                        }
+                        
                         TaskRunner.RunTask(task);
                     }
                     catch (Exception ex)
@@ -373,6 +386,8 @@ namespace Orleans.Runtime.Scheduler
                 } 
                 while (((MaxWorkItemsPerTurn <= 0) || (count <= MaxWorkItemsPerTurn)) &&
                     ((ActivationSchedulingQuantum <= TimeSpan.Zero) || (stopwatch.Elapsed < ActivationSchedulingQuantum)));
+                log.Info("Executing {0} Tasks in WorkGroup {1} Running on thread {2}, MaxWorkItemsPerTurn = {3}, ActivationSchedulingQuantum = {4}, processed size = {5}, stopwatch.Elapsed = {6}",
+                    count, SchedulingContext.ToString(), thread.ToString(), MaxWorkItemsPerTurn, ActivationSchedulingQuantum.ToString(), totalSize, stopwatch.Elapsed);
                 stopwatch.Stop();
             }
             catch (Exception ex)

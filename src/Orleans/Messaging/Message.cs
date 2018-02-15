@@ -56,16 +56,21 @@ namespace Orleans.Runtime
         /// <summary>
         /// NOTE: The contents of bodyBytes should never be modified
         /// </summary>
-        private List<ArraySegment<byte>> bodyBytes;
+        public List<ArraySegment<byte>> bodyBytes;
 
-        private List<ArraySegment<byte>> headerBytes;
+        public List<ArraySegment<byte>> headerBytes;
 
-        private object bodyObject;
+        public object bodyObject;
+
+        public int bodySize;
+
+        public int headerSize;
 
         // Cache values of TargetAddess and SendingAddress as they are used very frequently
         private ActivationAddress targetAddress;
         private ActivationAddress sendingAddress;
         private static readonly Logger logger;
+
         
         static Message()
         {
@@ -447,6 +452,7 @@ namespace Orleans.Runtime
             this.BodyObject = null;
 
             this.bodyBytes = body;
+
         }
 
         /// <summary>
@@ -714,7 +720,7 @@ namespace Orleans.Runtime
             ReleaseBodyAndHeaderBuffers();
         }
 
-        private static int BufferLength(List<ArraySegment<byte>> buffer)
+        public static int BufferLength(List<ArraySegment<byte>> buffer)
         {
             var result = 0;
             for (var i = 0; i < buffer.Count; i++)

@@ -221,12 +221,16 @@ namespace Orleans.Runtime.Scheduler
             if (workItemGroup == null)
             {
                 Task t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, context, this);
+                logger.Info("QueueWorkItem (work item group null) " + workItem.ItemType + " work item name " + workItem.Name + " context " + workItem + " and wrap into task");
+                logger.Info("OTS Run Queue size {0}", RunQueue.Length);
                 t.Start(this);
             }
             else
             {
                 // Create Task wrapper for this work item
                 Task t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, context, workItemGroup.TaskRunner);
+                logger.Info("QueueWorkItem (work item group " + workItemGroup.Name + " ) " + workItem.ItemType + " work item name " + workItem.Name + " detail " + workItem + " and wrap into task");
+                logger.Info("OTS Run Queue size {0}", RunQueue.Length);
                 t.Start(workItemGroup.TaskRunner);
             }
         }
