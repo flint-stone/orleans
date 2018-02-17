@@ -210,6 +210,12 @@ namespace Orleans.Runtime
                 msg.headerSize = headerLength;
                 msg.bodySize = bodyLength;
 
+                Log.Info(
+                    "Receiving message Size={0} HeaderLength={1} BodyLength={2}. Msg={3}",
+                    headerLength + bodyLength,
+                    headerLength,
+                    bodyLength,
+                    msg.ToString());
                 // update parse receiveOffset and clear lengths
                 decodeOffset = bodyOffset + bodyLength;
                 headerLength = 0;
