@@ -831,12 +831,19 @@ namespace Orleans.Runtime
 
         public override string ToString()
         {
-            return String.Format("[Activation: {0}{1}{2}{3} State={4}]",
-                 Silo,
-                 Grain,
-                 ActivationId,
-                 GetActivationInfoString(),
-                 State);
+//            return String.Format("[Activation: {0}{1}{2}{3} State={4}]",
+//                 Silo,
+//                 Grain,
+//                 ActivationId,
+//                 GetActivationInfoString(),
+//                 State);
+            return String.Format("[Activation: {0}{1}{2}{3} {4} State={5}]",
+                Silo,
+                Grain,
+                ActivationId,
+                GetActivationInfoString(),
+                Grain.Key.N1,
+                State);
         }
 
         internal string ToDetailedString(bool includeExtraDetails = false)

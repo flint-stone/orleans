@@ -293,6 +293,9 @@ namespace Orleans.Runtime
                 {
                     var request = (InvokeMethodRequest) message.GetDeserializedBody(this.SerializationManager);
 
+                    logger.Info("WIG: ------ Handling incoming request of message HeaderLength={0} BodyLength={1}, Msg={2}, Target Actication={3},  Sending Grain={4}, Request={5} ------",
+                        message.headerSize, message.bodySize, message.ToString(), message.SendingActivation, message.SendingGrain, request);
+
                     if (request.Arguments != null)
                     {
                         CancellationSourcesExtension.RegisterCancellationTokens(target, request, logger, this);

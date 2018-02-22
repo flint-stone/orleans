@@ -382,15 +382,16 @@ namespace Orleans.Runtime
         {
             lock (targetActivation)
             {
-#if DEBUG
                 List<ArraySegment<byte>> data;
                 int headerLength;
                 try
                 {
                     int bodyLength;
                     data = message.Serialize(this.serializationManager, out headerLength, out bodyLength);
-                    logger.Info("------ Handling incoming request of message Size={0} HeaderLength={1} BodyLength={2} #ArraySegments={3}. Msg={4}. Target Actication={5} ------",
-                        headerLength + bodyLength + Message.LENGTH_HEADER_SIZE, headerLength, bodyLength, data.Count, this.ToString(), targetActivation);
+                    //logger.Info("------ Handling incoming request of message Size={0} HeaderLength={1} BodyLength={2} #ArraySegments={3}. Msg={4}. Target Actication={5} ------",
+                    //    headerLength + bodyLength + Message.LENGTH_HEADER_SIZE, headerLength, bodyLength, data.Count, this.ToString(), targetActivation);
+                    message.headerSize = headerLength;
+                    message.bodySize = bodyLength;
                 }
                 catch (Exception exc)
                 {
@@ -400,7 +401,6 @@ namespace Orleans.Runtime
                     MessagingStatisticsGroup.OnDroppedSentMessage(message);           
                     return;
                 }
-#endif
                 if (targetActivation.Grain.IsGrain && message.IsUsingInterfaceVersions)
                 {
                     var request = ((InvokeMethodRequest)message.GetDeserializedBody(this.serializationManager));

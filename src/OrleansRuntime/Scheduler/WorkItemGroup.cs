@@ -386,7 +386,7 @@ namespace Orleans.Runtime.Scheduler
                 } 
                 while (((MaxWorkItemsPerTurn <= 0) || (count <= MaxWorkItemsPerTurn)) &&
                     ((ActivationSchedulingQuantum <= TimeSpan.Zero) || (stopwatch.Elapsed < ActivationSchedulingQuantum)));
-                log.Info("Executing {0} Tasks in WorkGroup {1} Running on thread {2}, MaxWorkItemsPerTurn = {3}, ActivationSchedulingQuantum = {4}, processed size = {5}, stopwatch.Elapsed = {6}",
+                log.Info("WIG: Executing {0} Tasks in WorkGroup {1} Running on thread {2}, MaxWorkItemsPerTurn = {3}, ActivationSchedulingQuantum = {4}, processed size = {5}, stopwatch.Elapsed = {6}",
                     count, SchedulingContext.ToString(), thread.ToString(), MaxWorkItemsPerTurn, ActivationSchedulingQuantum.ToString(), totalSize, stopwatch.Elapsed);
                 stopwatch.Stop();
             }

@@ -627,8 +627,10 @@ namespace Orleans.Runtime
                 IsNewPlacement ? "NewPlacement " : "", // 2
                 response,  //3
                 Direction, //4
-                String.Format("{0}{1}{2}", SendingSilo, SendingGrain, SendingActivation), //5
-                String.Format("{0}{1}{2}{3}", TargetSilo, TargetGrain, TargetActivation, TargetObserverId), //6
+                //String.Format("{0}{1}{2}", SendingSilo, SendingGrain, SendingActivation), //5
+                //String.Format("{0}{1}{2}{3}", TargetSilo, TargetGrain, TargetActivation, TargetObserverId), //6
+                String.Format("{0}{1}{2} SentFrom: {3}", SendingSilo, SendingGrain, SendingActivation, unchecked((long)SendingGrain.Key.N1)), //5
+                String.Format("{0}{1}{2}{3} TargetAt: {4}", TargetSilo, TargetGrain, TargetActivation, TargetObserverId, unchecked((long)TargetGrain.Key.N1)), //6
                 Id, //7
                 ResendCount > 0 ? "[ResendCount=" + ResendCount + "]" : "", //8
                 ForwardCount > 0 ? "[ForwardCount=" + ForwardCount + "]" : "", //9
