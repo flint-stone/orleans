@@ -1,0 +1,27 @@
+## Get message size from incoming message at Dispatcher
+iconv -f utf-16 -t utf-8 y-4thread-debug.log | grep "Handling incoming" | tee msgSize.log
+grep "ProcessChannelItem" msgSize.log  | tee processChannelItem.log
+iconv -f utf-16 -t utf-8 y-4thread-debug.log | grep "Handling incoming" | tee msgSize.log
+grep "ProcessChannelItem" msgSize.log  | tee processChannelItem.log
+## grep all logs from WIG trace
+iconv -f utf-16 -t utf-8 y-4thread-debug.log | grep "WIG:" | tee wig.log
+
+# filter out specific grain entries
+#grep "281474976710656" wig.log
+grep "281474976710656" wig.log | tee wig-281474976710656-control.log
+grep "281517926383616" wig.log | tee wig-281517926383616-reducer.log
+#grep "281474976710656 " wig.log | tee wig-281474976710656-control.log
+#grep "281517926383616 " wig.log | tee wig-281517926383616-reducer.log
+#grep "Executing" wig-281517926383616-reducer.log | tee output.log
+grep "Executing" wig-281517926383616-reducer.log | tee wig-281517926383616-reducer-filtered.log
+grep "281513631416323 " wig.log | tee wig-281513631416323-mapper.log
+grep "Executing" wig-281513631416323-mapper.log | tee wig-281513631416323-mapper-filtered.log
+
+
+cat wig-281517926383616-reducer-filtered.log | gawk '{ print $2, $44, $47}' | tee output.log
+# timestamp
+cat wig-281517926383616-reducer-filtered.log | gawk '{ print $2}' | tee output.log
+# message size from all invokes in the turn
+cat wig-281517926383616-reducer-filtered.log | gawk '{ print $44}' | tee output.log
+# timespent on this turn
+cat wig-281517926383616-reducer-filtered.log | gawk '{ print $47}' | tee output.log
