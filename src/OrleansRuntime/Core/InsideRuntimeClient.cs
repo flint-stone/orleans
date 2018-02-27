@@ -173,6 +173,11 @@ namespace Orleans.Runtime
                 message.TargetObserverId = target.ObserverId;
             }
 
+            if (schedulingContext != null)
+            {
+                logger.Info("======= Sending request from origin activation {0} with timestamp {1}", message.SendingActivation, schedulingContext.tickCount );
+            }
+
             if (debugContext != null)
                 message.DebugContext = debugContext;
 

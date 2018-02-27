@@ -142,6 +142,8 @@ namespace Orleans.Runtime.Scheduler
             }
         }
 
+        public int tickCount { get; set; }
+
         public string Name 
         {
             get

@@ -26,6 +26,7 @@ namespace UnitTests.SchedulerTests
         public bool IsSystemPriorityContext { get { return false; } }
 
         public string DetailedStatus() { return ToString(); }
+        public int tickCount { get; set; }
 
         #region IEquatable<ISchedulingContext> Members
 

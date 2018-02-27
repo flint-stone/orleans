@@ -15,6 +15,8 @@ namespace Orleans.Runtime
         string Name { get; }
         bool IsSystemPriorityContext { get; }
         string DetailedStatus();
+
+        int tickCount { get; set; }
     }
 
     internal static class SchedulingUtils

@@ -42,6 +42,8 @@ namespace Orleans.Runtime
             if (context == null) throw new InvalidOperationException("SetExecutionContext called on unexpected non-WorkerPool thread");
             context.ActivationContext = shedContext;
             context.Scheduler = scheduler;
+
+            if(shedContext!=null) shedContext.tickCount = Environment.TickCount;
         }
 
         internal static void ResetExecutionContext()
