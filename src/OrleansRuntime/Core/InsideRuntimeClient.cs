@@ -107,8 +107,31 @@ namespace Orleans.Runtime
             InvokeMethodOptions options,
             string genericArguments = null)
         {
+            // Adding scheduler hint
+            AddingSchedulerHint();
             var message = this.messageFactory.CreateMessage(request, options);
             SendRequestMessage(target, message, context, callback, debugContext, options, genericArguments);
+        }
+
+        private void AddingSchedulerHint()
+        {
+            /*
+            SchedulingContext schedulingContext = RuntimeContext.Current != null ?
+                RuntimeContext.Current.ActivationContext as SchedulingContext : null;
+            
+            if (schedulingContext.ContextType == SchedulingContextType.Activation)
+            {
+                Object currentPath = RequestContext.Get("Path");
+                if (currentPath != null)
+                {
+                    RequestContext.Set("Path", (string)currentPath + ":" + schedulingContext.Activation);
+                }
+                else
+                {
+                    RequestContext.Set("Path", schedulingContext.Activation.ToString());
+                }
+            }
+            */
         }
 
         private void SendRequestMessage(

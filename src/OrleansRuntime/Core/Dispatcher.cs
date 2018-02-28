@@ -399,7 +399,17 @@ namespace Orleans.Runtime
                 targetActivation.RecordRunning(message);
 
                 MessagingProcessingStatisticsGroup.OnDispatcherMessageProcessedOk(message);
-                scheduler.QueueWorkItem(new InvokeWorkItem(targetActivation, message, this), targetActivation.SchedulingContext);
+                if (message.RequestContextData!=null && message.RequestContextData.ContainsKey("Deadline"))
+                {
+                    scheduler.QueueWorkItem(new InvokeWorkItem(targetActivation, message, this),
+                        targetActivation.SchedulingContext,
+                       ((int) message.RequestContextData["Deadline"] - Environment.TickCount));
+                }
+                else
+                {
+                    scheduler.QueueWorkItem(new InvokeWorkItem(targetActivation, message, this),
+                        targetActivation.SchedulingContext);
+                }
             }
         }
 

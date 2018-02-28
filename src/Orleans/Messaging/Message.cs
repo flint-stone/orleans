@@ -56,16 +56,21 @@ namespace Orleans.Runtime
         /// <summary>
         /// NOTE: The contents of bodyBytes should never be modified
         /// </summary>
-        private List<ArraySegment<byte>> bodyBytes;
+        public List<ArraySegment<byte>> bodyBytes;
 
-        private List<ArraySegment<byte>> headerBytes;
+        public List<ArraySegment<byte>> headerBytes;
 
-        private object bodyObject;
+        public object bodyObject;
+
+        public int bodySize;
+
+        public int headerSize;
 
         // Cache values of TargetAddess and SendingAddress as they are used very frequently
         private ActivationAddress targetAddress;
         private ActivationAddress sendingAddress;
         private static readonly Logger logger;
+
         
         static Message()
         {
@@ -447,6 +452,7 @@ namespace Orleans.Runtime
             this.BodyObject = null;
 
             this.bodyBytes = body;
+
         }
 
         /// <summary>
@@ -621,8 +627,10 @@ namespace Orleans.Runtime
                 IsNewPlacement ? "NewPlacement " : "", // 2
                 response,  //3
                 Direction, //4
-                String.Format("{0}{1}{2}", SendingSilo, SendingGrain, SendingActivation), //5
-                String.Format("{0}{1}{2}{3}", TargetSilo, TargetGrain, TargetActivation, TargetObserverId), //6
+                //String.Format("{0}{1}{2}", SendingSilo, SendingGrain, SendingActivation), //5
+                //String.Format("{0}{1}{2}{3}", TargetSilo, TargetGrain, TargetActivation, TargetObserverId), //6
+                String.Format("{0}{1}{2} SentFrom: {3}", SendingSilo, SendingGrain, SendingActivation, unchecked((long)SendingGrain.Key.N1)), //5
+                String.Format("{0}{1}{2}{3} TargetAt: {4}", TargetSilo, TargetGrain, TargetActivation, TargetObserverId, unchecked((long)TargetGrain.Key.N1)), //6
                 Id, //7
                 ResendCount > 0 ? "[ResendCount=" + ResendCount + "]" : "", //8
                 ForwardCount > 0 ? "[ForwardCount=" + ForwardCount + "]" : "", //9
@@ -714,7 +722,7 @@ namespace Orleans.Runtime
             ReleaseBodyAndHeaderBuffers();
         }
 
-        private static int BufferLength(List<ArraySegment<byte>> buffer)
+        public static int BufferLength(List<ArraySegment<byte>> buffer)
         {
             var result = 0;
             for (var i = 0; i < buffer.Count; i++)

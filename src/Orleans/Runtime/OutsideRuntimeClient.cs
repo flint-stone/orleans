@@ -591,8 +591,27 @@ namespace Orleans
             Justification = "CallbackData is IDisposable but instances exist beyond lifetime of this method so cannot Dispose yet.")]
         public void SendRequest(GrainReference target, InvokeMethodRequest request, TaskCompletionSource<object> context, Action<Message, TaskCompletionSource<object>> callback, string debugContext = null, InvokeMethodOptions options = InvokeMethodOptions.None, string genericArguments = null)
         {
+            AddingSchedulerHint();
             var message = this.messageFactory.CreateMessage(request, options);
             SendRequestMessage(target, message, context, callback, debugContext, options, genericArguments);
+        }
+
+        private void AddingSchedulerHint()
+        {
+            int currentTicks = Environment.TickCount;
+            RequestContext.Set("InitTimestamp", currentTicks);
+            RequestContext.Set("Deadline", currentTicks + 500);
+            /*
+            Object currentPath = RequestContext.Get("Path");
+            if (currentPath != null)
+            {
+                RequestContext.Set("Path", (string)currentPath + ":" + CurrentActivationAddress.Activation);
+            }
+            else
+            {
+                RequestContext.Set("Path", CurrentActivationAddress.Activation.ToString());
+            }   
+            */
         }
 
         private void SendRequestMessage(GrainReference target, Message message, TaskCompletionSource<object> context, Action<Message, TaskCompletionSource<object>> callback, string debugContext = null, InvokeMethodOptions options = InvokeMethodOptions.None, string genericArguments = null)
