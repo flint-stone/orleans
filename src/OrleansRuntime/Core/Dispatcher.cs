@@ -403,7 +403,8 @@ namespace Orleans.Runtime
                 {
                     scheduler.QueueWorkItem(new InvokeWorkItem(targetActivation, message, this),
                         targetActivation.SchedulingContext,
-                       ((int) message.RequestContextData["Deadline"] - Environment.TickCount));
+                       ((int) message.RequestContextData["Deadline"] - Environment.TickCount),
+                        (string)message.RequestContextData["Path"]);
                 }
                 else
                 {

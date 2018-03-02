@@ -601,7 +601,7 @@ namespace Orleans
             int currentTicks = Environment.TickCount;
             RequestContext.Set("InitTimestamp", currentTicks);
             RequestContext.Set("Deadline", currentTicks + 500);
-            /*
+            
             Object currentPath = RequestContext.Get("Path");
             if (currentPath != null)
             {
@@ -611,7 +611,7 @@ namespace Orleans
             {
                 RequestContext.Set("Path", CurrentActivationAddress.Activation.ToString());
             }   
-            */
+            
         }
 
         private void SendRequestMessage(GrainReference target, Message message, TaskCompletionSource<object> context, Action<Message, TaskCompletionSource<object>> callback, string debugContext = null, InvokeMethodOptions options = InvokeMethodOptions.None, string genericArguments = null)

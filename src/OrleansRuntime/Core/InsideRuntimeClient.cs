@@ -115,7 +115,7 @@ namespace Orleans.Runtime
 
         private void AddingSchedulerHint()
         {
-            /*
+            
             SchedulingContext schedulingContext = RuntimeContext.Current != null ?
                 RuntimeContext.Current.ActivationContext as SchedulingContext : null;
             
@@ -131,7 +131,7 @@ namespace Orleans.Runtime
                     RequestContext.Set("Path", schedulingContext.Activation.ToString());
                 }
             }
-            */
+            
         }
 
         private void SendRequestMessage(

@@ -133,8 +133,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 
             workItem.SchedulingContext = context;
 
-            //logger.Info("Work Item {0} has remaining ticks of {1}, current queue size {2}, history list {3}", workItem, remainingTicks, RunQueue.Length, path);
-            logger.Info("Work Item {0} has remaining ticks of {1}, current queue size {2}", workItem, remainingTicks, RunQueue.Length);
+            logger.Info("Work Item {0} has remaining ticks of {1}, current queue size {2}, history list {3}", workItem, remainingTicks, RunQueue.Length, path);
+            //logger.Info("Work Item {0} has remaining ticks of {1}, current queue size {2}", workItem, remainingTicks, RunQueue.Length);
             // We must wrap any work item in Task and enqueue it as a task to the right scheduler via Task.Start.
             // This will make sure the TaskScheduler.Current is set correctly on any task that is created implicitly in the execution of this workItem.
             if (workItemGroup == null)
