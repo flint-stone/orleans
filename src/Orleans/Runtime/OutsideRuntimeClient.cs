@@ -591,26 +591,29 @@ namespace Orleans
             Justification = "CallbackData is IDisposable but instances exist beyond lifetime of this method so cannot Dispose yet.")]
         public void SendRequest(GrainReference target, InvokeMethodRequest request, TaskCompletionSource<object> context, Action<Message, TaskCompletionSource<object>> callback, string debugContext = null, InvokeMethodOptions options = InvokeMethodOptions.None, string genericArguments = null)
         {
-            AddingSchedulerHint();
             var message = this.messageFactory.CreateMessage(request, options);
+            // Adding scheduler hint
+            AddingSchedulerHint(message, request, target);
             SendRequestMessage(target, message, context, callback, debugContext, options, genericArguments);
         }
 
-        private void AddingSchedulerHint()
+        private void AddingSchedulerHint(Message message, InvokeMethodRequest request, GrainReference target)
         {
-            int currentTicks = Environment.TickCount;
-            RequestContext.Set("InitTimestamp", currentTicks);
-            RequestContext.Set("Deadline", currentTicks + 500);
-            
-            Object currentPath = RequestContext.Get("Path");
-            if (currentPath != null)
+            var currentTicks = Environment.TickCount;
+            if(message.RequestContextData == null) message.RequestContextData = new Dictionary<string, object>();
+            if(!message.RequestContextData.ContainsKey("InitTimestamp")) message.RequestContextData.Add("InitTimestamp", currentTicks);
+            if(!message.RequestContextData.ContainsKey("Deadline")) message.RequestContextData.Add("Deadline", currentTicks + 500);
+
+            if(message.RequestContextData.TryGetValue("Path", out var currentPath))
             {
-                RequestContext.Set("Path", (string)currentPath + ":" + CurrentActivationAddress.Activation);
+                message.RequestContextData["Path"] = (string) currentPath + "***" +
+                                                     CurrentActivationAddress.Activation + "  Scheduling Context: " +
+                                                     request + " Target: " + target;
             }
             else
             {
-                RequestContext.Set("Path", CurrentActivationAddress.Activation.ToString());
-            }   
+                message.RequestContextData.Add("Path", CurrentActivationAddress.Activation + "  Scheduling Context: " + request + " Target: " + target); 
+            }
             
         }
 

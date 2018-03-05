@@ -107,31 +107,29 @@ namespace Orleans.Runtime
             InvokeMethodOptions options,
             string genericArguments = null)
         {
-            // Adding scheduler hint
-            AddingSchedulerHint();
             var message = this.messageFactory.CreateMessage(request, options);
+            // Adding scheduler hint
+            AddingSchedulerHint(message, request, target);
             SendRequestMessage(target, message, context, callback, debugContext, options, genericArguments);
         }
 
-        private void AddingSchedulerHint()
+        private void AddingSchedulerHint(Message message, InvokeMethodRequest request, GrainReference target)
         {
-            
+            if (message.RequestContextData == null) message.RequestContextData = new Dictionary<string, object>();
             SchedulingContext schedulingContext = RuntimeContext.Current != null ?
                 RuntimeContext.Current.ActivationContext as SchedulingContext : null;
             
-            if (schedulingContext.ContextType == SchedulingContextType.Activation)
+            if (schedulingContext!=null && schedulingContext.ContextType == SchedulingContextType.Activation)
             {
-                Object currentPath = RequestContext.Get("Path");
-                if (currentPath != null)
+                if (message.RequestContextData.TryGetValue("Path", out var currentPath))
                 {
-                    RequestContext.Set("Path", (string)currentPath + ":" + schedulingContext.Activation);
+                    message.RequestContextData["Path"] = (string)currentPath + "***" + schedulingContext.Activation + "  Request: " + request + " Target: " + target;
                 }
                 else
                 {
-                    RequestContext.Set("Path", schedulingContext.Activation.ToString());
+                    message.RequestContextData.Add("Path", schedulingContext.Activation + "  Request: " + request + " Target: " + target);
                 }
-            }
-            
+            }         
         }
 
         private void SendRequestMessage(
