@@ -34,4 +34,8 @@
       <SubType>Component</SubType>
     </Compile>
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="SourceLink.Create.CommandLine" Version="2.8.0" />
+  </ItemGroup>
 </Project>

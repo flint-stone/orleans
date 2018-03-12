@@ -12,6 +12,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FSharp.Core" Version="$(FSharpCoreVersion)" />
+    <PackageReference Include="FSharp.Core" Version="4.3.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="System.Net.Http" Version="4.3.3" />
   </ItemGroup>
 </Project>

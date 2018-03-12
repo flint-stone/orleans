@@ -8,11 +8,11 @@
   <ItemGroup>
     <PackageReference Include="xunit" Version="$(xUnitVersion)" />
     <PackageReference Include="Xunit.SkippableFact" Version="$(XunitSkippableFactVersion)" />
-    <PackageReference Include="System.Data.SqlClient" Version="$(SystemRuntimeVersion)" />
-    <PackageReference Include="FluentAssertions" Version="$(FluentAssertionsVersion)" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.4.2" />
+    <PackageReference Include="FluentAssertions" Version="5.1.2" />
     <PackageReference Include="Microsoft.Data.SQLite" Version="$(MicrosoftDataSQLiteVersion)" />
-    <PackageReference Include="Npgsql" Version="$(NpgsqlVersion)" />
-    <PackageReference Include="MySql.Data" Version="$(MySqlDataVersion)" />
+    <PackageReference Include="Npgsql" Version="3.2.7" />
+    <PackageReference Include="MySql.Data" Version="6.10.6" />
     <DotNetCliToolReference Include="dotnet-xunit" Version="$(xUnitVersion)" />
   </ItemGroup>
 
@@ -110,6 +110,11 @@
 
   <ItemGroup>
     <Folder Include="Storage\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="Microsoft.NET.Test.Sdk" Version="15.6.0" />
+    <PackageReference Update="System.Net.Http" Version="4.3.3" />
   </ItemGroup>
 
 </Project>

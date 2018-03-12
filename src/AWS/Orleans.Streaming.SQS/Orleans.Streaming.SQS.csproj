@@ -17,11 +17,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.SQS" Version="$(AWSSDKSQSVersion)" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.3.3.3" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Orleans.Core\Orleans.Core.csproj" />
     <ProjectReference Include="..\..\OrleansProviders\OrleansProviders.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="SourceLink.Create.CommandLine" Version="2.8.0" />
   </ItemGroup>
 </Project>

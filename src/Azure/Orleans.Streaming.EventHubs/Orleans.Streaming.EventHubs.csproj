@@ -21,9 +21,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.EventHubs" Version="$(MicrosoftAzureEventHubsVersion)" />
+    <PackageReference Include="Microsoft.Azure.EventHubs" Version="2.0.0" />
     <PackageReference Include="System.Net.Requests" Version="$(SystemRuntimeVersion)" />
-    <PackageReference Include="WindowsAzure.Storage" Version="$(WindowsAzureStorageVersion)" />
+    <PackageReference Include="WindowsAzure.Storage" Version="9.1.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,5 +33,9 @@
   <ItemGroup>
     <Folder Include="Utilities\" />
     <Folder Include="Storage\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="SourceLink.Create.CommandLine" Version="2.8.0" />
   </ItemGroup>
 </Project>

@@ -50,6 +50,11 @@
   <ItemGroup>
     <!-- This must come after all other PackageReference elements -->
     <PackageReference Update="@(PackageReference)" PrivateAssets="All" Publish="true" />
+    <PackageReference Update="Microsoft.Build.Framework" Version="15.6.82" />
+    <PackageReference Update="Microsoft.Build.Utilities.Core" Version="15.6.82" />
+    <PackageReference Update="Microsoft.Extensions.DependencyModel" Version="2.0.4" />
+    <PackageReference Update="Newtonsoft.Json" Version="11.0.1" />
+    <PackageReference Update="SourceLink.Create.CommandLine" Version="2.8.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Orleans.Core.Abstractions\Orleans.Core.Abstractions.csproj">

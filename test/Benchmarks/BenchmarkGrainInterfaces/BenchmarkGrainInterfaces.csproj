@@ -9,4 +9,9 @@
     <ProjectReference Include="..\..\..\src\Orleans.Core.Abstractions\Orleans.Core.Abstractions.csproj" />
     <ProjectReference Include="..\..\..\src\Orleans.Core\Orleans.Core.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="Microsoft.NET.Test.Sdk" Version="15.6.0" />
+    <PackageReference Update="System.Net.Http" Version="4.3.3" />
+  </ItemGroup>
 </Project>

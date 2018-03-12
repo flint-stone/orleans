@@ -10,9 +10,9 @@
 
   <ItemGroup>
     <PackageReference Include="xunit" Version="$(xUnitVersion)" />
-    <PackageReference Include="FluentAssertions" Version="$(FluentAssertionsVersion)" />
-    <PackageReference Include="Microsoft.ServiceFabric.Services" Version="$(MicrosoftServiceFabricServicesVersion)" />
-    <PackageReference Include="NSubstitute" Version="$(NSubstituteVersion)" />
+    <PackageReference Include="FluentAssertions" Version="5.1.2" />
+    <PackageReference Include="Microsoft.ServiceFabric.Services" Version="3.0.467" />
+    <PackageReference Include="NSubstitute" Version="3.1.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="$(MicrosoftExtensionsOptionsVersion)" />
     <DotNetCliToolReference Include="dotnet-xunit" Version="$(xUnitVersion)" />
   </ItemGroup>
@@ -29,5 +29,10 @@
     <None Include="TestServiceFabric.xunit.runner.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="Microsoft.NET.Test.Sdk" Version="15.6.0" />
+    <PackageReference Update="System.Net.Http" Version="4.3.3" />
   </ItemGroup>
 </Project>

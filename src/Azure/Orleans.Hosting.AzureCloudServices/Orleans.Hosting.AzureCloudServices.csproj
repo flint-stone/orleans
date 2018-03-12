@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.CSharp" Version="4.4.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="$(MicrosoftExtensionsLoggingVersion)" />
   </ItemGroup>
 
@@ -25,6 +26,10 @@
     <ProjectReference Include="..\..\Orleans.Runtime.Legacy\Orleans.Runtime.Legacy.csproj" />
     <ProjectReference Include="..\Orleans.Clustering.AzureStorage\Orleans.Clustering.AzureStorage.csproj" />
     <ProjectReference Include="..\..\Orleans.Runtime\Orleans.Runtime.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="SourceLink.Create.CommandLine" Version="2.8.0" />
   </ItemGroup>
 
 </Project>

@@ -14,7 +14,7 @@
   <ItemGroup>
     <PackageReference Include="xunit" Version="$(xUnitVersion)" />
     <PackageReference Include="Xunit.SkippableFact" Version="$(XunitSkippableFactVersion)" />
-    <PackageReference Include="NodaTime" Version="$(NodaTimeVersion)" />
+    <PackageReference Include="NodaTime" Version="2.2.4" />
     <DotNetCliToolReference Include="dotnet-xunit" Version="$(xUnitVersion)" />
   </ItemGroup>
 
@@ -31,5 +31,10 @@
 
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="Microsoft.NET.Test.Sdk" Version="15.6.0" />
+    <PackageReference Update="System.Net.Http" Version="4.3.3" />
   </ItemGroup>
 </Project>

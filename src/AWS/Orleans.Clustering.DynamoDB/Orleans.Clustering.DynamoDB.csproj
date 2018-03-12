@@ -18,12 +18,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.DynamoDBv2" Version="$(AWSSDKDynamoDBv2Version)" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.3.6.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Orleans.Core.Legacy\Orleans.Core.Legacy.csproj" />
     <ProjectReference Include="..\..\Orleans.Runtime.Abstractions\Orleans.Runtime.Abstractions.csproj" />
     <ProjectReference Include="..\..\OrleansProviders\OrleansProviders.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="SourceLink.Create.CommandLine" Version="2.8.0" />
   </ItemGroup>
 </Project>

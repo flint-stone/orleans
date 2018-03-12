@@ -14,11 +14,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.ServiceFabric.Services" Version="$(MicrosoftServiceFabricServicesVersion)" />
+    <PackageReference Include="Microsoft.ServiceFabric.Services" Version="3.0.467" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Orleans.Hosting.ServiceFabric\Orleans.Hosting.ServiceFabric.csproj" />
     <ProjectReference Include="..\Orleans.Runtime.Abstractions\Orleans.Runtime.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="SourceLink.Create.CommandLine" Version="2.8.0" />
   </ItemGroup>
 </Project>

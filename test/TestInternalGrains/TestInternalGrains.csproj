@@ -25,4 +25,8 @@
     <ProjectReference Include="..\TestInterfaces\TestInterfaces.csproj" />
     <ProjectReference Include="..\TestInternalGrainInterfaces\TestInternalGrainInterfaces.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="System.Net.Http" Version="4.3.3" />
+  </ItemGroup>
 </Project>
