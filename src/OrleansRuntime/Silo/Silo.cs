@@ -234,7 +234,8 @@ namespace Orleans.Runtime
             services.AddSingleton<IStreamProviderManager, StreamProviderManager>();
             services.AddSingleton<GrainRuntime>();
             services.AddSingleton<IGrainRuntime, GrainRuntime>();
-            services.AddSingleton<IOrleansTaskScheduler>();
+            services.AddSingleton<OrleansTaskScheduler>();
+            services.AddFromExisting<IOrleansTaskScheduler, OrleansTaskScheduler>();
             services.AddSingleton<GrainFactory>(sp => sp.GetService<InsideRuntimeClient>().ConcreteGrainFactory);
             services.AddFromExisting<IGrainFactory, GrainFactory>();
             services.AddFromExisting<IInternalGrainFactory, GrainFactory>();
