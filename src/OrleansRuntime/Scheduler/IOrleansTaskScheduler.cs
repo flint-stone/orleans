@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Orleans.Runtime.Configuration;
 
@@ -15,12 +14,6 @@ namespace Orleans.Runtime.Scheduler
         TimeSpan TurnWarningLength { get; }
         int RunQueueLength { get; }
         int WorkItemGroupCount { get; }
-        float AverageRunQueueLengthLevelTwo { get; }
-        float AverageEnqueuedLevelTwo { get; }
-        float AverageArrivalRateLevelTwo { get; }
-        float SumRunQueueLengthLevelTwo { get; }
-        float SumEnqueuedLevelTwo { get; }
-        float SumArrivalRateLevelTwo { get; }
         int MaximumConcurrencyLevel { get; }
         void Start();
         void StopApplicationTurns();
