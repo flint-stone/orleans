@@ -53,7 +53,7 @@ namespace Orleans.Runtime
 
         void DeactivateOnIdle(ActivationId id);
 
-        OrleansTaskScheduler Scheduler { get; }
+        IOrleansTaskScheduler Scheduler { get; }
         Task Invoke(IAddressable target, IInvokable invokable, Message message);
     }
 }

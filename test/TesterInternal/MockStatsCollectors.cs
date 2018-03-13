@@ -94,7 +94,7 @@ namespace UnitTests.Stats
         public string Name { get; private set; }
 
         private IStatsCollectorGrain grain;
-        private OrleansTaskScheduler taskScheduler;
+        private IOrleansTaskScheduler taskScheduler;
         private SchedulingContext schedulingContext;
         private Logger logger;
 
@@ -103,7 +103,7 @@ namespace UnitTests.Stats
             Name = name;
             this.logger = providerRuntime.GetLogger("MockStatsSiloCollector");
             this.grain = providerRuntime.GrainFactory.GetGrain<IStatsCollectorGrain>(0);
-            this.taskScheduler = providerRuntime.ServiceProvider.GetRequiredService<OrleansTaskScheduler>();
+            this.taskScheduler = providerRuntime.ServiceProvider.GetRequiredService<IOrleansTaskScheduler>();
             this.schedulingContext = providerRuntime.ServiceProvider.GetRequiredService<Silo>().testHook.SchedulingContext;
             logger.Info("{0} Init called", GetType().Name);
             return Task.CompletedTask;

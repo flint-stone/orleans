@@ -15,7 +15,7 @@ namespace Orleans.Runtime.Providers
     {
         private readonly SiloInitializationParameters siloDetails;
         private readonly ISiloStatusOracle siloStatusOracle;
-        private readonly OrleansTaskScheduler scheduler;
+        private readonly IOrleansTaskScheduler scheduler;
         private readonly ActivationDirectory activationDirectory;
         private readonly IConsistentRingProvider consistentRingProvider;
         private readonly ISiloRuntimeClient runtimeClient;
@@ -38,7 +38,7 @@ namespace Orleans.Runtime.Providers
             ISiloRuntimeClient runtimeClient,
             ImplicitStreamSubscriberTable implicitStreamSubscriberTable,
             ISiloStatusOracle siloStatusOracle,
-            OrleansTaskScheduler scheduler,
+            IOrleansTaskScheduler scheduler,
             ActivationDirectory activationDirectory)
         {
             this.siloDetails = siloDetails;

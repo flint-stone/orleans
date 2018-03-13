@@ -17,7 +17,7 @@ namespace Orleans.Runtime
 
         private readonly ILocalGrainDirectory grainDirectory;
         private readonly SiloAddress myAddress;
-        private readonly OrleansTaskScheduler scheduler;
+        private readonly IOrleansTaskScheduler scheduler;
         private readonly ClusterConfiguration orleansConfig;
         private readonly Logger logger;
         private Gateway gateway;
@@ -27,7 +27,7 @@ namespace Orleans.Runtime
         public ClientObserverRegistrar(
             ILocalSiloDetails siloDetails,
             ILocalGrainDirectory dir,
-            OrleansTaskScheduler scheduler,
+            IOrleansTaskScheduler scheduler,
             ClusterConfiguration config)
             : base(Constants.ClientObserverRegistrarId, siloDetails.SiloAddress)
         {

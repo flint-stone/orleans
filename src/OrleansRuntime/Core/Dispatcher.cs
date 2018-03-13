@@ -20,7 +20,7 @@ namespace Orleans.Runtime
     {
         internal ISiloMessageCenter Transport { get; }
 
-        private readonly OrleansTaskScheduler scheduler;
+        private readonly IOrleansTaskScheduler scheduler;
         private readonly Catalog catalog;
         private readonly Logger logger;
         private readonly ClusterConfiguration config;
@@ -35,7 +35,7 @@ namespace Orleans.Runtime
         private readonly SafeRandom random;
 
         internal Dispatcher(
-            OrleansTaskScheduler scheduler, 
+            IOrleansTaskScheduler scheduler, 
             ISiloMessageCenter transport, 
             Catalog catalog, 
             ClusterConfiguration config,

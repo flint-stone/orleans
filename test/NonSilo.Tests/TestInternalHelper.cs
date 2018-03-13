@@ -6,7 +6,7 @@ namespace UnitTests.TesterInternal
 {
     public class TestInternalHelper
     {
-        internal static OrleansTaskScheduler InitializeSchedulerForTesting(ISchedulingContext context, ICorePerformanceMetrics performanceMetrics)
+        internal static IOrleansTaskScheduler InitializeSchedulerForTesting(ISchedulingContext context, ICorePerformanceMetrics performanceMetrics)
         {
             StatisticsCollector.StatisticsCollectionLevel = StatisticsLevel.Info;
             SchedulerStatisticsGroup.Init();

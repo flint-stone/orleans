@@ -12,7 +12,7 @@ namespace Orleans.Runtime.Scheduler
         private Semaphore threadLimitingSemaphore;
         private readonly HashSet<WorkerPoolThread> pool;
         private readonly WorkerPoolThread systemThread;
-        private readonly OrleansTaskScheduler scheduler;
+        private readonly IOrleansTaskScheduler scheduler;
         private readonly object lockable;
         private bool running;
         private int runningThreadCount;
@@ -26,7 +26,7 @@ namespace Orleans.Runtime.Scheduler
 
         internal bool ShouldInjectWorkerThread { get { return EnableWorkerThreadInjection && runningThreadCount < WorkerPoolThread.MAX_THREAD_COUNT_TO_REPLACE; } }
 
-        internal WorkerPool(OrleansTaskScheduler sched, ICorePerformanceMetrics performanceMetrics, int maxActiveThreads, bool enableWorkerThreadInjection)
+        internal WorkerPool(IOrleansTaskScheduler sched, ICorePerformanceMetrics performanceMetrics, int maxActiveThreads, bool enableWorkerThreadInjection)
         {
             scheduler = sched;
             MaxActiveThreads = maxActiveThreads;

@@ -12,7 +12,7 @@ namespace Orleans.Runtime
     /// <summary>Base class for implementing a grain-like partitioned service with per silo instances of it automatically instantiated and started by silo runtime</summary>
     public abstract class GrainService : SystemTarget, IRingRangeListener, IGrainService
     {
-        private readonly OrleansTaskScheduler scheduler;
+        private readonly IOrleansTaskScheduler scheduler;
         private readonly IConsistentRingProvider ring;
         private readonly string typeName;
         private GrainServiceStatus status;

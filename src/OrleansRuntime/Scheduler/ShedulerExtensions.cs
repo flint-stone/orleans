@@ -5,7 +5,7 @@ namespace Orleans.Runtime.Scheduler
 {
     internal static class SchedulerExtensions
     {
-        internal static Task<T> QueueTask<T>(this OrleansTaskScheduler scheduler, Func<Task<T>> taskFunc, ISchedulingContext targetContext)
+        internal static Task<T> QueueTask<T>(this IOrleansTaskScheduler scheduler, Func<Task<T>> taskFunc, ISchedulingContext targetContext)
         {
             var resolver = new TaskCompletionSource<T>();
             Func<Task> asyncFunc =
@@ -27,7 +27,7 @@ namespace Orleans.Runtime.Scheduler
             return resolver.Task;
         }
 
-        internal static Task QueueTask(this OrleansTaskScheduler scheduler, Func<Task> taskFunc, ISchedulingContext targetContext)
+        internal static Task QueueTask(this IOrleansTaskScheduler scheduler, Func<Task> taskFunc, ISchedulingContext targetContext)
         {
             var resolver = new TaskCompletionSource<bool>();
             Func<Task> asyncFunc =
@@ -47,7 +47,7 @@ namespace Orleans.Runtime.Scheduler
             return resolver.Task;
         }
 
-        internal static Task QueueNamedTask(this OrleansTaskScheduler scheduler, Func<Task> taskFunc, ISchedulingContext targetContext, string activityName = null)
+        internal static Task QueueNamedTask(this IOrleansTaskScheduler scheduler, Func<Task> taskFunc, ISchedulingContext targetContext, string activityName = null)
         {
             var resolver = new TaskCompletionSource<bool>();
             Func<Task> asyncFunc =
@@ -67,7 +67,7 @@ namespace Orleans.Runtime.Scheduler
             return resolver.Task;
         }
 
-        internal static Task QueueAction(this OrleansTaskScheduler scheduler, Action action, ISchedulingContext targetContext)
+        internal static Task QueueAction(this IOrleansTaskScheduler scheduler, Action action, ISchedulingContext targetContext)
         {
             var resolver = new TaskCompletionSource<bool>();
             Action syncFunc =
@@ -93,7 +93,7 @@ namespace Orleans.Runtime.Scheduler
         /// <param name="scheduler"></param>
         /// <param name="action"></param>
         /// <param name="targetContext"></param>
-        internal static Task RunOrQueueAction(this OrleansTaskScheduler scheduler, Action action, ISchedulingContext targetContext)
+        internal static Task RunOrQueueAction(this IOrleansTaskScheduler scheduler, Action action, ISchedulingContext targetContext)
         {
             return scheduler.RunOrQueueTask(() =>
             {
@@ -103,7 +103,7 @@ namespace Orleans.Runtime.Scheduler
         }
 
 
-        internal static Task<T> RunOrQueueTask<T>(this OrleansTaskScheduler scheduler, Func<Task<T>> taskFunc, ISchedulingContext targetContext)
+        internal static Task<T> RunOrQueueTask<T>(this IOrleansTaskScheduler scheduler, Func<Task<T>> taskFunc, ISchedulingContext targetContext)
         {
             ISchedulingContext currentContext = RuntimeContext.CurrentActivationContext;
             if (SchedulingUtils.IsAddressableContext(currentContext)
@@ -124,7 +124,7 @@ namespace Orleans.Runtime.Scheduler
             return scheduler.QueueTask(taskFunc, targetContext);
         }
 
-        internal static Task RunOrQueueTask(this OrleansTaskScheduler scheduler, Func<Task> taskFunc, ISchedulingContext targetContext)
+        internal static Task RunOrQueueTask(this IOrleansTaskScheduler scheduler, Func<Task> taskFunc, ISchedulingContext targetContext)
         {
             var currentContext = RuntimeContext.CurrentActivationContext;
             if (SchedulingUtils.IsAddressableContext(currentContext)

@@ -17,14 +17,14 @@ namespace Orleans.Runtime
         private int totalNumTicks;
         private static readonly Logger logger = LogManager.GetLogger("GrainTimer", LoggerType.Runtime);
         private Task currentlyExecutingTickTask;
-        private readonly OrleansTaskScheduler scheduler;
+        private readonly IOrleansTaskScheduler scheduler;
         private readonly IActivationData activationData;
 
         public string Name { get; }
         
         private bool TimerAlreadyStopped { get { return timer == null || asyncCallback == null; } }
 
-        private GrainTimer(OrleansTaskScheduler scheduler, IActivationData activationData, Func<object, Task> asyncCallback, object state, TimeSpan dueTime, TimeSpan period, string name)
+        private GrainTimer(IOrleansTaskScheduler scheduler, IActivationData activationData, Func<object, Task> asyncCallback, object state, TimeSpan dueTime, TimeSpan period, string name)
         {
             var ctxt = RuntimeContext.CurrentActivationContext;
             scheduler.CheckSchedulingContextValidity(ctxt);
@@ -43,7 +43,7 @@ namespace Orleans.Runtime
         }
 
         internal static GrainTimer FromTimerCallback(
-            OrleansTaskScheduler scheduler,
+            IOrleansTaskScheduler scheduler,
             TimerCallback callback,
             object state,
             TimeSpan dueTime,
@@ -66,7 +66,7 @@ namespace Orleans.Runtime
         }
 
         internal static IGrainTimer FromTaskCallback(
-            OrleansTaskScheduler scheduler,
+            IOrleansTaskScheduler scheduler,
             Func<object, Task> asyncCallback,
             object state,
             TimeSpan dueTime,

@@ -70,7 +70,7 @@ namespace Orleans.Runtime
         
         private readonly SiloInitializationParameters initializationParams;
         private readonly ISiloMessageCenter messageCenter;
-        private readonly OrleansTaskScheduler scheduler;
+        private readonly IOrleansTaskScheduler scheduler;
         private readonly LocalGrainDirectory localGrainDirectory;
         private readonly ActivationDirectory activationDirectory;
         private readonly IncomingMessageAgent incomingAgent;
@@ -110,7 +110,7 @@ namespace Orleans.Runtime
         internal ClusterConfiguration OrleansConfig => this.initializationParams.ClusterConfig;
         internal GlobalConfiguration GlobalConfig => this.initializationParams.GlobalConfig;
         internal NodeConfiguration LocalConfig => this.initializationParams.NodeConfig;
-        internal OrleansTaskScheduler LocalScheduler { get { return scheduler; } }
+        internal IOrleansTaskScheduler LocalScheduler { get { return scheduler; } }
         internal GrainTypeManager LocalGrainTypeManager { get { return grainTypeManager; } }
         internal ILocalGrainDirectory LocalGrainDirectory { get { return localGrainDirectory; } }
         internal IMultiClusterOracle LocalMultiClusterOracle { get { return multiClusterOracle; } }
@@ -234,7 +234,7 @@ namespace Orleans.Runtime
             services.AddSingleton<IStreamProviderManager, StreamProviderManager>();
             services.AddSingleton<GrainRuntime>();
             services.AddSingleton<IGrainRuntime, GrainRuntime>();
-            services.AddSingleton<OrleansTaskScheduler>();
+            services.AddSingleton<IOrleansTaskScheduler>();
             services.AddSingleton<GrainFactory>(sp => sp.GetService<InsideRuntimeClient>().ConcreteGrainFactory);
             services.AddFromExisting<IGrainFactory, GrainFactory>();
             services.AddFromExisting<IInternalGrainFactory, GrainFactory>();
@@ -362,7 +362,7 @@ namespace Orleans.Runtime
             siloStatistics = Services.GetRequiredService<SiloStatisticsManager>();
 
             // The scheduler
-            scheduler = Services.GetRequiredService<OrleansTaskScheduler>();
+            scheduler = Services.GetRequiredService<IOrleansTaskScheduler>();
             healthCheckParticipants.Add(scheduler);
             
             runtimeClient = Services.GetRequiredService<InsideRuntimeClient>();

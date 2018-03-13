@@ -18,7 +18,7 @@ namespace UnitTests.SchedulerTests
         private readonly ITestOutputHelper output;
         private readonly RuntimeStatisticsGroup runtimeStatisticsGroup;
         private readonly SiloPerformanceMetrics performanceMetrics;
-        private OrleansTaskScheduler orleansTaskScheduler;
+        private IOrleansTaskScheduler orleansTaskScheduler;
 
         private bool mainDone;
         private int stageNum1;
@@ -215,7 +215,7 @@ namespace UnitTests.SchedulerTests
             // You test that no CW/StartNew runs until the main turn is fully done. And run in stress.
 
             UnitTestSchedulingContext context = new UnitTestSchedulingContext();
-            OrleansTaskScheduler masterScheduler = orleansTaskScheduler = TestInternalHelper.InitializeSchedulerForTesting(context, this.performanceMetrics);
+            IOrleansTaskScheduler masterScheduler = orleansTaskScheduler = TestInternalHelper.InitializeSchedulerForTesting(context, this.performanceMetrics);
             WorkItemGroup workItemGroup = orleansTaskScheduler.GetWorkItemGroup(context);
             ActivationTaskScheduler activationScheduler = workItemGroup.TaskRunner;
 
@@ -352,7 +352,7 @@ namespace UnitTests.SchedulerTests
         public void Sched_AC_Current_TaskScheduler()
         {
             UnitTestSchedulingContext context = new UnitTestSchedulingContext();
-            OrleansTaskScheduler orleansTaskScheduler = orleansTaskScheduler = TestInternalHelper.InitializeSchedulerForTesting(context, this.performanceMetrics);
+            IOrleansTaskScheduler orleansTaskScheduler = orleansTaskScheduler = TestInternalHelper.InitializeSchedulerForTesting(context, this.performanceMetrics);
             ActivationTaskScheduler activationScheduler = orleansTaskScheduler.GetWorkItemGroup(context).TaskRunner;
 
             // RuntimeContext.InitializeThread(masterScheduler);

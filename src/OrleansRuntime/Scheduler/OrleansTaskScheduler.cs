@@ -10,21 +10,27 @@ using Orleans.Runtime.Counters;
 
 namespace Orleans.Runtime.Scheduler
 {
-    [DebuggerDisplay("OrleansTaskScheduler RunQueue={RunQueue.Length}")]
-    internal class OrleansTaskScheduler : TaskScheduler, ITaskScheduler, IHealthCheckParticipant
+
+
+    [DebuggerDisplay("IOrleansTaskScheduler RunQueue={RunQueue.Length}")]
+    internal class OrleansTaskScheduler : TaskScheduler, IOrleansTaskScheduler
     {
-        private readonly LoggerImpl logger = LogManager.GetLogger("Scheduler.OrleansTaskScheduler", LoggerType.Runtime);
+        private readonly LoggerImpl logger = LogManager.GetLogger("Scheduler.IOrleansTaskScheduler", LoggerType.Runtime);
         private readonly ConcurrentDictionary<ISchedulingContext, WorkItemGroup> workgroupDirectory; // work group directory
         private bool applicationTurnsStopped;
-        
-        internal WorkQueue RunQueue { get; private set; }
-        internal WorkerPool Pool { get; private set; }
+
+        public WorkQueue RunQueue { get; private set; }
+        public WorkerPool Pool { get; private set; }
         internal static TimeSpan TurnWarningLengthThreshold { get; set; }
         // This is the maximum number of pending work items for a single activation before we write a warning log.
-        internal LimitValue MaxPendingItemsLimit { get; private set; }
-        internal TimeSpan DelayWarningThreshold { get; private set; }
-        
+        public LimitValue MaxPendingItemsLimit { get; private set; }
+
+        public TimeSpan DelayWarningThreshold { get; private set; }
+
+        TimeSpan IOrleansTaskScheduler.TurnWarningLength { get { return TurnWarningLengthThreshold; }}
         public int RunQueueLength { get { return RunQueue.Length; } }
+
+        public TaskScheduler Instance { get { return this; } }
 
         public static OrleansTaskScheduler CreateTestInstance(int maxActiveThreads, ICorePerformanceMetrics performanceMetrics)
         {
@@ -55,7 +61,7 @@ namespace Orleans.Runtime.Scheduler
             MaxPendingItemsLimit = maxPendingItemsLimit;
             workgroupDirectory = new ConcurrentDictionary<ISchedulingContext, WorkItemGroup>();
             RunQueue = new WorkQueue();
-            logger.Info("Starting OrleansTaskScheduler with {0} Max Active application Threads and 1 system thread.", maxActiveThreads);
+            logger.Info("Starting IOrleansTaskScheduler with {0} Max Active application Threads and 1 system thread.", maxActiveThreads);
             Pool = new WorkerPool(this, performanceMetrics, maxActiveThreads, injectMoreWorkerThreads);
             IntValueStatistic.FindOrCreate(StatisticNames.SCHEDULER_WORKITEMGROUP_COUNT, () => WorkItemGroupCount);
             IntValueStatistic.FindOrCreate(new StatisticName(StatisticNames.QUEUES_QUEUE_SIZE_INSTANTANEOUS_PER_QUEUE, "Scheduler.LevelOne"), () => RunQueueLength);
@@ -72,7 +78,7 @@ namespace Orleans.Runtime.Scheduler
 
         public int WorkItemGroupCount { get { return workgroupDirectory.Count; } }
 
-        private float AverageRunQueueLengthLevelTwo
+        public float AverageRunQueueLengthLevelTwo
         {
             get
             {
@@ -83,7 +89,7 @@ namespace Orleans.Runtime.Scheduler
             }
         }
 
-        private float AverageEnqueuedLevelTwo
+        public float AverageEnqueuedLevelTwo
         {
             get
             {
@@ -94,7 +100,7 @@ namespace Orleans.Runtime.Scheduler
             }
         }
 
-        private float AverageArrivalRateLevelTwo
+        public float AverageArrivalRateLevelTwo
         {
             get
             {
@@ -105,7 +111,7 @@ namespace Orleans.Runtime.Scheduler
             }
         }
 
-        private float SumRunQueueLengthLevelTwo
+        public float SumRunQueueLengthLevelTwo
         {
             get
             {
@@ -113,7 +119,7 @@ namespace Orleans.Runtime.Scheduler
             }
         }
 
-        private float SumEnqueuedLevelTwo
+        public float SumEnqueuedLevelTwo
         {
             get
             {
@@ -121,7 +127,7 @@ namespace Orleans.Runtime.Scheduler
             }
         }
 
-        private float SumArrivalRateLevelTwo
+        public float SumArrivalRateLevelTwo
         {
             get
             {
@@ -182,8 +188,8 @@ namespace Orleans.Runtime.Scheduler
             }
             else
             {
-                var error = String.Format("QueueTask was called on OrleansTaskScheduler for task {0} on Context {1}."
-                    + " Should only call OrleansTaskScheduler.QueueTask with tasks on the null context.",
+                var error = String.Format("QueueTask was called on IOrleansTaskScheduler for task {0} on Context {1}."
+                    + " Should only call IOrleansTaskScheduler.QueueTask with tasks on the null context.",
                     task.Id, context);
                 logger.Error(ErrorCode.SchedulerQueueTaskWrongCall, error);
                 throw new InvalidOperationException(error);
@@ -198,8 +204,8 @@ namespace Orleans.Runtime.Scheduler
 #endif
             if (workItem is TaskWorkItem)
             {
-                var error = String.Format("QueueWorkItem was called on OrleansTaskScheduler for TaskWorkItem {0} on Context {1}."
-                    + " Should only call OrleansTaskScheduler.QueueWorkItem on WorkItems that are NOT TaskWorkItem. Tasks should be queued to the scheduler via QueueTask call.",
+                var error = String.Format("QueueWorkItem was called on IOrleansTaskScheduler for TaskWorkItem {0} on Context {1}."
+                    + " Should only call IOrleansTaskScheduler.QueueWorkItem on WorkItems that are NOT TaskWorkItem. Tasks should be queued to the scheduler via QueueTask call.",
                     workItem.ToString(), context);
                 logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
                 throw new InvalidOperationException(error);
@@ -266,7 +272,7 @@ namespace Orleans.Runtime.Scheduler
             throw new InvalidSchedulingContextException(error);
         }
 
-        internal void CheckSchedulingContextValidity(ISchedulingContext context)
+        public void CheckSchedulingContextValidity(ISchedulingContext context)
         {
             if (context == null)
             {
@@ -342,7 +348,7 @@ namespace Orleans.Runtime.Scheduler
             }
             else
             {
-                var error = String.Format("RunTask was called on OrleansTaskScheduler for task {0} on Context {1}. Should only call OrleansTaskScheduler.RunTask on tasks queued on a null context.", 
+                var error = String.Format("RunTask was called on IOrleansTaskScheduler for task {0} on Context {1}. Should only call IOrleansTaskScheduler.RunTask on tasks queued on a null context.", 
                     task.Id, context);
                 logger.Error(ErrorCode.SchedulerTaskRunningOnWrongScheduler1, error);
                 throw new InvalidOperationException(error);
@@ -359,25 +365,25 @@ namespace Orleans.Runtime.Scheduler
             return Pool.DoHealthCheck();
         }
 
-        internal void PrintStatistics()
+        public void PrintStatistics()
         {
             if (!logger.IsInfo) return;
 
             var stats = Utils.EnumerableToString(workgroupDirectory.Values.OrderBy(wg => wg.Name), wg => string.Format("--{0}", wg.DumpStatus()), Environment.NewLine);
             if (stats.Length > 0)
                 logger.LogWithoutBulkingAndTruncating(Severity.Info, ErrorCode.SchedulerStatistics, 
-                    "OrleansTaskScheduler.PrintStatistics(): RunQueue={0}, WorkItems={1}, Directory:" + Environment.NewLine + "{2}",
+                    "IOrleansTaskScheduler.PrintStatistics(): RunQueue={0}, WorkItems={1}, Directory:" + Environment.NewLine + "{2}",
                     RunQueue.Length, WorkItemGroupCount, stats);
         }
 
-        internal void DumpSchedulerStatus(bool alwaysOutput = true)
+        public void DumpSchedulerStatus(bool alwaysOutput = true)
         {
             if (!logger.IsVerbose && !alwaysOutput) return;
 
             PrintStatistics();
 
             var sb = new StringBuilder();
-            sb.AppendLine("Dump of current OrleansTaskScheduler status:");
+            sb.AppendLine("Dump of current IOrleansTaskScheduler status:");
             sb.AppendFormat("CPUs={0} RunQueue={1}, WorkItems={2} {3}",
                 Environment.ProcessorCount,
                 RunQueue.Length,

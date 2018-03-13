@@ -8,12 +8,12 @@ namespace Orleans.Runtime.Messaging
     {
         private readonly IMessageCenter messageCenter;
         private readonly ActivationDirectory directory;
-        private readonly OrleansTaskScheduler scheduler;
+        private readonly IOrleansTaskScheduler scheduler;
         private readonly Dispatcher dispatcher;
         private readonly MessageFactory messageFactory;
         private readonly Message.Categories category;
 
-        internal IncomingMessageAgent(Message.Categories cat, IMessageCenter mc, ActivationDirectory ad, OrleansTaskScheduler sched, Dispatcher dispatcher, MessageFactory messageFactory) :
+        internal IncomingMessageAgent(Message.Categories cat, IMessageCenter mc, ActivationDirectory ad, IOrleansTaskScheduler sched, Dispatcher dispatcher, MessageFactory messageFactory) :
             base(cat.ToString())
         {
             category = cat;

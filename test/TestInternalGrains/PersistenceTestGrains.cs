@@ -817,7 +817,7 @@ namespace UnitTests.Grains
 
     internal class NonReentrentStressGrainWithoutState : Grain, INonReentrentStressGrainWithoutState
     {
-        private readonly OrleansTaskScheduler scheduler;
+        private readonly IOrleansTaskScheduler scheduler;
         private const int Multiple = 100;
         private Logger logger;
         private bool executing;
@@ -839,7 +839,7 @@ namespace UnitTests.Grains
             new Tuple<string, Severity>("Scheduler.ActivationTaskScheduler", Severity.Info)
         };
         
-        public NonReentrentStressGrainWithoutState(OrleansTaskScheduler scheduler)
+        public NonReentrentStressGrainWithoutState(IOrleansTaskScheduler scheduler)
         {
             this.scheduler = scheduler;
         }

@@ -80,7 +80,7 @@ namespace Orleans.Runtime
         internal readonly ActivationCollector ActivationCollector;
 
         private readonly ILocalGrainDirectory directory;
-        private readonly OrleansTaskScheduler scheduler;
+        private readonly IOrleansTaskScheduler scheduler;
         private readonly ActivationDirectory activations;
         private IStorageProviderManager storageProviderManager;
         private ILogConsistencyProviderManager logConsistencyProviderManager;
@@ -110,7 +110,7 @@ namespace Orleans.Runtime
             ILocalSiloDetails localSiloDetails,
             ILocalGrainDirectory grainDirectory,
             GrainTypeManager typeManager,
-            OrleansTaskScheduler scheduler,
+            IOrleansTaskScheduler scheduler,
             ActivationDirectory activationDirectory,
             ClusterConfiguration config,
             GrainCreator grainCreator,

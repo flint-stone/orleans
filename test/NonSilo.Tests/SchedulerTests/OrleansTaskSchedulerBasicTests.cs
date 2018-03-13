@@ -55,7 +55,7 @@ namespace UnitTests.SchedulerTests
             this.performanceMetrics = new SiloPerformanceMetrics(this.runtimeStatisticsGroup);
             InitSchedulerLogging();
             this.rootContext = new UnitTestSchedulingContext();
-            this.scheduler = TestInternalHelper.InitializeSchedulerForTesting(rootContext, this.performanceMetrics);
+            this.scheduler = (OrleansTaskScheduler)TestInternalHelper.InitializeSchedulerForTesting(rootContext, this.performanceMetrics);
         }
         
         public void Dispose()

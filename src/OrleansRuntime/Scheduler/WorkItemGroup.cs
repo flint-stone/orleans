@@ -20,7 +20,7 @@ namespace Orleans.Runtime.Scheduler
 
         private static readonly Logger appLogger = LogManager.GetLogger("Scheduler.WorkItemGroup", LoggerType.Runtime);
         private readonly Logger log;
-        private readonly OrleansTaskScheduler masterScheduler;
+        private readonly IOrleansTaskScheduler masterScheduler;
         private WorkGroupStatus state;
         private readonly Object lockable;
         private readonly Queue<Task> workItems;
@@ -128,7 +128,7 @@ namespace Orleans.Runtime.Scheduler
         //private static readonly int MaxWaitingThreads = 500;
 
 
-        internal WorkItemGroup(OrleansTaskScheduler sched, ISchedulingContext schedulingContext)
+        internal WorkItemGroup(IOrleansTaskScheduler sched, ISchedulingContext schedulingContext)
         {
             masterScheduler = sched;
             SchedulingContext = schedulingContext;
@@ -361,11 +361,11 @@ namespace Orleans.Runtime.Scheduler
 #endif
                         totalItemsProcessed++;
                         var taskLength = stopwatch.Elapsed - taskStart;
-                        if (taskLength > OrleansTaskScheduler.TurnWarningLengthThreshold)
+                        if (taskLength > masterScheduler.TurnWarningLength)
                         {
                             SchedulerStatisticsGroup.NumLongRunningTurns.Increment();
                             log.Warn(ErrorCode.SchedulerTurnTooLong3, "Task {0} in WorkGroup {1} took elapsed time {2:g} for execution, which is longer than {3}. Running on thread {4}",
-                                OrleansTaskExtentions.ToString(task), SchedulingContext.ToString(), taskLength, OrleansTaskScheduler.TurnWarningLengthThreshold, thread.ToString());
+                                OrleansTaskExtentions.ToString(task), SchedulingContext.ToString(), taskLength, masterScheduler.TurnWarningLength, thread.ToString());
                         }
                         thread.CurrentTask = null;
                     }
