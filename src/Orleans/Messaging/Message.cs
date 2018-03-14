@@ -56,15 +56,11 @@ namespace Orleans.Runtime
         /// <summary>
         /// NOTE: The contents of bodyBytes should never be modified
         /// </summary>
-        public List<ArraySegment<byte>> bodyBytes;
+        private List<ArraySegment<byte>> bodyBytes;
 
-        public List<ArraySegment<byte>> headerBytes;
+        private List<ArraySegment<byte>> headerBytes;
 
-        public object bodyObject;
-
-        public int bodySize;
-
-        public int headerSize;
+        private object bodyObject;
 
         // Cache values of TargetAddess and SendingAddress as they are used very frequently
         private ActivationAddress targetAddress;
