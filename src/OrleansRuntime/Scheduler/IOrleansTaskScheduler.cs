@@ -6,7 +6,7 @@ namespace Orleans.Runtime.Scheduler
 {
     internal interface IOrleansTaskScheduler : ITaskScheduler, IHealthCheckParticipant
     {
-        WorkQueue RunQueue { get; }
+        IWorkQueue RunQueue { get; }
         WorkerPool Pool { get; }
         LimitValue MaxPendingItemsLimit { get; }
         TimeSpan DelayWarningThreshold { get; }

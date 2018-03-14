@@ -1,6 +1,7 @@
 ﻿using Orleans.Runtime;
 using Orleans.Runtime.Configuration;
 using Orleans.Runtime.Scheduler;
+using Orleans.Runtime.Scheduler.PoliciedScheduler;
 
 namespace UnitTests.TesterInternal
 {

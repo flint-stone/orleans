@@ -39,6 +39,7 @@ using Orleans.Storage;
 using Orleans.Streams;
 using Orleans.Timers;
 using Orleans.MultiCluster;
+using Orleans.Runtime.Scheduler.PoliciedScheduler;
 using Orleans.Runtime.Versions;
 using Orleans.Runtime.Versions.Compatibility;
 using Orleans.Streams.Core;
