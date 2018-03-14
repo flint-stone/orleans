@@ -53,6 +53,7 @@ namespace Orleans.Runtime.Scheduler
             get { return SchedulingUtils.IsSystemContext(SchedulingContext); }
         }
 
+        public double TimeRemain { get; set; }
         public string Name { get { return SchedulingContext == null ? "unknown" : SchedulingContext.Name; } }
 
         internal int ExternalWorkItemCount

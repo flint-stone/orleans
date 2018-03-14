@@ -1,9 +1,13 @@
 ﻿#define PRIORITIZE_SYSTEM_TASKS
 
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using DataStructures;
+using Orleans.Runtime.Scheduler;
 
 namespace Orleans.Runtime.Scheduler
 {
@@ -23,8 +27,8 @@ namespace Orleans.Runtime.Scheduler
 
         internal PBWorkQueue()
         {
-            mainQueue = new BlockingCollection<IWorkItem>(new ConcurrentBag<IWorkItem>());
-            systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentBag<IWorkItem>());
+            mainQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(10, new WorkItemComparer()));
+            systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(10, new WorkItemComparer()));
             queueArray = new BlockingCollection<IWorkItem>[] { systemQueue, mainQueue };
 
             if (!StatisticsCollector.CollectShedulerQueuesStats) return;
@@ -189,5 +193,21 @@ namespace Orleans.Runtime.Scheduler
 
             GC.SuppressFinalize(this);
         }
+
+        
+    }
+}
+
+
+// Random for testing
+internal class WorkItemComparer : IComparer<IWorkItem>
+{
+    public int Compare(IWorkItem x, IWorkItem y)
+    {
+        /*if (x == null && y == null) return 0;
+        else if (x == null) return 1;
+        else if (y == null) return -1;
+        return x.GetHashCode() - y.GetHashCode();*/
+        return 0; // no ordering
     }
 }
