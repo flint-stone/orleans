@@ -7,9 +7,9 @@ namespace Orleans.Timers
 {
     internal class TimerRegistry : ITimerRegistry
     {
-        private readonly OrleansTaskScheduler scheduler;
+        private readonly IOrleansTaskScheduler scheduler;
 
-        public TimerRegistry(OrleansTaskScheduler scheduler)
+        public TimerRegistry(IOrleansTaskScheduler scheduler)
         {
             this.scheduler = scheduler;
         }

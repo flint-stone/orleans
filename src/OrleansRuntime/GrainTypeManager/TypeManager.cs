@@ -19,7 +19,7 @@ namespace Orleans.Runtime
         private readonly ImplicitStreamSubscriberTable implicitStreamSubscriberTable;
         private readonly IInternalGrainFactory grainFactory;
         private readonly CachedVersionSelectorManager versionSelectorManager;
-        private readonly OrleansTaskScheduler scheduler;
+        private readonly IOrleansTaskScheduler scheduler;
         private readonly TimeSpan refreshClusterMapInterval;
         private bool hasToRefreshClusterGrainInterfaceMap;
         private IDisposable refreshClusterGrainInterfaceMapTimer;
@@ -29,7 +29,7 @@ namespace Orleans.Runtime
             SiloAddress myAddr,
             GrainTypeManager grainTypeManager,
             ISiloStatusOracle oracle,
-            OrleansTaskScheduler scheduler,
+            IOrleansTaskScheduler scheduler,
             TimeSpan refreshClusterMapInterval,
             ImplicitStreamSubscriberTable implicitStreamSubscriberTable,
             IInternalGrainFactory grainFactory,

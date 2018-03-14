@@ -7,7 +7,7 @@ namespace Orleans.Runtime.Counters
 {
     internal class SiloPerformanceMetrics : ISiloPerformanceMetrics, IDisposable
     {
-        internal OrleansTaskScheduler Scheduler { get; set; }
+        internal IOrleansTaskScheduler Scheduler { get; set; }
         internal ActivationDirectory ActivationDirectory { get; set; }
         internal ActivationCollector ActivationCollector { get; set; }
         internal IMessageCenter MessageCenter { get; set; }

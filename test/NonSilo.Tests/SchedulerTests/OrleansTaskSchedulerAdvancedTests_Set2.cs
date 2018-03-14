@@ -7,6 +7,7 @@ using Orleans.Runtime;
 using Orleans.Runtime.Configuration;
 using Orleans.Runtime.Counters;
 using Orleans.Runtime.Scheduler;
+using Orleans.Runtime.Scheduler.PoliciedScheduler;
 using TestExtensions;
 using UnitTests.Grains;
 using UnitTests.TesterInternal;

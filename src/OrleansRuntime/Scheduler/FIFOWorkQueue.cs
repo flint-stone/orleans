@@ -7,7 +7,10 @@ using System.Threading;
 
 namespace Orleans.Runtime.Scheduler
 {
-    internal class WorkQueue : IWorkQueue
+    /// <summary>
+    /// Priority Based Work Queue
+    /// </summary>
+    internal class FIFOWorkQueue : IWorkQueue
     {
         private BlockingCollection<IWorkItem> mainQueue;
         private BlockingCollection<IWorkItem> systemQueue;
@@ -18,10 +21,10 @@ namespace Orleans.Runtime.Scheduler
 
         public int Length { get { return mainQueue.Count + systemQueue.Count; } }
 
-        internal WorkQueue()
+        internal FIFOWorkQueue()
         {
-            mainQueue = new BlockingCollection<IWorkItem>(new ConcurrentBag<IWorkItem>());
-            systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentBag<IWorkItem>());
+            mainQueue = new BlockingCollection<IWorkItem>(new ConcurrentQueue<IWorkItem>());
+            systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentQueue<IWorkItem>());
             queueArray = new BlockingCollection<IWorkItem>[] { systemQueue, mainQueue };
 
             if (!StatisticsCollector.CollectShedulerQueuesStats) return;

@@ -13,7 +13,7 @@ namespace Orleans.Runtime.Scheduler
         private const int MAX_CPU_USAGE_TO_REPLACE = 50;
 
         private readonly WorkerPool pool;
-        private readonly OrleansTaskScheduler scheduler;
+        private readonly IOrleansTaskScheduler scheduler;
         private readonly TimeSpan maxWorkQueueWait;
         internal CancellationToken CancelToken { get { return Cts.Token; } }
         private bool ownsSemaphore;
@@ -87,7 +87,7 @@ namespace Orleans.Runtime.Scheduler
         internal readonly int WorkerThreadStatisticsNumber;
         private readonly ICorePerformanceMetrics performanceMetrics;
 
-        internal WorkerPoolThread(WorkerPool gtp, OrleansTaskScheduler sched, ICorePerformanceMetrics performanceMetrics, int threadNumber, bool system = false)
+        internal WorkerPoolThread(WorkerPool gtp, IOrleansTaskScheduler sched, ICorePerformanceMetrics performanceMetrics, int threadNumber, bool system = false)
             : base((system ? "System." : "") + threadNumber)
         {
             pool = gtp;
@@ -110,7 +110,7 @@ namespace Orleans.Runtime.Scheduler
             {
                 // We can't set these in the constructor because that doesn't run on our thread
                 current = this;
-                RuntimeContext.InitializeThread(scheduler);
+                RuntimeContext.InitializeThread(scheduler.Instance);
                 
                 int noWorkCount = 0;
                 
@@ -164,7 +164,7 @@ namespace Orleans.Runtime.Scheduler
                             // Do the work
                             try
                             {
-                                RuntimeContext.SetExecutionContext(todo.SchedulingContext, scheduler);
+                                RuntimeContext.SetExecutionContext(todo.SchedulingContext, scheduler.Instance);
                                 CurrentWorkItem = todo;
 #if TRACK_DETAILED_STATS
                                 if (todo.ItemType != WorkItemType.WorkItemGroup)
@@ -357,10 +357,10 @@ namespace Orleans.Runtime.Scheduler
         {
             if (CurrentTask != null)
             {
-                return Utils.Since(currentTaskStarted) > OrleansTaskScheduler.TurnWarningLengthThreshold;
+                return Utils.Since(currentTaskStarted) > scheduler.TurnWarningLength;
             } 
             // If there is no active Task, check current wokr item, if any.
-            bool frozenWorkItem = CurrentWorkItem != null && Utils.Since(currentWorkItemStarted) > OrleansTaskScheduler.TurnWarningLengthThreshold;
+            bool frozenWorkItem = CurrentWorkItem != null && Utils.Since(currentWorkItemStarted) > scheduler.TurnWarningLength;
             return frozenWorkItem;
         }
     }

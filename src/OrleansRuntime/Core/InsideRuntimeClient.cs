@@ -46,7 +46,7 @@ namespace Orleans.Runtime
             ClusterConfiguration config,
             GrainTypeManager typeManager,
             TypeMetadataCache typeMetadataCache,
-            OrleansTaskScheduler scheduler,
+            IOrleansTaskScheduler scheduler,
             IServiceProvider serviceProvider,
             SerializationManager serializationManager,
             MessageFactory messageFactory,
@@ -77,7 +77,7 @@ namespace Orleans.Runtime
 
         public IStreamProviderRuntime CurrentStreamProviderRuntime { get; internal set; }
 
-        public OrleansTaskScheduler Scheduler { get; }
+        public IOrleansTaskScheduler Scheduler { get; }
 
         public IInternalGrainFactory InternalGrainFactory => this.ConcreteGrainFactory;
 

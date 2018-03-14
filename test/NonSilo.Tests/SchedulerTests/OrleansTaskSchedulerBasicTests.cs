@@ -12,6 +12,7 @@ using UnitTests.TesterInternal;
 using Xunit;
 using Xunit.Abstractions;
 using Orleans;
+using Orleans.Runtime.Scheduler.PoliciedScheduler;
 
 // ReSharper disable ConvertToConstant.Local
 

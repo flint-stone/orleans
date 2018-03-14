@@ -53,7 +53,7 @@ namespace Orleans.Runtime.GrainDirectory
         private readonly TaskCompletionSource<bool> stopPreparationResolver;
         public Task StopPreparationCompletion { get { return stopPreparationResolver.Task; } }
 
-        internal OrleansTaskScheduler Scheduler { get; private set; }
+        internal IOrleansTaskScheduler Scheduler { get; private set; }
 
         internal GrainDirectoryHandoffManager HandoffManager { get; private set; }
 
@@ -93,7 +93,7 @@ namespace Orleans.Runtime.GrainDirectory
         public LocalGrainDirectory(
             ClusterConfiguration clusterConfig,
             ILocalSiloDetails siloDetails,
-            OrleansTaskScheduler scheduler,
+            IOrleansTaskScheduler scheduler,
             ISiloStatusOracle siloStatusOracle,
             IMultiClusterOracle multiClusterOracle,
             IInternalGrainFactory grainFactory,

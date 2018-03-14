@@ -523,7 +523,7 @@ namespace Orleans.Runtime.ReminderService
                 LocalSequenceNumber = -1;
             }
 
-            public void StartTimer(OrleansTaskScheduler scheduler, Func<object, Task> asyncCallback, Logger Logger)
+            public void StartTimer(IOrleansTaskScheduler scheduler, Func<object, Task> asyncCallback, Logger Logger)
             {
                 StopReminder(Logger); // just to make sure.
                 var dueTimeSpan = CalculateDueTime();

@@ -11,6 +11,7 @@ using Orleans.Concurrency;
 using Orleans.Core;
 using Orleans.Runtime;
 using Orleans.Runtime.Scheduler;
+using Orleans.Runtime.Scheduler.PoliciedScheduler;
 using Orleans.Serialization;
 using UnitTests.GrainInterfaces;
 using Xunit;

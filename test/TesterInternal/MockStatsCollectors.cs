@@ -10,6 +10,7 @@ using Orleans.Runtime;
 using Orleans.Runtime.Configuration;
 using Orleans.Runtime.Scheduler;
 using Microsoft.Extensions.DependencyInjection;
+using Orleans.Runtime.Scheduler.PoliciedScheduler;
 
 namespace UnitTests.Stats
 {

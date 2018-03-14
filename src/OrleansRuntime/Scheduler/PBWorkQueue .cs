@@ -1,13 +1,20 @@
 ﻿#define PRIORITIZE_SYSTEM_TASKS
 
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using DataStructures;
+using Orleans.Runtime.Scheduler;
 
 namespace Orleans.Runtime.Scheduler
 {
-    internal class WorkQueue : IWorkQueue
+    /// <summary>
+    /// Priority Based Work Queue
+    /// </summary>
+    internal class PBWorkQueue : IWorkQueue
     {
         private BlockingCollection<IWorkItem> mainQueue;
         private BlockingCollection<IWorkItem> systemQueue;
@@ -18,10 +25,10 @@ namespace Orleans.Runtime.Scheduler
 
         public int Length { get { return mainQueue.Count + systemQueue.Count; } }
 
-        internal WorkQueue()
+        internal PBWorkQueue()
         {
-            mainQueue = new BlockingCollection<IWorkItem>(new ConcurrentBag<IWorkItem>());
-            systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentBag<IWorkItem>());
+            mainQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(10, new WorkItemComparer()));
+            systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(10, new WorkItemComparer()));
             queueArray = new BlockingCollection<IWorkItem>[] { systemQueue, mainQueue };
 
             if (!StatisticsCollector.CollectShedulerQueuesStats) return;
@@ -186,5 +193,17 @@ namespace Orleans.Runtime.Scheduler
 
             GC.SuppressFinalize(this);
         }
+
+        
+    }
+}
+
+
+// Random for testing
+internal class WorkItemComparer : IComparer<IWorkItem>
+{
+    public int Compare(IWorkItem x, IWorkItem y)
+    {
+        return x.TimeRemain.CompareTo(y.TimeRemain); 
     }
 }
