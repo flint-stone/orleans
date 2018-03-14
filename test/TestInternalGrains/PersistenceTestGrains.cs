@@ -11,6 +11,7 @@ using Orleans.Concurrency;
 using Orleans.Core;
 using Orleans.Runtime;
 using Orleans.Runtime.Scheduler;
+using Orleans.Runtime.Scheduler.PoliciedScheduler;
 using Orleans.Serialization;
 using UnitTests.GrainInterfaces;
 using Xunit;
@@ -817,7 +818,7 @@ namespace UnitTests.Grains
 
     internal class NonReentrentStressGrainWithoutState : Grain, INonReentrentStressGrainWithoutState
     {
-        private readonly IOrleansTaskScheduler scheduler;
+        private readonly OrleansTaskScheduler scheduler;
         private const int Multiple = 100;
         private Logger logger;
         private bool executing;
@@ -839,7 +840,7 @@ namespace UnitTests.Grains
             new Tuple<string, Severity>("Scheduler.ActivationTaskScheduler", Severity.Info)
         };
         
-        public NonReentrentStressGrainWithoutState(IOrleansTaskScheduler scheduler)
+        public NonReentrentStressGrainWithoutState(OrleansTaskScheduler scheduler)
         {
             this.scheduler = scheduler;
         }
