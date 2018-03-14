@@ -204,10 +204,6 @@ internal class WorkItemComparer : IComparer<IWorkItem>
 {
     public int Compare(IWorkItem x, IWorkItem y)
     {
-        /*if (x == null && y == null) return 0;
-        else if (x == null) return 1;
-        else if (y == null) return -1;
-        return x.GetHashCode() - y.GetHashCode();*/
-        return x.TimeRemain.CompareTo(y.TimeRemain); // no ordering
+        return x.TimeRemain.CompareTo(y.TimeRemain); 
     }
 }
