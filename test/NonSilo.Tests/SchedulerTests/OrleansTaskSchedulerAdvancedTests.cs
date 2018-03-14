@@ -7,6 +7,7 @@ using Orleans;
 using Orleans.Runtime;
 using Orleans.Runtime.Counters;
 using Orleans.Runtime.Scheduler;
+using Orleans.Runtime.Scheduler.PoliciedScheduler;
 using UnitTests.TesterInternal;
 using Xunit;
 using Xunit.Abstractions;
@@ -18,7 +19,7 @@ namespace UnitTests.SchedulerTests
         private readonly ITestOutputHelper output;
         private readonly RuntimeStatisticsGroup runtimeStatisticsGroup;
         private readonly SiloPerformanceMetrics performanceMetrics;
-        private IOrleansTaskScheduler orleansTaskScheduler;
+        private OrleansTaskScheduler orleansTaskScheduler;
 
         private bool mainDone;
         private int stageNum1;
@@ -215,7 +216,7 @@ namespace UnitTests.SchedulerTests
             // You test that no CW/StartNew runs until the main turn is fully done. And run in stress.
 
             UnitTestSchedulingContext context = new UnitTestSchedulingContext();
-            IOrleansTaskScheduler masterScheduler = orleansTaskScheduler = TestInternalHelper.InitializeSchedulerForTesting(context, this.performanceMetrics);
+            OrleansTaskScheduler masterScheduler = orleansTaskScheduler = TestInternalHelper.InitializeSchedulerForTesting(context, this.performanceMetrics);
             WorkItemGroup workItemGroup = orleansTaskScheduler.GetWorkItemGroup(context);
             ActivationTaskScheduler activationScheduler = workItemGroup.TaskRunner;
 
@@ -352,7 +353,7 @@ namespace UnitTests.SchedulerTests
         public void Sched_AC_Current_TaskScheduler()
         {
             UnitTestSchedulingContext context = new UnitTestSchedulingContext();
-            IOrleansTaskScheduler orleansTaskScheduler = orleansTaskScheduler = TestInternalHelper.InitializeSchedulerForTesting(context, this.performanceMetrics);
+            OrleansTaskScheduler orleansTaskScheduler = orleansTaskScheduler = TestInternalHelper.InitializeSchedulerForTesting(context, this.performanceMetrics);
             ActivationTaskScheduler activationScheduler = orleansTaskScheduler.GetWorkItemGroup(context).TaskRunner;
 
             // RuntimeContext.InitializeThread(masterScheduler);
