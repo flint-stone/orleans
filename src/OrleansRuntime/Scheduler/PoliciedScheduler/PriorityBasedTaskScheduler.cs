@@ -82,7 +82,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
         }
         #endregion
 
-        #region IPriorityBasedTaskScheduler
+        #region IOrleansTaskScheduler
         public void Start()
         {
             Pool.Start();
