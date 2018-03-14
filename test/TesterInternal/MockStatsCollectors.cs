@@ -10,6 +10,7 @@ using Orleans.Runtime;
 using Orleans.Runtime.Configuration;
 using Orleans.Runtime.Scheduler;
 using Microsoft.Extensions.DependencyInjection;
+using Orleans.Runtime.Scheduler.PoliciedScheduler;
 
 namespace UnitTests.Stats
 {
@@ -94,7 +95,7 @@ namespace UnitTests.Stats
         public string Name { get; private set; }
 
         private IStatsCollectorGrain grain;
-        private IOrleansTaskScheduler taskScheduler;
+        private OrleansTaskScheduler taskScheduler;
         private SchedulingContext schedulingContext;
         private Logger logger;
 
@@ -103,7 +104,7 @@ namespace UnitTests.Stats
             Name = name;
             this.logger = providerRuntime.GetLogger("MockStatsSiloCollector");
             this.grain = providerRuntime.GrainFactory.GetGrain<IStatsCollectorGrain>(0);
-            this.taskScheduler = providerRuntime.ServiceProvider.GetRequiredService<IOrleansTaskScheduler>();
+            this.taskScheduler = providerRuntime.ServiceProvider.GetRequiredService<OrleansTaskScheduler>();
             this.schedulingContext = providerRuntime.ServiceProvider.GetRequiredService<Silo>().testHook.SchedulingContext;
             logger.Info("{0} Init called", GetType().Name);
             return Task.CompletedTask;
