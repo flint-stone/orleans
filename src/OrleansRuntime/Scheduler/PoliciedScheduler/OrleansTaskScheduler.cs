@@ -9,13 +9,11 @@ using Orleans.Runtime.Configuration;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 {
-
-
-    [DebuggerDisplay("IOrleansTaskScheduler RunQueue={RunQueue.Length}")]
+    [DebuggerDisplay("OrleansTaskScheduler RunQueue={RunQueue.Length}")]
     internal class OrleansTaskScheduler : TaskScheduler, IOrleansTaskScheduler
     {
         #region Private
-        private readonly LoggerImpl logger = LogManager.GetLogger("Scheduler.IOrleansTaskScheduler", LoggerType.Runtime);
+        private readonly LoggerImpl logger = LogManager.GetLogger("Scheduler.OrleansTaskScheduler", LoggerType.Runtime);
         private readonly ConcurrentDictionary<ISchedulingContext, WorkItemGroup> workgroupDirectory; // work group directory
         private bool applicationTurnsStopped;
         private static TimeSpan TurnWarningLengthThreshold { get; set; }
@@ -66,7 +64,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             MaxPendingItemsLimit = maxPendingItemsLimit;
             workgroupDirectory = new ConcurrentDictionary<ISchedulingContext, WorkItemGroup>();
             RunQueue = new WorkQueue();
-            logger.Info("Starting IOrleansTaskScheduler with {0} Max Active application Threads and 1 system thread.", maxActiveThreads);
+            logger.Info("Starting OrleansTaskScheduler with {0} Max Active application Threads and 1 system thread.", maxActiveThreads);
             Pool = new WorkerPool(this, performanceMetrics, maxActiveThreads, injectMoreWorkerThreads);
             IntValueStatistic.FindOrCreate(StatisticNames.SCHEDULER_WORKITEMGROUP_COUNT, () => WorkItemGroupCount);
             IntValueStatistic.FindOrCreate(new StatisticName(StatisticNames.QUEUES_QUEUE_SIZE_INSTANTANEOUS_PER_QUEUE, "Scheduler.LevelOne"), () => RunQueueLength);
@@ -97,8 +95,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 
             applicationTurnsStopped = true;
             foreach (var group in workgroupDirectory.Values)
-                if (!@group.IsSystemGroup)
-                    @group.Stop();
+            {
+                if (!group.IsSystemGroup)
+                    group.Stop();
+            }      
         }
 
         public void Stop()
@@ -115,8 +115,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 #endif
             if (workItem is TaskWorkItem)
             {
-                var error = string.Format("QueueWorkItem was called on IOrleansTaskScheduler for TaskWorkItem {0} on Context {1}."
-                    + " Should only call IOrleansTaskScheduler.QueueWorkItem on WorkItems that are NOT TaskWorkItem. Tasks should be queued to the scheduler via QueueTask call.",
+                var error = string.Format("QueueWorkItem was called on OrleansTaskScheduler for TaskWorkItem {0} on Context {1}."
+                    + " Should only call OrleansTaskScheduler.QueueWorkItem on WorkItems that are NOT TaskWorkItem. Tasks should be queued to the scheduler via QueueTask call.",
                     workItem, context);
                 logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
                 throw new InvalidOperationException(error);
@@ -137,13 +137,13 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             // This will make sure the TaskScheduler.Current is set correctly on any task that is created implicitly in the execution of this workItem.
             if (workItemGroup == null)
             {
-                var t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, context, this);
+                Task t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, context, this);
                 t.Start(this);
             }
             else
             {
                 // Create Task wrapper for this work item
-                var t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, context, workItemGroup.TaskRunner);
+                Task t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, context, workItemGroup.TaskRunner);
                 t.Start(workItemGroup.TaskRunner);
             }
         }
@@ -151,7 +151,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
         // Only required if you have work groups flagged by a context that is not a WorkGroupingContext
         public WorkItemGroup RegisterWorkContext(ISchedulingContext context)
         {
-            if (context == null) return null;
+            if (context == null)
+                return null;
 
             var wg = new WorkItemGroup(this, context);
             workgroupDirectory.TryAdd(context, wg);
@@ -178,7 +179,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             if (workgroupDirectory.TryGetValue(context, out workGroup))
                 return workGroup;
 
-            var error = string.Format("QueueWorkItem was called on a non-null context {0} but there is no valid WorkItemGroup for it.", context);
+            var error = String.Format("QueueWorkItem was called on a non-null context {0} but there is no valid WorkItemGroup for it.", context);
             logger.Error(ErrorCode.SchedulerQueueWorkItemWrongContext, error);
             throw new InvalidSchedulingContextException(error);
         }
@@ -186,10 +187,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
         public void CheckSchedulingContextValidity(ISchedulingContext context)
         {
             if (context == null)
+            {
                 throw new InvalidSchedulingContextException(
                     "CheckSchedulingContextValidity was called on a null SchedulingContext."
                     + "Please make sure you are not trying to create a Timer from outside Orleans Task Scheduler, "
                     + "which will be the case if you create it inside Task.Run.");
+            }
             GetWorkItemGroup(context); // GetWorkItemGroup throws for Invalid context
         }
 
@@ -217,14 +220,14 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             if (workItemGroup == null)
             {
                 RuntimeContext.SetExecutionContext(null, this);
-                var done = TryExecuteTask(task);
+                bool done = TryExecuteTask(task);
                 if (!done)
                     logger.Warn(ErrorCode.SchedulerTaskExecuteIncomplete2, "RunTask: Incomplete base.TryExecuteTask for Task Id={0} with Status={1}",
                         task.Id, task.Status);
             }
             else
             {
-                var error = string.Format("RunTask was called on IOrleansTaskScheduler for task {0} on Context {1}. Should only call IOrleansTaskScheduler.RunTask on tasks queued on a null context.",
+                var error = String.Format("RunTask was called on OrleansTaskScheduler for task {0} on Context {1}. Should only call OrleansTaskScheduler.RunTask on tasks queued on a null context.",
                     task.Id, context);
                 logger.Error(ErrorCode.SchedulerTaskRunningOnWrongScheduler1, error);
                 throw new InvalidOperationException(error);
@@ -248,7 +251,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             var stats = Utils.EnumerableToString(workgroupDirectory.Values.OrderBy(wg => wg.Name), wg => string.Format("--{0}", wg.DumpStatus()), Environment.NewLine);
             if (stats.Length > 0)
                 logger.LogWithoutBulkingAndTruncating(Severity.Info, ErrorCode.SchedulerStatistics,
-                    "IOrleansTaskScheduler.PrintStatistics(): RunQueue={0}, WorkItems={1}, Directory:" + Environment.NewLine + "{2}",
+                    "OrleansTaskScheduler.PrintStatistics(): RunQueue={0}, WorkItems={1}, Directory:" + Environment.NewLine + "{2}",
                     RunQueue.Length, WorkItemGroupCount, stats);
         }
 
@@ -259,7 +262,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             PrintStatistics();
 
             var sb = new StringBuilder();
-            sb.AppendLine("Dump of current IOrleansTaskScheduler status:");
+            sb.AppendLine("Dump of current OrleansTaskScheduler status:");
             sb.AppendFormat("CPUs={0} RunQueue={1}, WorkItems={2} {3}",
                 Environment.ProcessorCount,
                 RunQueue.Length,
@@ -306,8 +309,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             }
             else
             {
-                var error = string.Format("QueueTask was called on IOrleansTaskScheduler for task {0} on Context {1}."
-                                          + " Should only call IOrleansTaskScheduler.QueueTask with tasks on the null context.",
+                var error = string.Format("QueueTask was called on OrleansTaskScheduler for task {0} on Context {1}."
+                                          + " Should only call OrleansTaskScheduler.QueueTask with tasks on the null context.",
                     task.Id, context);
                 logger.Error(ErrorCode.SchedulerQueueTaskWrongCall, error);
                 throw new InvalidOperationException(error);
