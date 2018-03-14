@@ -66,7 +66,6 @@ namespace Orleans.Runtime
         private ActivationAddress targetAddress;
         private ActivationAddress sendingAddress;
         private static readonly Logger logger;
-
         
         static Message()
         {
@@ -448,7 +447,6 @@ namespace Orleans.Runtime
             this.BodyObject = null;
 
             this.bodyBytes = body;
-
         }
 
         /// <summary>
@@ -718,7 +716,7 @@ namespace Orleans.Runtime
             ReleaseBodyAndHeaderBuffers();
         }
 
-        public static int BufferLength(List<ArraySegment<byte>> buffer)
+        private static int BufferLength(List<ArraySegment<byte>> buffer)
         {
             var result = 0;
             for (var i = 0; i < buffer.Count; i++)
