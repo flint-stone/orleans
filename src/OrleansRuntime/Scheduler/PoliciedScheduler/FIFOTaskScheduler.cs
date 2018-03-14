@@ -82,7 +82,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
         }
         #endregion
 
-        #region IFIFOTaskScheduler
+        #region IOrleansTaskScheduler
         public void Start()
         {
             Pool.Start();
@@ -97,8 +97,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 
             applicationTurnsStopped = true;
             foreach (var group in workgroupDirectory.Values)
-                if (!@group.IsSystemGroup)
-                    @group.Stop();
+            {
+                if (!group.IsSystemGroup)
+                    group.Stop();
+            }
         }
 
         public void Stop()

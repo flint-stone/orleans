@@ -97,8 +97,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 
             applicationTurnsStopped = true;
             foreach (var group in workgroupDirectory.Values)
-                if (!@group.IsSystemGroup)
-                    @group.Stop();
+            {
+                if (!group.IsSystemGroup)
+                    group.Stop();
+            }
         }
 
         public void Stop()
