@@ -470,6 +470,10 @@ namespace Orleans.Runtime
                 this.localGrainDirectory.InvalidateCacheEntry(oldAddress);
             }
             // IMPORTANT: do not do anything on activation context anymore, since this activation is invalid already.
+#if DEBUG
+            logger.Info("Queue closure work item with path {0}", message?.RequestContextData != null && message.RequestContextData.ContainsKey("Path")?(string)message.RequestContextData["Path"]:"null");
+            // logger.Info("Queue closure work item with time remaining {0}", message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline") ? (String)message.RequestContextData["Deadline"] : "null");
+#endif
             scheduler.QueueWorkItem(new ClosureWorkItem(
                 () => TryForwardRequest(message, oldAddress, forwardingAddress, failedOperation, exc)),
                 catalog.SchedulingContext);
@@ -495,6 +499,11 @@ namespace Orleans.Runtime
                         messages.Count, oldAddress, forwardingAddress,
                         failedOperation));
             }
+#if DEBUG
+            // How to assign priority to these folks?
+            logger.Info("Queue closure work items with path ?");
+            // logger.Info("Queue closure work items with time remaining ?");
+#endif
 
             // IMPORTANT: do not do anything on activation context anymore, since this activation is invalid already.
             scheduler.QueueWorkItem(new ClosureWorkItem(

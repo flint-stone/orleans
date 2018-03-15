@@ -37,7 +37,7 @@ namespace Orleans.Runtime.Scheduler
 #endif
             this.TimeRemain =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline")
-                    ? (int)message.RequestContextData["Deadline"] - Environment.TickCount
+                    ? (int) message.RequestContextData["Deadline"] - Environment.TickCount
                     : 0.0;
         }
 

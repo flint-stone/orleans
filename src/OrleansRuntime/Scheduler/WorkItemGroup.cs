@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -30,7 +31,7 @@ namespace Orleans.Runtime.Scheduler
         private readonly QueueTrackingStatistic queueTracking;
         private TimeSpan totalQueuingDelay;
         private readonly long quantumExpirations;
-        private readonly int workItemGroupStatisticsNumber;
+        private readonly int workItemGroupStatisticsNumber; 
 
         internal ActivationTaskScheduler TaskRunner { get; private set; }
         
@@ -213,6 +214,7 @@ namespace Orleans.Runtime.Scheduler
 #if DEBUG
                 if (log.IsVerbose3) log.Verbose3("Add to RunQueue {0}, #{1}, onto {2}", task, thisSequenceNumber, SchedulingContext);
 #endif
+                TimeRemain = totalItemsEnQueued;
                 masterScheduler.RunQueue.Add(this);
             }
         }
@@ -322,9 +324,15 @@ namespace Orleans.Runtime.Scheduler
                     lock (lockable)
                     {
                         if (workItems.Count > 0)
+                        {
                             task = workItems.Dequeue();
-                        else // If the list is empty, then we're done
+                            TimeRemain = ((SchedulingContext) task.AsyncState).TimeRemain;
+                        }
+                        else
+                        {
+                            // If the list is empty, then we're done
                             break;
+                        }
                     }
 
 #if TRACK_DETAILED_STATS
@@ -375,6 +383,11 @@ namespace Orleans.Runtime.Scheduler
                 while (((MaxWorkItemsPerTurn <= 0) || (count <= MaxWorkItemsPerTurn)) &&
                     ((ActivationSchedulingQuantum <= TimeSpan.Zero) || (stopwatch.Elapsed < ActivationSchedulingQuantum)));
                 stopwatch.Stop();
+#if DEBUG
+                StringBuilder sb = new StringBuilder();
+                masterScheduler.RunQueue.DumpStatus(sb);
+                log.Info("RunQueue Contents: {0}", sb.ToString());
+#endif
             }
             catch (Exception ex)
             {
@@ -392,6 +405,8 @@ namespace Orleans.Runtime.Scheduler
                         if (WorkItemCount > 0)
                         {
                             state = WorkGroupStatus.Runnable;
+                            // TODO: How to add deadline for work item that is added back
+                            TimeRemain = totalItemsEnQueued;
                             masterScheduler.RunQueue.Add(this);
                         }
                         else
