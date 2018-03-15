@@ -204,6 +204,6 @@ internal class WorkItemComparer : IComparer<IWorkItem>
 {
     public int Compare(IWorkItem x, IWorkItem y)
     {
-        return x.TimeRemain.CompareTo(y.TimeRemain); 
+        return y.TimeRemain.CompareTo(x.TimeRemain); 
     }
 }

@@ -214,7 +214,9 @@ namespace Orleans.Runtime.Scheduler
 #if DEBUG
                 if (log.IsVerbose3) log.Verbose3("Add to RunQueue {0}, #{1}, onto {2}", task, thisSequenceNumber, SchedulingContext);
 #endif
-                TimeRemain = totalItemsEnQueued;
+                var contextObj = task.AsyncState as SchedulingContext;
+
+                TimeRemain = contextObj?.TimeRemain ?? 0.0;
                 masterScheduler.RunQueue.Add(this);
             }
         }
@@ -326,7 +328,6 @@ namespace Orleans.Runtime.Scheduler
                         if (workItems.Count > 0)
                         {
                             task = workItems.Dequeue();
-                            TimeRemain = ((SchedulingContext) task.AsyncState).TimeRemain;
                         }
                         else
                         {
@@ -406,7 +407,9 @@ namespace Orleans.Runtime.Scheduler
                         {
                             state = WorkGroupStatus.Runnable;
                             // TODO: How to add deadline for work item that is added back
-                            TimeRemain = totalItemsEnQueued;
+                            Task next = workItems.Peek();
+                            var contextObj = next.AsyncState as SchedulingContext;
+                            TimeRemain = contextObj?.TimeRemain ?? 0.0;
                             masterScheduler.RunQueue.Add(this);
                         }
                         else
