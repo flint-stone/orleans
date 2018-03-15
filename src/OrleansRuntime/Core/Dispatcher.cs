@@ -401,7 +401,9 @@ namespace Orleans.Runtime
                 MessagingProcessingStatisticsGroup.OnDispatcherMessageProcessedOk(message);
                 if (message.RequestContextData!=null && message.RequestContextData.ContainsKey("Deadline"))
                 {
+#if DEBUG
                     logger.Info("Queue invoke work item with path {0}", (string)message.RequestContextData["Path"]);
+#endif
                     scheduler.QueueWorkItem(new InvokeWorkItem(targetActivation, message, this),
                         targetActivation.SchedulingContext);
                 }
