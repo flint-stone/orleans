@@ -22,7 +22,7 @@ namespace Orleans.Runtime.Scheduler
             this.TimeRemain =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline")
                     ? (int) message.RequestContextData["Deadline"] - Environment.TickCount
-                    : 0.0;
+                    : 0;
         }
 
         public ClosureWorkItem(Action closure, Func<string> getName, Message message = null)
@@ -38,7 +38,7 @@ namespace Orleans.Runtime.Scheduler
             this.TimeRemain =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline")
                     ? (int) message.RequestContextData["Deadline"] - Environment.TickCount
-                    : 0.0;
+                    : 0;
         }
 
         #region IWorkItem Members

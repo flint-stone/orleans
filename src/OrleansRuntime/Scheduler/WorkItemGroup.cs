@@ -217,7 +217,15 @@ namespace Orleans.Runtime.Scheduler
                 var contextObj = task.AsyncState as SchedulingContext;
 
                 TimeRemain = contextObj?.TimeRemain ?? 0.0;
+#if DEBUG
+                log.Info("Changing WIG {0} priority to : {1}", this, TimeRemain);
+#endif
                 masterScheduler.RunQueue.Add(this);
+#if DEBUG
+                StringBuilder sb = new StringBuilder();
+                masterScheduler.RunQueue.DumpStatus(sb);
+                log.Info("RunQueue Contents: {0}", sb.ToString());
+#endif
             }
         }
 
@@ -384,11 +392,7 @@ namespace Orleans.Runtime.Scheduler
                 while (((MaxWorkItemsPerTurn <= 0) || (count <= MaxWorkItemsPerTurn)) &&
                     ((ActivationSchedulingQuantum <= TimeSpan.Zero) || (stopwatch.Elapsed < ActivationSchedulingQuantum)));
                 stopwatch.Stop();
-#if DEBUG
-                StringBuilder sb = new StringBuilder();
-                masterScheduler.RunQueue.DumpStatus(sb);
-                log.Info("RunQueue Contents: {0}", sb.ToString());
-#endif
+
             }
             catch (Exception ex)
             {
@@ -410,7 +414,15 @@ namespace Orleans.Runtime.Scheduler
                             Task next = workItems.Peek();
                             var contextObj = next.AsyncState as SchedulingContext;
                             TimeRemain = contextObj?.TimeRemain ?? 0.0;
+#if DEBUG
+                            log.Info("Changing WIG {0} priority to : {1}", this, TimeRemain);
+#endif
                             masterScheduler.RunQueue.Add(this);
+#if DEBUG
+                            StringBuilder sb = new StringBuilder();
+                            masterScheduler.RunQueue.DumpStatus(sb);
+                            log.Info("RunQueue Contents: {0}", sb.ToString());
+#endif
                         }
                         else
                         {

@@ -166,6 +166,9 @@ namespace Orleans.Runtime
                         // We would add a counter here, except that there's already a counter for this in the Catalog.
                         // Note that this has to run in a non-null scheduler context, so we always queue it to the catalog's context
                         var origin = message.SendingSilo;
+#if DEBUG
+                        logger.Info("Queue closure work item at ReceiveMessage with time remaining {0}", message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline") ? (string)message.RequestContextData["Deadline"] : "null");
+#endif
                         scheduler.QueueWorkItem(new ClosureWorkItem(
                             // don't use message.TargetAddress, cause it may have been removed from the headers by this time!
                             async () =>
@@ -182,7 +185,7 @@ namespace Orleans.Runtime
                                             nonExistentActivation), exc);
                                 }
                             },
-                            () => "LocalGrainDirectory.UnregisterAfterNonexistingActivation"),
+                            () => "LocalGrainDirectory.UnregisterAfterNonexistingActivation", message),
                             catalog.SchedulingContext);
 
                         ProcessRequestToInvalidActivation(message, nonExistentActivation, null, "Non-existent activation");
@@ -471,11 +474,11 @@ namespace Orleans.Runtime
             }
             // IMPORTANT: do not do anything on activation context anymore, since this activation is invalid already.
 #if DEBUG
-            logger.Info("Queue closure work item with path {0}", message?.RequestContextData != null && message.RequestContextData.ContainsKey("Path")?(string)message.RequestContextData["Path"]:"null");
-            // logger.Info("Queue closure work item with time remaining {0}", message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline") ? (String)message.RequestContextData["Deadline"] : "null");
+            // logger.Info("Queue closure work item with path {0}", message?.RequestContextData != null && message.RequestContextData.ContainsKey("Path")?(string)message.RequestContextData["Path"]:"null");
+            logger.Info("Queue closure work item at ProcessRequestToInvalidActivation with time remaining {0}", message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline") ? (String)message.RequestContextData["Deadline"] : "null");
 #endif
             scheduler.QueueWorkItem(new ClosureWorkItem(
-                () => TryForwardRequest(message, oldAddress, forwardingAddress, failedOperation, exc)),
+                () => TryForwardRequest(message, oldAddress, forwardingAddress, failedOperation, exc), message),
                 catalog.SchedulingContext);
         }
 
@@ -501,7 +504,8 @@ namespace Orleans.Runtime
             }
 #if DEBUG
             // How to assign priority to these folks?
-            logger.Info("Queue closure work items with path ?");
+            //logger.Info("Queue closure work items with path ?");
+            logger.Info("Queue closure work item at ProcessRequestsToInvalidActivation with time remaining {0}", messages[0]?.RequestContextData != null && messages[0].RequestContextData.ContainsKey("Deadline") ? (String)messages[0].RequestContextData["Deadline"] : "null");
             // logger.Info("Queue closure work items with time remaining ?");
 #endif
 
@@ -514,7 +518,7 @@ namespace Orleans.Runtime
                         TryForwardRequest(message, oldAddress, forwardingAddress, failedOperation, exc);
                     }
                 }
-                ), catalog.SchedulingContext);
+                , messages[0]), catalog.SchedulingContext);
         }
 
         internal void TryForwardRequest(Message message, ActivationAddress oldAddress, ActivationAddress forwardingAddress, string failedOperation, Exception exc = null)
