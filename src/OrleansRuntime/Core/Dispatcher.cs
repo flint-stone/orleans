@@ -505,7 +505,7 @@ namespace Orleans.Runtime
 #if DEBUG
             // How to assign priority to these folks?
             //logger.Info("Queue closure work items with path ?");
-            logger.Info("Queue closure work item at ProcessRequestsToInvalidActivation with time remaining {0}", messages[0]?.RequestContextData != null && messages[0].RequestContextData.ContainsKey("Deadline") ? (String)messages[0].RequestContextData["Deadline"] : "null");
+            logger.Info("Queue closure work item at ProcessRequestsToInvalidActivation with time remaining {0}", messages[0]?.RequestContextData != null && messages[0].RequestContextData.ContainsKey("Deadline") ? messages[0].RequestContextData["Deadline"] : "null");
             // logger.Info("Queue closure work items with time remaining ?");
 #endif
 
