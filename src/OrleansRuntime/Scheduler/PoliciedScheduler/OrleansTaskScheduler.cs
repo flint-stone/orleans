@@ -140,13 +140,23 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 #endif
             if (workItemGroup == null)
             {
-                Task t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, context, this);
+                var priorityContext = new PriorityContext
+                {
+                    timeRemain = 0.0,
+                    context = context
+                };
+                Task t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, priorityContext, this);
                 t.Start(this);
             }
             else
             {
+                var priorityContext = new PriorityContext
+                {
+                    timeRemain = 0.0,
+                    context = context
+                };
                 // Create Task wrapper for this work item
-                Task t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, context, workItemGroup.TaskRunner);
+                Task t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, priorityContext, workItemGroup.TaskRunner);
                 t.Start(workItemGroup.TaskRunner);
             }
         }

@@ -146,14 +146,23 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             // This will make sure the TaskScheduler.Current is set correctly on any task that is created implicitly in the execution of this workItem.
             if (workItemGroup == null)
             {
-                var t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, context, this);
+                var priorityContext = new PriorityContext
+                {
+                    timeRemain = 0.0,
+                    context = context
+                };
+                var t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, priorityContext, this);
                 t.Start(this);
             }
             else
             {
                 // Create Task wrapper for this work item
-                ((SchedulingContext) context).TimeRemain = workItem.TimeRemain;
-                var t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, context, workItemGroup.TaskRunner);
+                var priorityContext = new PriorityContext
+                {
+                    timeRemain = workItem.TimeRemain,
+                    context = context
+                };
+                var t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, priorityContext, workItemGroup.TaskRunner);
                 t.Start(workItemGroup.TaskRunner);
             }
         }
@@ -218,8 +227,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
         /// <param name="task"><c>Task</c> to be executed</param>
         public void RunTask(Task task)
         {
+            var contextObj = task.AsyncState;
 #if DEBUG
-            if (logger.IsVerbose2) logger.Verbose2("RunTask: Id={0} with Status={1} AsyncState={2} when TaskScheduler.Current={3}", task.Id, task.Status, task.AsyncState, Current);
+            if (logger.IsVerbose2) logger.Verbose2("RunTask: Id={0} with Status={1} AsyncState={2} when TaskScheduler.Current={3}", task.Id, task.Status, contextObj, Current);
 #endif
             var context = RuntimeContext.CurrentActivationContext;
             var workItemGroup = GetWorkItemGroup(context);
@@ -241,7 +251,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             }
 
 #if DEBUG
-            if (logger.IsVerbose2) logger.Verbose2("RunTask: Completed Id={0} with Status={1} task.AsyncState={2} when TaskScheduler.Current={3}", task.Id, task.Status, task.AsyncState, Current);
+            if (logger.IsVerbose2) logger.Verbose2("RunTask: Completed Id={0} with Status={1} task.AsyncState={2} when TaskScheduler.Current={3}", task.Id, task.Status, contextObj, Current);
 #endif
         }
 
@@ -298,9 +308,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
         {
             var contextObj = task.AsyncState;
 #if DEBUG
-            if (logger.IsVerbose2) logger.Verbose2("QueueTask: Id={0} with Status={1} AsyncState={2} when TaskScheduler.Current={3}", task.Id, task.Status, task.AsyncState, Current);
+            if (logger.IsVerbose2) logger.Verbose2("QueueTask: Id={0} with Status={1} AsyncState={2} when TaskScheduler.Current={3}", task.Id, task.Status, contextObj, Current);
 #endif
-            var context = contextObj as ISchedulingContext;
+            var priorityContext = contextObj as PriorityContext;
+            var context = priorityContext?.context;
             var workItemGroup = GetWorkItemGroup(context);
             if (applicationTurnsStopped && workItemGroup != null && !workItemGroup.IsSystemGroup)
             {

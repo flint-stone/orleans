@@ -202,6 +202,10 @@ namespace Orleans.Runtime.Scheduler
                     SchedulerStatisticsGroup.OnWorkItemEnqueue();
 #endif
                 workItems.Enqueue(task);
+#if DEBUG
+                if (log.IsVerbose3) log.Verbose3("Add to RunQueue {0}, #{1}, onto {2}", task, thisSequenceNumber, SchedulingContext);
+                log.Info("Dumping Status From EnqueueTask: {0}", DumpStatus());
+#endif
                 int maxPendingItemsLimit = masterScheduler.MaxPendingItemsLimit.SoftLimitThreshold;
                 if (maxPendingItemsLimit > 0 && count > maxPendingItemsLimit)
                 {
@@ -211,14 +215,12 @@ namespace Orleans.Runtime.Scheduler
                 if (state != WorkGroupStatus.Waiting) return;
 
                 state = WorkGroupStatus.Runnable;
-#if DEBUG
-                if (log.IsVerbose3) log.Verbose3("Add to RunQueue {0}, #{1}, onto {2}", task, thisSequenceNumber, SchedulingContext);
-#endif
-                var contextObj = task.AsyncState as SchedulingContext;
 
-                TimeRemain = contextObj?.TimeRemain ?? 0.0;
+                var contextObj = task.AsyncState as PriorityContext;
+
+                TimeRemain = contextObj?.timeRemain ?? 0.0;
 #if DEBUG
-                log.Info("Changing WIG {0} priority to : {1}", this, TimeRemain);
+                log.Info("Changing WIG {0} priority to : {1} with context {2}", this, TimeRemain, contextObj);
 #endif
                 masterScheduler.RunQueue.Add(this);
 #if DEBUG
@@ -302,6 +304,9 @@ namespace Orleans.Runtime.Scheduler
             {
                 // Process multiple items -- drain the applicationMessageQueue (up to max items) for this physical activation
                 int count = 0;
+#if DEBUG
+                log.Info("Dumping Status From Execute before polling: {0}", DumpStatus());
+#endif
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
                 do 
@@ -333,6 +338,17 @@ namespace Orleans.Runtime.Scheduler
                     Task task;
                     lock (lockable)
                     {
+#if DEBUG
+                        StringBuilder b = new StringBuilder();
+                        foreach (var t in workItems)
+                        {
+                            var c = t.AsyncState as PriorityContext;
+                            var tr = c?.timeRemain?? 0.0;
+                            //var name = contextObj?.Name ?? "NULL";
+                            b.Append(c + ":" + tr);
+                        }
+                        log.Info("Dumping Status From Execute before execution: {0}", b);
+#endif
                         if (workItems.Count > 0)
                         {
                             task = workItems.Dequeue();
@@ -350,6 +366,9 @@ namespace Orleans.Runtime.Scheduler
 #endif
 
 #if DEBUG
+                    var contextObj = task.AsyncState as PriorityContext;
+                    var timeRemain = contextObj?.timeRemain ?? 0.0;
+                    log.Info("Dumping Status : About to execute task {0} in SchedulingContext={1} with time remain of {2}", task, SchedulingContext, timeRemain);
                     if (log.IsVerbose2) log.Verbose2("About to execute task {0} in SchedulingContext={1}", task, SchedulingContext);
 #endif
                     var taskStart = stopwatch.Elapsed;
@@ -392,6 +411,9 @@ namespace Orleans.Runtime.Scheduler
                 while (((MaxWorkItemsPerTurn <= 0) || (count <= MaxWorkItemsPerTurn)) &&
                     ((ActivationSchedulingQuantum <= TimeSpan.Zero) || (stopwatch.Elapsed < ActivationSchedulingQuantum)));
                 stopwatch.Stop();
+#if DEBUG
+                log.Info("Dumping Status From Execute after executing {0} items: {1}", count, DumpStatus());
+#endif
 
             }
             catch (Exception ex)
@@ -412,16 +434,17 @@ namespace Orleans.Runtime.Scheduler
                             state = WorkGroupStatus.Runnable;
                             // TODO: How to add deadline for work item that is added back
                             Task next = workItems.Peek();
-                            var contextObj = next.AsyncState as SchedulingContext;
-                            TimeRemain = contextObj?.TimeRemain ?? 0.0;
+                            var contextObj = next.AsyncState as PriorityContext;
+                            TimeRemain = contextObj?.timeRemain ?? 0.0;
 #if DEBUG
-                            log.Info("Changing WIG {0} priority to : {1}", this, TimeRemain);
+                            log.Info("Changing WIG {0} priority to : {1} with context {2}", this, TimeRemain, contextObj);
 #endif
                             masterScheduler.RunQueue.Add(this);
 #if DEBUG
                             StringBuilder sb = new StringBuilder();
                             masterScheduler.RunQueue.DumpStatus(sb);
                             log.Info("RunQueue Contents: {0}", sb.ToString());
+                            
 #endif
                         }
                         else
@@ -466,6 +489,16 @@ namespace Orleans.Runtime.Scheduler
                 {
                     sb.AppendFormat("Detailed SchedulingContext=<{0}>", SchedulingContext.DetailedStatus());
                 }
+
+#if DEBUG
+                foreach (var task in workItems)
+                {
+                    var contextObj = task.AsyncState as PriorityContext;
+                    var timeRemain = contextObj?.timeRemain ?? 0.0;
+                    //var name = contextObj?.Name ?? "NULL";
+                    sb.Append(task + ":" + timeRemain);
+                }
+#endif
                 return sb.ToString();
             }
         }

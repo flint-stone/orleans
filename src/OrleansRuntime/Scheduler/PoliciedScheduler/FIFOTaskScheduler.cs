@@ -139,13 +139,23 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             // This will make sure the TaskScheduler.Current is set correctly on any task that is created implicitly in the execution of this workItem.
             if (workItemGroup == null)
             {
-                var t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, context, this);
+                var priorityContext = new PriorityContext
+                {
+                    timeRemain = 0.0,
+                    context = context
+                };
+                var t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, priorityContext, this);
                 t.Start(this);
             }
             else
             {
                 // Create Task wrapper for this work item
-                var t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, context, workItemGroup.TaskRunner);
+                var priorityContext = new PriorityContext
+                {
+                    timeRemain = 0.0,
+                    context = context
+                };
+                var t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, priorityContext, workItemGroup.TaskRunner);
                 t.Start(workItemGroup.TaskRunner);
             }
         }
