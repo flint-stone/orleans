@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -204,6 +203,8 @@ namespace Orleans.Runtime.Scheduler
                 workItems.Enqueue(task);
 #if DEBUG
                 if (log.IsVerbose3) log.Verbose3("Add to RunQueue {0}, #{1}, onto {2}", task, thisSequenceNumber, SchedulingContext);
+#endif
+#if PQ_DEBUG
                 log.Info("Dumping Status From EnqueueTask: {0}", DumpStatus());
 #endif
                 int maxPendingItemsLimit = masterScheduler.MaxPendingItemsLimit.SoftLimitThreshold;
@@ -219,11 +220,11 @@ namespace Orleans.Runtime.Scheduler
                 var contextObj = task.AsyncState as PriorityContext;
 
                 TimeRemain = contextObj?.TimeRemain ?? 0.0;
-#if DEBUG
+#if PQ_DEBUG
                 log.Info("Changing WIG {0} priority to : {1} with context {2}", this, TimeRemain, contextObj);
 #endif
                 masterScheduler.RunQueue.Add(this);
-#if DEBUG
+#if PQ_DEBUG
                 StringBuilder sb = new StringBuilder();
                 masterScheduler.RunQueue.DumpStatus(sb);
                 log.Info("RunQueue Contents: {0}", sb.ToString());
@@ -272,7 +273,7 @@ namespace Orleans.Runtime.Scheduler
                 workItems.Clear();
             }
         }
-        #region IWorkItem Members
+#region IWorkItem Members
 
         public WorkItemType ItemType
         {
@@ -304,7 +305,7 @@ namespace Orleans.Runtime.Scheduler
             {
                 // Process multiple items -- drain the applicationMessageQueue (up to max items) for this physical activation
                 int count = 0;
-#if DEBUG
+#if PQ_DEBUG
                 log.Info("Dumping Status From Execute before polling: {0}", DumpStatus());
 #endif
                 var stopwatch = new Stopwatch();
@@ -338,13 +339,12 @@ namespace Orleans.Runtime.Scheduler
                     Task task;
                     lock (lockable)
                     {
-#if DEBUG
+#if PQ_DEBUG
                         StringBuilder b = new StringBuilder();
                         foreach (var t in workItems)
                         {
                             var c = t.AsyncState as PriorityContext;
                             var tr = c?.TimeRemain?? 0.0;
-                            //var name = contextObj?.Name ?? "NULL";
                             b.Append(c + ":" + tr);
                         }
                         log.Info("Dumping Status From Execute before execution: {0}", b);
@@ -365,7 +365,7 @@ namespace Orleans.Runtime.Scheduler
                         SchedulerStatisticsGroup.OnWorkItemDequeue();
 #endif
 
-#if DEBUG
+#if PQ_DEBUG
                     var contextObj = task.AsyncState as PriorityContext;
                     var timeRemain = contextObj?.TimeRemain ?? 0.0;
                     log.Info("Dumping Status : About to execute task {0} in SchedulingContext={1} with time remain of {2}", task, SchedulingContext, timeRemain);
@@ -411,7 +411,7 @@ namespace Orleans.Runtime.Scheduler
                 while (((MaxWorkItemsPerTurn <= 0) || (count <= MaxWorkItemsPerTurn)) &&
                     ((ActivationSchedulingQuantum <= TimeSpan.Zero) || (stopwatch.Elapsed < ActivationSchedulingQuantum)));
                 stopwatch.Stop();
-#if DEBUG
+#if PQ_DEBUG
                 log.Info("Dumping Status From Execute after executing {0} items: {1}", count, DumpStatus());
 #endif
 
@@ -436,11 +436,11 @@ namespace Orleans.Runtime.Scheduler
                             Task next = workItems.Peek();
                             var contextObj = next.AsyncState as PriorityContext;
                             TimeRemain = contextObj?.TimeRemain ?? 0.0;
-#if DEBUG
+#if PQ_DEBUG
                             log.Info("Changing WIG {0} priority to : {1} with context {2}", this, TimeRemain, contextObj);
 #endif
                             masterScheduler.RunQueue.Add(this);
-#if DEBUG
+#if PQ_DEBUG
                             StringBuilder sb = new StringBuilder();
                             masterScheduler.RunQueue.DumpStatus(sb);
                             log.Info("RunQueue Contents: {0}", sb.ToString());
@@ -456,7 +456,7 @@ namespace Orleans.Runtime.Scheduler
             }
         }
 
-        #endregion
+#endregion
 
         public override string ToString()
         {

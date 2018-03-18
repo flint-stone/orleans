@@ -135,11 +135,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 
             workItem.SchedulingContext = context;
 
-#if DEBUG
+#if PQ_DEBUG
             logger.Info("Work Item {0} has remaining ticks of {1}, current queue size {2}", workItem, workItem.TimeRemain, RunQueue.Length);
-            //logger.Info("Work Item {0} has remaining ticks of {1}, current queue size {2}", workItem, remainingTicks, RunQueue.Length);
-            // We must wrap any work item in Task and enqueue it as a task to the right scheduler via Task.Start.
-            // This will make sure the TaskScheduler.Current is set correctly on any task that is created implicitly in the execution of this workItem.
 #endif
 
             // We must wrap any work item in Task and enqueue it as a task to the right scheduler via Task.Start.
@@ -268,7 +265,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             var stats = Utils.EnumerableToString(workgroupDirectory.Values.OrderBy(wg => wg.Name), wg => string.Format("--{0}", wg.DumpStatus()), Environment.NewLine);
             if (stats.Length > 0)
                 logger.LogWithoutBulkingAndTruncating(Severity.Info, ErrorCode.SchedulerStatistics,
-                    "IPriorityBasedTaskScheduler.PrintStatistics(): RunQueue={0}, WorkItems={1}, Directory:" + Environment.NewLine + "{2}",
+                    "PriorityBasedTaskScheduler.PrintStatistics(): RunQueue={0}, WorkItems={1}, Directory:" + Environment.NewLine + "{2}",
                     RunQueue.Length, WorkItemGroupCount, stats);
         }
 

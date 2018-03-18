@@ -163,9 +163,8 @@ namespace Orleans.Runtime.Messaging
 
             if (targetActivation != null) targetActivation.IncrementEnqueuedOnDispatcherCount();
 
-#if DEBUG
-            //Log.Info("Queue closure work item with path {0}", msg?.RequestContextData != null && msg.RequestContextData.ContainsKey("Path") ? (string)msg.RequestContextData["Path"] : "null");
-            // Log.Info("Queue closure work item with time remaining {0}", msg?.RequestContextData != null && msg.RequestContextData.ContainsKey("Deadline") ? (int)(msg.RequestContextData["Deadline"]) - Environment.TickCount: -1);
+#if PQ_DEBUG
+            Log.Info("Queue closure work item with path {0}", msg?.RequestContextData != null && msg.RequestContextData.ContainsKey("Path") ? (string)msg.RequestContextData["Path"] : "null");
 #endif
             scheduler.QueueWorkItem(new ClosureWorkItem(() =>
             {
