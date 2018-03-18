@@ -606,8 +606,10 @@ namespace Orleans
 
             if(message.RequestContextData.TryGetValue("Path", out var currentPath))
             {
-                message.RequestContextData["Path"] = (string) currentPath + "***" +
-                                                     CurrentActivationAddress.Activation + "  Scheduling Context: " +
+//                message.RequestContextData["Path"] = (string) currentPath + "***" +
+//                                                     CurrentActivationAddress.Activation + "  Scheduling Context: " +
+//                                                     request + " Target: " + target;
+                message.RequestContextData["Path"] = CurrentActivationAddress.Activation + "  Scheduling Context: " +
                                                      request + " Target: " + target;
             }
             else
