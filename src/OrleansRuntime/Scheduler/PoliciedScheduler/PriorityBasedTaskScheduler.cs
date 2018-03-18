@@ -148,10 +148,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             {
                 var priorityContext = new PriorityContext
                 {
-                    timeRemain = 0.0,
-                    context = context
+                    TimeRemain = 0.0,
+                    Context = context
                 };
-                var t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, priorityContext, this);
+                var t = TaskSchedulerUtils.WrapWorkItemWithPriorityAsTask(workItem, priorityContext, this);
                 t.Start(this);
             }
             else
@@ -159,10 +159,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
                 // Create Task wrapper for this work item
                 var priorityContext = new PriorityContext
                 {
-                    timeRemain = workItem.TimeRemain,
-                    context = context
+                    TimeRemain = workItem.TimeRemain,
+                    Context = context
                 };
-                var t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, priorityContext, workItemGroup.TaskRunner);
+                var t = TaskSchedulerUtils.WrapWorkItemWithPriorityAsTask(workItem, priorityContext, workItemGroup.TaskRunner);
                 t.Start(workItemGroup.TaskRunner);
             }
         }
@@ -311,7 +311,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             if (logger.IsVerbose2) logger.Verbose2("QueueTask: Id={0} with Status={1} AsyncState={2} when TaskScheduler.Current={3}", task.Id, task.Status, contextObj, Current);
 #endif
             var priorityContext = contextObj as PriorityContext;
-            var context = priorityContext?.context;
+            var context = priorityContext?.Context;
             var workItemGroup = GetWorkItemGroup(context);
             if (applicationTurnsStopped && workItemGroup != null && !workItemGroup.IsSystemGroup)
             {

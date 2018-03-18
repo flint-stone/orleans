@@ -218,7 +218,7 @@ namespace Orleans.Runtime.Scheduler
 
                 var contextObj = task.AsyncState as PriorityContext;
 
-                TimeRemain = contextObj?.timeRemain ?? 0.0;
+                TimeRemain = contextObj?.TimeRemain ?? 0.0;
 #if DEBUG
                 log.Info("Changing WIG {0} priority to : {1} with context {2}", this, TimeRemain, contextObj);
 #endif
@@ -343,7 +343,7 @@ namespace Orleans.Runtime.Scheduler
                         foreach (var t in workItems)
                         {
                             var c = t.AsyncState as PriorityContext;
-                            var tr = c?.timeRemain?? 0.0;
+                            var tr = c?.TimeRemain?? 0.0;
                             //var name = contextObj?.Name ?? "NULL";
                             b.Append(c + ":" + tr);
                         }
@@ -367,7 +367,7 @@ namespace Orleans.Runtime.Scheduler
 
 #if DEBUG
                     var contextObj = task.AsyncState as PriorityContext;
-                    var timeRemain = contextObj?.timeRemain ?? 0.0;
+                    var timeRemain = contextObj?.TimeRemain ?? 0.0;
                     log.Info("Dumping Status : About to execute task {0} in SchedulingContext={1} with time remain of {2}", task, SchedulingContext, timeRemain);
                     if (log.IsVerbose2) log.Verbose2("About to execute task {0} in SchedulingContext={1}", task, SchedulingContext);
 #endif
@@ -435,7 +435,7 @@ namespace Orleans.Runtime.Scheduler
                             // TODO: How to add deadline for work item that is added back
                             Task next = workItems.Peek();
                             var contextObj = next.AsyncState as PriorityContext;
-                            TimeRemain = contextObj?.timeRemain ?? 0.0;
+                            TimeRemain = contextObj?.TimeRemain ?? 0.0;
 #if DEBUG
                             log.Info("Changing WIG {0} priority to : {1} with context {2}", this, TimeRemain, contextObj);
 #endif
@@ -494,7 +494,7 @@ namespace Orleans.Runtime.Scheduler
                 foreach (var task in workItems)
                 {
                     var contextObj = task.AsyncState as PriorityContext;
-                    var timeRemain = contextObj?.timeRemain ?? 0.0;
+                    var timeRemain = contextObj?.TimeRemain ?? 0.0;
                     //var name = contextObj?.Name ?? "NULL";
                     sb.Append(task + ":" + timeRemain);
                 }
