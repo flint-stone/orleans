@@ -108,7 +108,28 @@ namespace Orleans.Runtime
             string genericArguments = null)
         {
             var message = this.messageFactory.CreateMessage(request, options);
+            // Adding scheduler hint
+            AddingSchedulerHint(message, request, target);
             SendRequestMessage(target, message, context, callback, debugContext, options, genericArguments);
+        }
+
+        private void AddingSchedulerHint(Message message, InvokeMethodRequest request, GrainReference target)
+        {
+            if (message.RequestContextData == null) message.RequestContextData = new Dictionary<string, object>();
+            SchedulingContext schedulingContext = RuntimeContext.Current != null ?
+                RuntimeContext.Current.ActivationContext as SchedulingContext : null;
+            
+            if (schedulingContext!=null && schedulingContext.ContextType == SchedulingContextType.Activation)
+            {
+                if (message.RequestContextData.TryGetValue("Path", out var currentPath))
+                {
+                    message.RequestContextData["Path"] = (string)currentPath + "***" + schedulingContext.Activation + "  Request: " + request + " Target: " + target;
+                }
+                else
+                {
+                    message.RequestContextData.Add("Path", schedulingContext.Activation + "  Request: " + request + " Target: " + target);
+                }
+            }         
         }
 
         private void SendRequestMessage(

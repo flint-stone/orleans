@@ -615,6 +615,20 @@ namespace Orleans.Runtime
                         break;
                 }
             }
+#if PQ_DEBUG
+            return String.Format("{0}{1}{2}{3}{4} {5}->{6} #{7}{8}{9}: {10}",
+                IsReadOnly ? "ReadOnly " : "", //0
+                IsAlwaysInterleave ? "IsAlwaysInterleave " : "", //1
+                IsNewPlacement ? "NewPlacement " : "", // 2
+                response,  //3
+                Direction, //4
+                String.Format("{0}{1}{2} SentFrom: {3}", SendingSilo, SendingGrain, SendingActivation, unchecked((long)SendingGrain.Key.N1)), //5
+                String.Format("{0}{1}{2}{3} TargetAt: {4}", TargetSilo, TargetGrain, TargetActivation, TargetObserverId, unchecked((long)TargetGrain.Key.N1)), //6
+                Id, //7
+                ResendCount > 0 ? "[ResendCount=" + ResendCount + "]" : "", //8
+                ForwardCount > 0 ? "[ForwardCount=" + ForwardCount + "]" : "", //9
+                DebugContext); //10
+#else
             return String.Format("{0}{1}{2}{3}{4} {5}->{6} #{7}{8}{9}: {10}",
                 IsReadOnly ? "ReadOnly " : "", //0
                 IsAlwaysInterleave ? "IsAlwaysInterleave " : "", //1
@@ -627,6 +641,7 @@ namespace Orleans.Runtime
                 ResendCount > 0 ? "[ResendCount=" + ResendCount + "]" : "", //8
                 ForwardCount > 0 ? "[ForwardCount=" + ForwardCount + "]" : "", //9
                 DebugContext); //10
+#endif 
         }
 
         internal void SetTargetPlacement(PlacementResult value)

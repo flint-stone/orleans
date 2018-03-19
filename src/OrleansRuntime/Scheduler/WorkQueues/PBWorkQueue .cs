@@ -27,8 +27,8 @@ namespace Orleans.Runtime.Scheduler
 
         internal PBWorkQueue()
         {
-            mainQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(10, new WorkItemComparer()));
-            systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(10, new WorkItemComparer()));
+            mainQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer()));
+            systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer()));
             queueArray = new BlockingCollection<IWorkItem>[] { systemQueue, mainQueue };
 
             if (!StatisticsCollector.CollectShedulerQueuesStats) return;
@@ -152,7 +152,7 @@ namespace Orleans.Runtime.Scheduler
                 sb.AppendLine("System Queue:");
                 foreach (var workItem in systemQueue)
                 {
-                    sb.AppendFormat("  {0}", workItem).AppendLine();
+                    sb.AppendFormat("  {0}:{1}", workItem, workItem.TimeRemain).AppendLine();
                 }
             }
             
@@ -160,7 +160,7 @@ namespace Orleans.Runtime.Scheduler
 
             sb.AppendLine("Main Queue:");
             foreach (var workItem in mainQueue)
-                sb.AppendFormat("  {0}", workItem).AppendLine();
+                sb.AppendFormat("  {0}:{1}", workItem, workItem.TimeRemain).AppendLine();
         }
 
         public void RunDown()
@@ -204,6 +204,6 @@ internal class WorkItemComparer : IComparer<IWorkItem>
 {
     public int Compare(IWorkItem x, IWorkItem y)
     {
-        return x.TimeRemain.CompareTo(y.TimeRemain); 
+        return y.TimeRemain.CompareTo(x.TimeRemain); 
     }
 }

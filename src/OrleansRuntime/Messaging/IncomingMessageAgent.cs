@@ -1,6 +1,8 @@
 using System;
+using System.Runtime.Remoting.Messaging;
 using System.Threading;
 using Orleans.Runtime.Scheduler;
+using Orleans.Runtime.Scheduler.PoliciedScheduler;
 
 namespace Orleans.Runtime.Messaging
 {
@@ -162,18 +164,39 @@ namespace Orleans.Runtime.Messaging
 
             if (targetActivation != null) targetActivation.IncrementEnqueuedOnDispatcherCount();
 
-            scheduler.QueueWorkItem(new ClosureWorkItem(() =>
+#if PQ_DEBUG
+            Log.Info("Queue closure work item with path {0}", msg?.RequestContextData != null && msg.RequestContextData.ContainsKey("Path") ? (string)msg.RequestContextData["Path"] : "null");
+#endif
+            if (scheduler.GetType() == typeof(PriorityBasedTaskScheduler))
             {
-                try
-                {
-                    dispatcher.ReceiveMessage(msg);
-                }
-                finally
-                {
-                    if (targetActivation != null) targetActivation.DecrementEnqueuedOnDispatcherCount();
-                }
-            },
-            () => "Dispatcher.ReceiveMessage"), context);
+                scheduler.QueueWorkItem(new ClosureWorkItem(() =>
+                    {
+                        try
+                        {
+                            dispatcher.ReceiveMessage(msg);
+                        }
+                        finally
+                        {
+                            if (targetActivation != null) targetActivation.DecrementEnqueuedOnDispatcherCount();
+                        }
+                    },
+                    () => "Dispatcher.ReceiveMessage", msg), context);
+            }
+            else
+            {
+                scheduler.QueueWorkItem(new ClosureWorkItem(() =>
+                    {
+                        try
+                        {
+                            dispatcher.ReceiveMessage(msg);
+                        }
+                        finally
+                        {
+                            if (targetActivation != null) targetActivation.DecrementEnqueuedOnDispatcherCount();
+                        }
+                    },
+                    () => "Dispatcher.ReceiveMessage"), context);
+            }
         }
     }
 }

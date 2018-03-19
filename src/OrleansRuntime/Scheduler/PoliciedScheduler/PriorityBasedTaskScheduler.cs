@@ -135,17 +135,31 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 
             workItem.SchedulingContext = context;
 
+#if PQ_DEBUG
+            logger.Info("Work Item {0} has remaining ticks of {1}, current queue size {2}", workItem, workItem.TimeRemain, RunQueue.Length);
+#endif
+
             // We must wrap any work item in Task and enqueue it as a task to the right scheduler via Task.Start.
             // This will make sure the TaskScheduler.Current is set correctly on any task that is created implicitly in the execution of this workItem.
             if (workItemGroup == null)
             {
-                var t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, context, this);
+                var priorityContext = new PriorityContext
+                {
+                    TimeRemain = 0.0,
+                    Context = context
+                };
+                var t = TaskSchedulerUtils.WrapWorkItemWithPriorityAsTask(workItem, priorityContext, this);
                 t.Start(this);
             }
             else
             {
                 // Create Task wrapper for this work item
-                var t = TaskSchedulerUtils.WrapWorkItemAsTask(workItem, context, workItemGroup.TaskRunner);
+                var priorityContext = new PriorityContext
+                {
+                    TimeRemain = workItem.TimeRemain,
+                    Context = context
+                };
+                var t = TaskSchedulerUtils.WrapWorkItemWithPriorityAsTask(workItem, priorityContext, workItemGroup.TaskRunner);
                 t.Start(workItemGroup.TaskRunner);
             }
         }
@@ -250,7 +264,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             var stats = Utils.EnumerableToString(workgroupDirectory.Values.OrderBy(wg => wg.Name), wg => string.Format("--{0}", wg.DumpStatus()), Environment.NewLine);
             if (stats.Length > 0)
                 logger.LogWithoutBulkingAndTruncating(Severity.Info, ErrorCode.SchedulerStatistics,
-                    "IPriorityBasedTaskScheduler.PrintStatistics(): RunQueue={0}, WorkItems={1}, Directory:" + Environment.NewLine + "{2}",
+                    "PriorityBasedTaskScheduler.PrintStatistics(): RunQueue={0}, WorkItems={1}, Directory:" + Environment.NewLine + "{2}",
                     RunQueue.Length, WorkItemGroupCount, stats);
         }
 
@@ -292,7 +306,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 #if DEBUG
             if (logger.IsVerbose2) logger.Verbose2("QueueTask: Id={0} with Status={1} AsyncState={2} when TaskScheduler.Current={3}", task.Id, task.Status, task.AsyncState, Current);
 #endif
-            var context = contextObj as ISchedulingContext;
+            var priorityContext = contextObj as PriorityContext;
+            var context = priorityContext?.Context;
             var workItemGroup = GetWorkItemGroup(context);
             if (applicationTurnsStopped && workItemGroup != null && !workItemGroup.IsSystemGroup)
             {
