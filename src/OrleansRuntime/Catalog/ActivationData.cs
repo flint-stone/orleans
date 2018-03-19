@@ -863,12 +863,20 @@ namespace Orleans.Runtime
         {
             get
             {
+#if PQ_DEBUG
                 return String.Format("[Activation: {0}{1}{2}{3} {4}]",
                      Silo,
                      Grain,
                      ActivationId,
                      GetActivationInfoString(),
                      Grain.Key.N1);
+#else
+                return String.Format("[Activation: {0}{1}{2}{3}]",
+                     Silo,
+                     Grain,
+                     ActivationId,
+                     GetActivationInfoString());
+#endif
             }
         }
 
@@ -889,7 +897,7 @@ namespace Orleans.Runtime
                 String.Format(" #GrainType={0} Placement={1}", GrainInstanceType.FullName, placement);
         }
 
-        #endregion
+#endregion
     }
 
     internal static class StreamResourceTestControl

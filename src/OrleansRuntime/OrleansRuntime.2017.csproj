@@ -25,7 +25,7 @@
     <OrleansReferencesBase>$(ProjectDir)..\Bootstrap\</OrleansReferencesBase>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>TRACE;DEBUG;EXCLUDE_ASSEMBLYINFO;EXCLUDEFSHARP;NET461;PQ_DEBUG</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;EXCLUDE_ASSEMBLYINFO;EXCLUDEFSHARP;NET461;</DefineConstants>
   </PropertyGroup>
   <Import Project="$(ProjectDir)..\Orleans.SDK.targets" />
   <!--End Orleans -->

@@ -10,7 +10,7 @@ namespace Orleans.Runtime.Scheduler
 
         public override string Name { get { return nameGetter==null ? "" : nameGetter(); } }
 
-        public ClosureWorkItem(Action closure, Message message = null)
+        public ClosureWorkItem(Action closure, Message message)
         {
             continuation = closure;
 #if TRACK_DETAILED_STATS
@@ -25,7 +25,7 @@ namespace Orleans.Runtime.Scheduler
                     : 0;
         }
 
-        public ClosureWorkItem(Action closure, Func<string> getName, Message message = null)
+        public ClosureWorkItem(Action closure, Func<string> getName, Message message)
         {
             continuation = closure;
             nameGetter = getName;
@@ -41,6 +41,28 @@ namespace Orleans.Runtime.Scheduler
                     : 0;
         }
 
+        public ClosureWorkItem(Action closure)
+        {
+            continuation = closure;
+#if TRACK_DETAILED_STATS
+            if (StatisticsCollector.CollectGlobalShedulerStats)
+            {
+                SchedulerStatisticsGroup.OnClosureWorkItemsCreated();
+            }
+#endif
+        }
+
+        public ClosureWorkItem(Action closure, Func<string> getName)
+        {
+            continuation = closure;
+            nameGetter = getName;
+#if TRACK_DETAILED_STATS
+            if (StatisticsCollector.CollectGlobalShedulerStats)
+            {
+                SchedulerStatisticsGroup.OnClosureWorkItemsCreated();
+            }
+#endif
+        }
         #region IWorkItem Members
 
         public override void Execute()

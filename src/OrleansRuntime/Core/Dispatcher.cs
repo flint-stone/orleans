@@ -9,6 +9,7 @@ using Orleans.Runtime.GrainDirectory;
 using Orleans.Runtime.Messaging;
 using Orleans.Runtime.Placement;
 using Orleans.Runtime.Scheduler;
+using Orleans.Runtime.Scheduler.PoliciedScheduler;
 using Orleans.Runtime.Versions.Compatibility;
 using Orleans.Serialization;
 using Orleans.Versions.Compatibility;
@@ -169,25 +170,49 @@ namespace Orleans.Runtime
 #if PQ_DEBUG
                         logger.Info("Queue closure work item at ReceiveMessage with time remaining {0}", message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline") ? (string)message.RequestContextData["Deadline"] : "null");
 #endif
-                        scheduler.QueueWorkItem(new ClosureWorkItem(
-                            // don't use message.TargetAddress, cause it may have been removed from the headers by this time!
-                            async () =>
-                            {
-                                try
-                                {
-                                    await this.localGrainDirectory.UnregisterAfterNonexistingActivation(
-                                        nonExistentActivation, origin);
-                                }
-                                catch (Exception exc)
-                                {
-                                    logger.Warn(ErrorCode.Dispatcher_FailedToUnregisterNonExistingAct,
-                                        String.Format("Failed to un-register NonExistentActivation {0}",
-                                            nonExistentActivation), exc);
-                                }
-                            },
-                            () => "LocalGrainDirectory.UnregisterAfterNonexistingActivation", message),
-                            catalog.SchedulingContext);
-
+                        if (scheduler.GetType() == typeof(PriorityBasedTaskScheduler))
+                        {
+                            scheduler.QueueWorkItem(new ClosureWorkItem(
+                                    // don't use message.TargetAddress, cause it may have been removed from the headers by this time!
+                                    async () =>
+                                    {
+                                        try
+                                        {
+                                            await this.localGrainDirectory.UnregisterAfterNonexistingActivation(
+                                                nonExistentActivation, origin);
+                                        }
+                                        catch (Exception exc)
+                                        {
+                                            logger.Warn(ErrorCode.Dispatcher_FailedToUnregisterNonExistingAct,
+                                                String.Format("Failed to un-register NonExistentActivation {0}",
+                                                    nonExistentActivation), exc);
+                                        }
+                                    },
+                                    () => "LocalGrainDirectory.UnregisterAfterNonexistingActivation", message),
+                                catalog.SchedulingContext);
+                        }
+                        else
+                        {
+                            scheduler.QueueWorkItem(new ClosureWorkItem(
+                                    // don't use message.TargetAddress, cause it may have been removed from the headers by this time!
+                                    async () =>
+                                    {
+                                        try
+                                        {
+                                            await this.localGrainDirectory.UnregisterAfterNonexistingActivation(
+                                                nonExistentActivation, origin);
+                                        }
+                                        catch (Exception exc)
+                                        {
+                                            logger.Warn(ErrorCode.Dispatcher_FailedToUnregisterNonExistingAct,
+                                                String.Format("Failed to un-register NonExistentActivation {0}",
+                                                    nonExistentActivation), exc);
+                                        }
+                                    },
+                                    () => "LocalGrainDirectory.UnregisterAfterNonexistingActivation"),
+                                catalog.SchedulingContext);
+                        }
+                        
                         ProcessRequestToInvalidActivation(message, nonExistentActivation, null, "Non-existent activation");
                     }
                     else
@@ -402,19 +427,14 @@ namespace Orleans.Runtime
                 targetActivation.RecordRunning(message);
 
                 MessagingProcessingStatisticsGroup.OnDispatcherMessageProcessedOk(message);
-                if (message.RequestContextData!=null && message.RequestContextData.ContainsKey("Deadline"))
-                {
 #if PQ_DEBUG
-                    logger.Info("Queue invoke work item with path {0}", (string)message.RequestContextData["Path"]);
-#endif
-                    scheduler.QueueWorkItem(new InvokeWorkItem(targetActivation, message, this),
-                        targetActivation.SchedulingContext);
-                }
-                else
+                if ((message.RequestContextData != null && message.RequestContextData.ContainsKey("Path")))
                 {
-                    scheduler.QueueWorkItem(new InvokeWorkItem(targetActivation, message, this),
-                        targetActivation.SchedulingContext);
-                }
+                    logger.Info("Queue invoke work item with path {0}", (string)message.RequestContextData["Path"]);
+                }              
+#endif
+                scheduler.QueueWorkItem(new InvokeWorkItem(targetActivation, message, this),
+                    targetActivation.SchedulingContext);
             }
         }
 
@@ -477,9 +497,18 @@ namespace Orleans.Runtime
             // logger.Info("Queue closure work item with path {0}", message?.RequestContextData != null && message.RequestContextData.ContainsKey("Path")?(string)message.RequestContextData["Path"]:"null");
             logger.Info("Queue closure work item at ProcessRequestToInvalidActivation with time remaining {0}", message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline") ? (String)message.RequestContextData["Deadline"] : "null");
 #endif
-            scheduler.QueueWorkItem(new ClosureWorkItem(
-                () => TryForwardRequest(message, oldAddress, forwardingAddress, failedOperation, exc), message),
-                catalog.SchedulingContext);
+            if (scheduler.GetType() == typeof(PriorityBasedTaskScheduler))
+            {
+                scheduler.QueueWorkItem(new ClosureWorkItem(
+                        () => TryForwardRequest(message, oldAddress, forwardingAddress, failedOperation, exc), message),
+                    catalog.SchedulingContext);
+            }
+            else
+            {
+                scheduler.QueueWorkItem(new ClosureWorkItem(
+                        () => TryForwardRequest(message, oldAddress, forwardingAddress, failedOperation, exc)),
+                    catalog.SchedulingContext);
+            }
         }
 
         internal void ProcessRequestsToInvalidActivation(
@@ -508,15 +537,31 @@ namespace Orleans.Runtime
 #endif
 
             // IMPORTANT: do not do anything on activation context anymore, since this activation is invalid already.
-            scheduler.QueueWorkItem(new ClosureWorkItem(
-                () =>
-                {
-                    foreach (var message in messages)
+            if (scheduler.GetType() == typeof(PriorityBasedTaskScheduler))
+            {
+                scheduler.QueueWorkItem(new ClosureWorkItem(
+                    () =>
                     {
-                        TryForwardRequest(message, oldAddress, forwardingAddress, failedOperation, exc);
+                        foreach (var message in messages)
+                        {
+                            TryForwardRequest(message, oldAddress, forwardingAddress, failedOperation, exc);
+                        }
                     }
-                }
-                , messages[0]), catalog.SchedulingContext);
+                    , messages[0]), catalog.SchedulingContext);
+            }
+            else
+            {
+                scheduler.QueueWorkItem(new ClosureWorkItem(
+                    () =>
+                    {
+                        foreach (var message in messages)
+                        {
+                            TryForwardRequest(message, oldAddress, forwardingAddress, failedOperation, exc);
+                        }
+                    }
+                    ), catalog.SchedulingContext);
+            }
+            
         }
 
         internal void TryForwardRequest(Message message, ActivationAddress oldAddress, ActivationAddress forwardingAddress, string failedOperation, Exception exc = null)
