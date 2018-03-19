@@ -12,8 +12,6 @@ namespace Orleans.Runtime.Scheduler
 
         public SchedulingContextType ContextType { get; private set; }
 
-        public double TimeRemain;
-
         private readonly bool isLowPrioritySystemTarget;
 
         public SchedulingContext(ActivationData activation)

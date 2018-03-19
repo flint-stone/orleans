@@ -222,9 +222,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
         /// <param name="task"><c>Task</c> to be executed</param>
         public void RunTask(Task task)
         {
-            var contextObj = task.AsyncState;
 #if DEBUG
-            if (logger.IsVerbose2) logger.Verbose2("RunTask: Id={0} with Status={1} AsyncState={2} when TaskScheduler.Current={3}", task.Id, task.Status, contextObj, Current);
+            if (logger.IsVerbose2) logger.Verbose2("RunTask: Id={0} with Status={1} AsyncState={2} when TaskScheduler.Current={3}", task.Id, task.Status, task.AsyncState, Current);
 #endif
             var context = RuntimeContext.CurrentActivationContext;
             var workItemGroup = GetWorkItemGroup(context);
@@ -246,7 +245,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             }
 
 #if DEBUG
-            if (logger.IsVerbose2) logger.Verbose2("RunTask: Completed Id={0} with Status={1} task.AsyncState={2} when TaskScheduler.Current={3}", task.Id, task.Status, contextObj, Current);
+            if (logger.IsVerbose2) logger.Verbose2("RunTask: Completed Id={0} with Status={1} task.AsyncState={2} when TaskScheduler.Current={3}", task.Id, task.Status, task.AsyncState, Current);
 #endif
         }
 
@@ -303,7 +302,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
         {
             var contextObj = task.AsyncState;
 #if DEBUG
-            if (logger.IsVerbose2) logger.Verbose2("QueueTask: Id={0} with Status={1} AsyncState={2} when TaskScheduler.Current={3}", task.Id, task.Status, contextObj, Current);
+            if (logger.IsVerbose2) logger.Verbose2("QueueTask: Id={0} with Status={1} AsyncState={2} when TaskScheduler.Current={3}", task.Id, task.Status, task.AsyncState, Current);
 #endif
             var priorityContext = contextObj as PriorityContext;
             var context = priorityContext?.Context;

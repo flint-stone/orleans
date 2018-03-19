@@ -30,7 +30,7 @@ namespace Orleans.Runtime.Scheduler
         private readonly QueueTrackingStatistic queueTracking;
         private TimeSpan totalQueuingDelay;
         private readonly long quantumExpirations;
-        private readonly int workItemGroupStatisticsNumber; 
+        private readonly int workItemGroupStatisticsNumber;
 
         internal ActivationTaskScheduler TaskRunner { get; private set; }
         
@@ -273,7 +273,7 @@ namespace Orleans.Runtime.Scheduler
                 workItems.Clear();
             }
         }
-#region IWorkItem Members
+        #region IWorkItem Members
 
         public WorkItemType ItemType
         {
@@ -350,14 +350,9 @@ namespace Orleans.Runtime.Scheduler
                         log.Info("Dumping Status From Execute before execution: {0}", b);
 #endif
                         if (workItems.Count > 0)
-                        {
                             task = workItems.Dequeue();
-                        }
-                        else
-                        {
-                            // If the list is empty, then we're done
+                        else// If the list is empty, then we're done
                             break;
-                        }
                     }
 
 #if TRACK_DETAILED_STATS
@@ -369,6 +364,8 @@ namespace Orleans.Runtime.Scheduler
                     var contextObj = task.AsyncState as PriorityContext;
                     var timeRemain = contextObj?.TimeRemain ?? 0.0;
                     log.Info("Dumping Status : About to execute task {0} in SchedulingContext={1} with time remain of {2}", task, SchedulingContext, timeRemain);
+#endif
+#if DEBUG
                     if (log.IsVerbose2) log.Verbose2("About to execute task {0} in SchedulingContext={1}", task, SchedulingContext);
 #endif
                     var taskStart = stopwatch.Elapsed;
@@ -432,15 +429,12 @@ namespace Orleans.Runtime.Scheduler
                         if (WorkItemCount > 0)
                         {
                             state = WorkGroupStatus.Runnable;
-                            // TODO: How to add deadline for work item that is added back
                             Task next = workItems.Peek();
                             var contextObj = next.AsyncState as PriorityContext;
                             TimeRemain = contextObj?.TimeRemain ?? 0.0;
-#if PQ_DEBUG
-                            log.Info("Changing WIG {0} priority to : {1} with context {2}", this, TimeRemain, contextObj);
-#endif
                             masterScheduler.RunQueue.Add(this);
 #if PQ_DEBUG
+                            log.Info("Changing WIG {0} priority to : {1} with context {2}", this, TimeRemain, contextObj);
                             StringBuilder sb = new StringBuilder();
                             masterScheduler.RunQueue.DumpStatus(sb);
                             log.Info("RunQueue Contents: {0}", sb.ToString());
@@ -456,7 +450,7 @@ namespace Orleans.Runtime.Scheduler
             }
         }
 
-#endregion
+        #endregion
 
         public override string ToString()
         {
@@ -490,7 +484,7 @@ namespace Orleans.Runtime.Scheduler
                     sb.AppendFormat("Detailed SchedulingContext=<{0}>", SchedulingContext.DetailedStatus());
                 }
 
-#if DEBUG
+#if PQ_DEBUG
                 foreach (var task in workItems)
                 {
                     var contextObj = task.AsyncState as PriorityContext;

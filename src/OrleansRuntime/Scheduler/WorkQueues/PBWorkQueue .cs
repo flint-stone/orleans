@@ -27,10 +27,8 @@ namespace Orleans.Runtime.Scheduler
 
         internal PBWorkQueue()
         {
-            //mainQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(10, new WorkItemComparer()));
-            //systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(10, new WorkItemComparer()));
-            mainQueue = new BlockingCollection<IWorkItem>(new ConcurrentQueue<IWorkItem>());
-            systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentQueue<IWorkItem>());
+            mainQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer()));
+            systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer()));
             queueArray = new BlockingCollection<IWorkItem>[] { systemQueue, mainQueue };
 
             if (!StatisticsCollector.CollectShedulerQueuesStats) return;
