@@ -831,6 +831,7 @@ namespace Orleans.Runtime
 
         public override string ToString()
         {
+#if PQ_DEBUG
             return String.Format("[Activation: {0}{1}{2}{3} {4} State={5}]",
                  Silo,
                  Grain,
@@ -838,6 +839,14 @@ namespace Orleans.Runtime
                  GetActivationInfoString(),
                  Grain.Key.N1,
                  State);
+#else
+            return String.Format("[Activation: {0}{1}{2}{3} State={4}]",
+                Silo,
+                Grain,
+                ActivationId,
+                GetActivationInfoString(),
+                State);
+#endif
         }
 
         internal string ToDetailedString(bool includeExtraDetails = false)

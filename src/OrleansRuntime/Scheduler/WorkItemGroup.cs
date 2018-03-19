@@ -489,7 +489,6 @@ namespace Orleans.Runtime.Scheduler
                 {
                     var contextObj = task.AsyncState as PriorityContext;
                     var timeRemain = contextObj?.TimeRemain ?? 0.0;
-                    //var name = contextObj?.Name ?? "NULL";
                     sb.Append(task + ":" + timeRemain);
                 }
 #endif
