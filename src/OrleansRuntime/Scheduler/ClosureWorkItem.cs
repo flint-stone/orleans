@@ -19,12 +19,6 @@ namespace Orleans.Runtime.Scheduler
                 SchedulerStatisticsGroup.OnClosureWorkItemsCreated();
             }
 #endif
-            // SDF
-            //            this.PriorityContext =
-            //                message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline")
-            //                    ? (int) message.RequestContextData["Deadline"] - Environment.TickCount
-            //                    : 0;
-            // EDF
             this.PriorityContext =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline")
                     ? (int) message.RequestContextData["Deadline"] : 0;
@@ -40,12 +34,6 @@ namespace Orleans.Runtime.Scheduler
                 SchedulerStatisticsGroup.OnClosureWorkItemsCreated();
             }
 #endif
-            // SDF
-            //            this.PriorityContext =
-            //                message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline")
-            //                    ? (int) message.RequestContextData["Deadline"] - Environment.TickCount
-            //                    : 0;
-            // EDF
             this.PriorityContext =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline")
                     ? (int) message.RequestContextData["Deadline"] : 0;
