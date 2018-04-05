@@ -19,10 +19,9 @@ namespace Orleans.Runtime.Scheduler
                 SchedulerStatisticsGroup.OnClosureWorkItemsCreated();
             }
 #endif
-            this.TimeRemain =
+            this.PriorityContext =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline")
-                    ? (int) message.RequestContextData["Deadline"] - Environment.TickCount
-                    : 0;
+                    ? (int) message.RequestContextData["Deadline"] : 0;
         }
 
         public ClosureWorkItem(Action closure, Func<string> getName, Message message)
@@ -35,10 +34,9 @@ namespace Orleans.Runtime.Scheduler
                 SchedulerStatisticsGroup.OnClosureWorkItemsCreated();
             }
 #endif
-            this.TimeRemain =
+            this.PriorityContext =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline")
-                    ? (int) message.RequestContextData["Deadline"] - Environment.TickCount
-                    : 0;
+                    ? (int) message.RequestContextData["Deadline"] : 0;
         }
 
         public ClosureWorkItem(Action closure)

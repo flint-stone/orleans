@@ -23,8 +23,8 @@ namespace Orleans.Runtime.Scheduler
             this.message = message;
             this.dispatcher = dispatcher;
             this.SchedulingContext = activation.SchedulingContext;
-            // Adding time remain
-            this.TimeRemain = message.RequestContextData.ContainsKey("Deadline")?(int) message.RequestContextData["Deadline"] - Environment.TickCount : 0.0;
+            this.PriorityContext = message?.RequestContextData!=null && message.RequestContextData.ContainsKey("Deadline")?
+                (int) message.RequestContextData["Deadline"]:0;
             activation.IncrementInFlightCount();
         }
 

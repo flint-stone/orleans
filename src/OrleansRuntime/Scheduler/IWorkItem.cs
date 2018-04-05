@@ -6,7 +6,7 @@ namespace Orleans.Runtime.Scheduler
     internal interface IWorkItem
     {
         // TODO: Change priority to general context
-        double TimeRemain { get; set; }
+        double PriorityContext { get; set; }
         string Name { get; }
         WorkItemType ItemType { get; }
         ISchedulingContext SchedulingContext { get; set; }

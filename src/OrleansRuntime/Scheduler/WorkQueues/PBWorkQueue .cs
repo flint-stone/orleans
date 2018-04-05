@@ -152,7 +152,7 @@ namespace Orleans.Runtime.Scheduler
                 sb.AppendLine("System Queue:");
                 foreach (var workItem in systemQueue)
                 {
-                    sb.AppendFormat("  {0}:{1}", workItem, workItem.TimeRemain).AppendLine();
+                    sb.AppendFormat("  {0}:{1}", workItem, workItem.PriorityContext).AppendLine();
                 }
             }
             
@@ -160,7 +160,7 @@ namespace Orleans.Runtime.Scheduler
 
             sb.AppendLine("Main Queue:");
             foreach (var workItem in mainQueue)
-                sb.AppendFormat("  {0}:{1}", workItem, workItem.TimeRemain).AppendLine();
+                sb.AppendFormat("  {0}:{1}", workItem, workItem.PriorityContext).AppendLine();
         }
 
         public void RunDown()
@@ -204,6 +204,6 @@ internal class WorkItemComparer : IComparer<IWorkItem>
 {
     public int Compare(IWorkItem x, IWorkItem y)
     {
-        return y.TimeRemain.CompareTo(x.TimeRemain); 
+        return y.PriorityContext.CompareTo(x.PriorityContext); 
     }
 }
