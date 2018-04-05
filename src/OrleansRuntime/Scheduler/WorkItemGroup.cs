@@ -429,9 +429,10 @@ namespace Orleans.Runtime.Scheduler
                         if (WorkItemCount > 0)
                         {
                             state = WorkGroupStatus.Runnable;
-                            Task next = workItems.Peek();
-                            var contextObj = next.AsyncState as PriorityContext;
-                            TimeRemain = contextObj?.TimeRemain ?? 0.0;
+                            // Change priority contect to the next task (temporarily disabled)
+                            // Task next = workItems.Peek();
+                            // var contextObj = next.AsyncState as PriorityContext;
+                            // TimeRemain = contextObj?.TimeRemain ?? 0.0;
                             masterScheduler.RunQueue.Add(this);
 #if PQ_DEBUG
                             log.Info("Changing WIG {0} priority to : {1} with context {2}", this, TimeRemain, contextObj);
