@@ -53,7 +53,7 @@ namespace Orleans.Runtime.Scheduler
             get { return SchedulingUtils.IsSystemContext(SchedulingContext); }
         }
 
-        public double TimeRemain { get; set; }
+        public double PriorityContext { get; set; }
         public string Name { get { return SchedulingContext == null ? "unknown" : SchedulingContext.Name; } }
 
         internal int ExternalWorkItemCount
@@ -219,9 +219,9 @@ namespace Orleans.Runtime.Scheduler
 
                 var contextObj = task.AsyncState as PriorityContext;
 
-                TimeRemain = contextObj?.TimeRemain ?? 0.0;
+                PriorityContext = contextObj?.Priority ?? 0.0;
 #if PQ_DEBUG
-                log.Info("Changing WIG {0} priority to : {1} with context {2}", this, TimeRemain, contextObj);
+                log.Info("Changing WIG {0} priority to : {1} with context {2}", this, PriorityContext, contextObj);
 #endif
                 masterScheduler.RunQueue.Add(this);
 #if PQ_DEBUG
@@ -344,7 +344,7 @@ namespace Orleans.Runtime.Scheduler
                         foreach (var t in workItems)
                         {
                             var c = t.AsyncState as PriorityContext;
-                            var tr = c?.TimeRemain?? 0.0;
+                            var tr = c?.PriorityContext?? 0.0;
                             b.Append(c + ":" + tr);
                         }
                         log.Info("Dumping Status From Execute before execution: {0}", b);
@@ -362,8 +362,8 @@ namespace Orleans.Runtime.Scheduler
 
 #if PQ_DEBUG
                     var contextObj = task.AsyncState as PriorityContext;
-                    var timeRemain = contextObj?.TimeRemain ?? 0.0;
-                    log.Info("Dumping Status : About to execute task {0} in SchedulingContext={1} with time remain of {2}", task, SchedulingContext, timeRemain);
+                    var priority = contextObj?.PriorityContext ?? 0.0;
+                    log.Info("Dumping Status : About to execute task {0} in SchedulingContext={1} with time remain of {2}", task, SchedulingContext, priority);
 #endif
 #if DEBUG
                     if (log.IsVerbose2) log.Verbose2("About to execute task {0} in SchedulingContext={1}", task, SchedulingContext);
@@ -432,10 +432,10 @@ namespace Orleans.Runtime.Scheduler
                             // Change priority contect to the next task (temporarily disabled)
                             // Task next = workItems.Peek();
                             // var contextObj = next.AsyncState as PriorityContext;
-                            // TimeRemain = contextObj?.TimeRemain ?? 0.0;
+                            // PriorityContext = contextObj?.PriorityContext ?? 0.0;
                             masterScheduler.RunQueue.Add(this);
 #if PQ_DEBUG
-                            log.Info("Changing WIG {0} priority to : {1} with context {2}", this, TimeRemain, contextObj);
+                            log.Info("Changing WIG {0} priority to : {1} with context {2}", this, PriorityContext, contextObj);
                             StringBuilder sb = new StringBuilder();
                             masterScheduler.RunQueue.DumpStatus(sb);
                             log.Info("RunQueue Contents: {0}", sb.ToString());
@@ -489,8 +489,8 @@ namespace Orleans.Runtime.Scheduler
                 foreach (var task in workItems)
                 {
                     var contextObj = task.AsyncState as PriorityContext;
-                    var timeRemain = contextObj?.TimeRemain ?? 0.0;
-                    sb.Append(task + ":" + timeRemain);
+                    var priority = contextObj?.PriorityContext ?? 0.0;
+                    sb.Append(task + ":" + priority);
                 }
 #endif
                 return sb.ToString();

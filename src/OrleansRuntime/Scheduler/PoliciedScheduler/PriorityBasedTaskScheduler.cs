@@ -136,7 +136,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             workItem.SchedulingContext = context;
 
 #if PQ_DEBUG
-            logger.Info("Work Item {0} has remaining ticks of {1}, current queue size {2}", workItem, workItem.TimeRemain, RunQueue.Length);
+            logger.Info("Work Item {0} has remaining ticks of {1}, current queue size {2}", workItem, workItem.PriorityContext, RunQueue.Length);
 #endif
 
             // We must wrap any work item in Task and enqueue it as a task to the right scheduler via Task.Start.
@@ -145,7 +145,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             {
                 var priorityContext = new PriorityContext
                 {
-                    TimeRemain = 0.0,
+                    Priority = 0.0,
                     Context = context
                 };
                 var t = TaskSchedulerUtils.WrapWorkItemWithPriorityAsTask(workItem, priorityContext, this);
@@ -156,7 +156,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
                 // Create Task wrapper for this work item
                 var priorityContext = new PriorityContext
                 {
-                    TimeRemain = workItem.TimeRemain,
+                    Priority = workItem.PriorityContext,
                     Context = context
                 };
                 var t = TaskSchedulerUtils.WrapWorkItemWithPriorityAsTask(workItem, priorityContext, workItemGroup.TaskRunner);
