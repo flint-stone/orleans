@@ -593,30 +593,7 @@ namespace Orleans
         {
             var message = this.messageFactory.CreateMessage(request, options);
             // Adding scheduler hint
-            AddingSchedulerHint(message, request, target);
             SendRequestMessage(target, message, context, callback, debugContext, options, genericArguments);
-        }
-
-        private void AddingSchedulerHint(Message message, InvokeMethodRequest request, GrainReference target)
-        {
-            var currentTicks = Environment.TickCount;
-            if(message.RequestContextData == null) message.RequestContextData = new Dictionary<string, object>();
-            if(!message.RequestContextData.ContainsKey("InitTimestamp")) message.RequestContextData.Add("InitTimestamp", currentTicks);
-            if(!message.RequestContextData.ContainsKey("Deadline")) message.RequestContextData.Add("Deadline", currentTicks + 500);
-
-            if(message.RequestContextData.TryGetValue("Path", out var currentPath))
-            {
-//                message.RequestContextData["Path"] = (string) currentPath + "***" +
-//                                                     CurrentActivationAddress.Activation + "  Scheduling Context: " +
-//                                                     request + " Target: " + target;
-                message.RequestContextData["Path"] = CurrentActivationAddress.Activation + "  Scheduling Context: " +
-                                                     request + " Target: " + target;
-            }
-            else
-            {
-                message.RequestContextData.Add("Path", CurrentActivationAddress.Activation + "  Scheduling Context: " + request + " Target: " + target); 
-            }
-            
         }
 
         private void SendRequestMessage(GrainReference target, Message message, TaskCompletionSource<object> context, Action<Message, TaskCompletionSource<object>> callback, string debugContext = null, InvokeMethodOptions options = InvokeMethodOptions.None, string genericArguments = null)

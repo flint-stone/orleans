@@ -7,6 +7,7 @@ namespace Orleans.Runtime.Scheduler
     {
         private readonly Action continuation;
         private readonly Func<string> nameGetter;
+        private static readonly Logger logger = LogManager.GetLogger("ClosureWorkItem", LoggerType.Runtime);
 
         public override string Name { get { return nameGetter==null ? "" : nameGetter(); } }
 
@@ -21,7 +22,7 @@ namespace Orleans.Runtime.Scheduler
 #endif
             this.PriorityContext =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline")
-                    ? (int) message.RequestContextData["Deadline"] : 0;
+                    ? (long) message.RequestContextData["Deadline"] : 0;
         }
 
         public ClosureWorkItem(Action closure, Func<string> getName, Message message)
@@ -36,7 +37,7 @@ namespace Orleans.Runtime.Scheduler
 #endif
             this.PriorityContext =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline")
-                    ? (int) message.RequestContextData["Deadline"] : 0;
+                    ? (long) message.RequestContextData["Deadline"] : 0;
         }
 
         public ClosureWorkItem(Action closure)
@@ -70,6 +71,11 @@ namespace Orleans.Runtime.Scheduler
             {
                 SchedulerStatisticsGroup.OnClosureWorkItemsExecuted();
             }
+#endif
+#if PQ_DEBUG
+            logger.Info("Calling closure work item on grain {0} with closure type {1}",
+                (continuation.Target == null) ? "" : continuation.Target.ToString(), 
+                ToString());
 #endif
             continuation();
         }

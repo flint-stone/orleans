@@ -24,7 +24,7 @@ namespace Orleans.Runtime.Scheduler
             this.dispatcher = dispatcher;
             this.SchedulingContext = activation.SchedulingContext;
             this.PriorityContext = message?.RequestContextData!=null && message.RequestContextData.ContainsKey("Deadline")?
-                (int) message.RequestContextData["Deadline"]:0;
+                (long) message.RequestContextData["Deadline"]:0;
             activation.IncrementInFlightCount();
         }
 
