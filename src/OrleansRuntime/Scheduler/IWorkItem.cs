@@ -7,6 +7,7 @@ namespace Orleans.Runtime.Scheduler
     {
         // TODO: Change priority to general context
         double PriorityContext { get; set; }
+        ActivationAddress SourceActivation { get; set; }
         string Name { get; }
         WorkItemType ItemType { get; }
         ISchedulingContext SchedulingContext { get; set; }

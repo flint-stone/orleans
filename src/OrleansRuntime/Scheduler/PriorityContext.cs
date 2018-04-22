@@ -6,7 +6,7 @@ namespace Orleans.Runtime.Scheduler
     {
         public double Priority;
         public ISchedulingContext Context { get; set; }
-
+        public ActivationAddress SourceActivation { get; set; }
         public override String ToString()
         {
             return Context + " : " + Priority;

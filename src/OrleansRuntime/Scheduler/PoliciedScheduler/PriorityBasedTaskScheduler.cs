@@ -146,7 +146,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
                 var priorityContext = new PriorityContext
                 {
                     Priority = 0.0,
-                    Context = context
+                    Context = context,
+                    SourceActivation = workItem.SourceActivation
                 };
                 var t = TaskSchedulerUtils.WrapWorkItemWithPriorityAsTask(workItem, priorityContext, this);
                 t.Start(this);
@@ -157,7 +158,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
                 var priorityContext = new PriorityContext
                 {
                     Priority = workItem.PriorityContext,
-                    Context = context
+                    Context = context,
+                    SourceActivation = workItem.SourceActivation
                 };
                 var t = TaskSchedulerUtils.WrapWorkItemWithPriorityAsTask(workItem, priorityContext, workItemGroup.TaskRunner);
                 t.Start(workItemGroup.TaskRunner);

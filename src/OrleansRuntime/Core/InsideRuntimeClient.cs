@@ -346,7 +346,7 @@ namespace Orleans.Runtime
 #pragma warning restore 618
                     var requestInvoker = new GrainMethodInvoker(target, request, invoker, siloInterceptors, interfaceToImplementationMapping, invokeInterceptor);
 
-#if PQ_DEBUG
+#if DEBUG
                     logger.Info(
                         "Calling invoke work item on grain {0} with invoke type {1} from invokable {2}, request invoker {3}:{4}:{5}",
                         target.GetType().FullName + " ： " + message.TargetActivation??" ", invokable.GetType().FullName, invokable.GetType().FullName,

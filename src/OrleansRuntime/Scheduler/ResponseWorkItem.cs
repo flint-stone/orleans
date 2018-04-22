@@ -11,6 +11,7 @@ namespace Orleans.Runtime.Scheduler
         {
             target = t;
             response = m;
+            SourceActivation = m.SendingAddress;
         }
 
         #region IWorkItem Members

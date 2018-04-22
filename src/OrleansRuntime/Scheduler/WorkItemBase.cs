@@ -15,12 +15,15 @@ namespace Orleans.Runtime.Scheduler
             get { return Utils.Since(TimeQueued); } 
         }
 
-        public double PriorityContext { get; set; }
         public abstract string Name { get; }
 
         public abstract WorkItemType ItemType { get; }
 
         public DateTime TimeQueued { get; set; }
+  
+        public double PriorityContext { get; set; }
+  
+        public ActivationAddress SourceActivation { get; set; }
 
         public abstract void Execute();
 
