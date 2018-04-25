@@ -15,10 +15,19 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
     internal class PriorityBasedTaskScheduler : TaskScheduler, IOrleansTaskScheduler
     {
         #region Private
+
+        #region Global Schedulings
         private readonly LoggerImpl logger = LogManager.GetLogger("Scheduler.IPriorityBasedTaskScheduler", LoggerType.Runtime);
         private readonly ConcurrentDictionary<ISchedulingContext, WorkItemGroup> workgroupDirectory; // work group directory
         private bool applicationTurnsStopped;
         private static TimeSpan TurnWarningLengthThreshold { get; set; }
+        #endregion
+
+        #region Tenancies
+
+        private readonly Dictionary<short, Tuple<ulong, HashSet<ulong>>> tenants;
+        private readonly Dictionary<short, long> timeLimitsOnTenants;
+        #endregion
         #endregion
 
         #region IPriorityBasedTaskScheduler
@@ -54,6 +63,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
                     config.TurnWarningLengthThreshold, config.EnableWorkerThreadInjection, config.LimitManager.GetLimit(LimitNames.LIMIT_MAX_PENDING_ITEMS),
                     performanceMetrics)
         {
+            tenants = new Dictionary<short, Tuple<ulong, HashSet<ulong>>>();
+            timeLimitsOnTenants = new Dictionary<short, long>();
         }
 
         private PriorityBasedTaskScheduler(int maxActiveThreads, TimeSpan delayWarningThreshold, TimeSpan activationSchedulingQuantum,
@@ -138,7 +149,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 #if PQ_DEBUG
             logger.Info("Work Item {0} has remaining ticks of {1}, current queue size {2}", workItem, workItem.PriorityContext, RunQueue.Length);
 #endif
-
+          
             // We must wrap any work item in Task and enqueue it as a task to the right scheduler via Task.Start.
             // This will make sure the TaskScheduler.Current is set correctly on any task that is created implicitly in the execution of this workItem.
             if (workItemGroup == null)
@@ -164,6 +175,40 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
                 var t = TaskSchedulerUtils.WrapWorkItemWithPriorityAsTask(workItem, priorityContext, workItemGroup.TaskRunner);
                 t.Start(workItemGroup.TaskRunner);
             }
+        }
+
+        public void QueueControllerWorkItem(IWorkItem workItem, ISchedulingContext context)
+        {
+#if DEBUG
+            if (logger.IsVerbose2) logger.Verbose2("QueueControllerWorkItem " + context);
+#endif
+
+#if PQ_DEBUG
+            logger.Info("Controller WorkItem {0} has remaining ticks of {1}, current queue size {2}", workItem, workItem.PriorityContext, RunQueue.Length);
+            if (!(workItem is InvokeWorkItem))
+            {
+                var error = string.Format(
+                    "WorkItem {0} on context {1} is not a Invoke WorkItem", workItem, context);
+                logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
+                throw new InvalidOperationException(error);
+            }
+#endif
+            // Populate Topology info
+            var controllerContext = ((InvokeWorkItem)workItem).ControllerContext;
+
+            ulong controllerId = ((InvokeWorkItem)workItem).SourceActivation.Grain.Key.N1;
+            if (tenants.ContainsKey(controllerContext.AppId))
+            {
+                var schedulingContext = context as SchedulingContext;
+                tenants[controllerContext.AppId].Item2.Add(schedulingContext.Activation.Grain.Key.N1);
+            }
+            else
+            {
+                tenants.Add(controllerContext.AppId, new Tuple<ulong, HashSet<ulong>>(controllerId, new HashSet<ulong>()));
+                timeLimitsOnTenants.Add(controllerContext.AppId, controllerContext.Time);
+            }
+            
+            QueueWorkItem(workItem, context);
         }
 
         // Only required if you have work groups flagged by a context that is not a WorkGroupingContext

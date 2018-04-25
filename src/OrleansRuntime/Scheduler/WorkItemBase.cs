@@ -26,6 +26,7 @@ namespace Orleans.Runtime.Scheduler
         public ActivationAddress SourceActivation { get; set; }
 
         public abstract void Execute();
+        public abstract void Execute(PriorityContext context);
 
         public bool IsSystemPriority
         {

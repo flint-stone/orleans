@@ -157,6 +157,10 @@ namespace Orleans.Runtime
 
                     ActivationAddress nonExistentActivation = nea.NonExistentActivation;
 
+#if DEBUG
+                    logger.Info($" {message}" );
+#endif
+
                     if (message.Direction != Message.Directions.Response)
                     {
                         // Un-register the target activation so we don't keep getting spurious messages.
@@ -167,7 +171,7 @@ namespace Orleans.Runtime
                         // We would add a counter here, except that there's already a counter for this in the Catalog.
                         // Note that this has to run in a non-null scheduler context, so we always queue it to the catalog's context
                         var origin = message.SendingSilo;
-#if PQ_DEBUG
+#if DEBUG
                         logger.Info("Queue closure work item at ReceiveMessage with time remaining {0}", message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline") ? (string)message.RequestContextData["Deadline"] : "null");
 #endif
                         if (scheduler.GetType() == typeof(PriorityBasedTaskScheduler))
@@ -433,8 +437,16 @@ namespace Orleans.Runtime
                     logger.Info("Queue invoke work item with path {0}", (string)message.RequestContextData["Path"]);
                 }              
 #endif
-                scheduler.QueueWorkItem(new InvokeWorkItem(targetActivation, message, this),
-                    targetActivation.SchedulingContext);
+                var invokeWorkItem = new InvokeWorkItem(targetActivation, message, this);
+                if (invokeWorkItem.ControllerContext != null)
+                {
+                    // Reduce the amount of workItem acesses
+                    scheduler.QueueControllerWorkItem(invokeWorkItem, targetActivation.SchedulingContext);
+                }
+                else
+                {
+                    scheduler.QueueWorkItem(invokeWorkItem, targetActivation.SchedulingContext);
+                } 
             }
         }
 

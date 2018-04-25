@@ -28,6 +28,11 @@ namespace Orleans.Runtime.Scheduler
             target.HandleNewRequest(request);
         }
 
+        public override void Execute(PriorityContext context)
+        {
+            Execute();
+        }
+
         #endregion
 
         public override string ToString()

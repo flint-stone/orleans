@@ -15,5 +15,6 @@ namespace Orleans.Runtime.Scheduler
         DateTime TimeQueued { get; set;  }
         bool IsSystemPriority { get; }
         void Execute();
+        void Execute(PriorityContext context);
     }
 }

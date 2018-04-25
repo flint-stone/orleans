@@ -5,10 +5,12 @@ namespace Orleans.Runtime.Scheduler
 {
     internal class InvokeWorkItem : WorkItemBase
     {
+        public readonly ControllerContext ControllerContext;
+
         private static readonly Logger logger = LogManager.GetLogger("InvokeWorkItem", LoggerType.Runtime);
         private readonly ActivationData activation;
         private readonly Message message;
-        private readonly Dispatcher dispatcher;
+        private readonly Dispatcher dispatcher;       
 
         public InvokeWorkItem(ActivationData activation, Message message, Dispatcher dispatcher)
         {
@@ -23,8 +25,13 @@ namespace Orleans.Runtime.Scheduler
             this.message = message;
             this.dispatcher = dispatcher;
             this.SchedulingContext = activation.SchedulingContext;
+            // Interpreting Scheduling Context From Application
             this.PriorityContext = message?.RequestContextData!=null && message.RequestContextData.ContainsKey("Deadline")?
                 (long) message.RequestContextData["Deadline"]:0;
+            this.ControllerContext =
+                message?.RequestContextData != null && message.RequestContextData.ContainsKey("ControllerContext")
+                    ? (ControllerContext) message.RequestContextData["ControllerContext"]
+                    : null;
             this.SourceActivation = message.SendingAddress;
             activation.IncrementInFlightCount();
         }
@@ -47,17 +54,47 @@ namespace Orleans.Runtime.Scheduler
             {
                 var grain = activation.GrainInstance;
                 var runtimeClient = (ISiloRuntimeClient)grain.GrainReference.RuntimeClient;
+                logger.Info($"Invoke: {message}");
                 Task task = runtimeClient.Invoke(grain, this.activation, this.message);
-                task.ContinueWith(t =>
+                task.ContinueWith(delegate
                 {
+                    logger.Info($"InvokeWithContinuation: {message}");
                     // Note: This runs for all outcomes of resultPromiseTask - both Success or Fault
                     activation.DecrementInFlightCount();
                     this.dispatcher.OnActivationCompletedRequest(activation, message);
-                }).Ignore();
+                    logger.Info($"Complete Request: {message} on activation {activation}");
+                }, task.AsyncState).Ignore();
             }
             catch (Exception exc)
             {
                 logger.Warn(ErrorCode.InvokeWorkItem_UnhandledExceptionInInvoke, 
+                    String.Format("Exception trying to invoke request {0} on activation {1}.", message, activation), exc);
+
+                activation.DecrementInFlightCount();
+                this.dispatcher.OnActivationCompletedRequest(activation, message);
+            }
+        }
+
+        public override void Execute(PriorityContext context)
+        {
+            try
+            {
+                var grain = activation.GrainInstance;
+                var runtimeClient = (ISiloRuntimeClient)grain.GrainReference.RuntimeClient;
+                logger.Info($"Invoke: {message}");
+                Task task = runtimeClient.Invoke(grain, this.activation, this.message);
+                task.ContinueWith(delegate
+                {
+                    logger.Info($"InvokeWithContinuation: {message}");
+                    // Note: This runs for all outcomes of resultPromiseTask - both Success or Fault
+                    activation.DecrementInFlightCount();
+                    this.dispatcher.OnActivationCompletedRequest(activation, message);
+                    logger.Info($"Complete Request: {message} on activation {activation}");
+                }, context).Ignore();
+            }
+            catch (Exception exc)
+            {
+                logger.Warn(ErrorCode.InvokeWorkItem_UnhandledExceptionInInvoke,
                     String.Format("Exception trying to invoke request {0} on activation {1}.", message, activation), exc);
 
                 activation.DecrementInFlightCount();
