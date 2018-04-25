@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Orleans.Runtime.Scheduler.PoliciedScheduler;
+using Orleans.Runtime.Scheduler.Utility;
 
 
 namespace Orleans.Runtime.Scheduler
@@ -405,7 +406,7 @@ namespace Orleans.Runtime.Scheduler
 #endif
                         totalItemsProcessed++;
                         var taskLength = stopwatch.Elapsed - taskStart;
-#if PQ_DEBUG
+//#if PQ_DEBUG
                         var contextObj = task.AsyncState as PriorityContext;
                         if(contextObj?.SourceActivation != null) // If the task originates from another activation
                         {
@@ -413,7 +414,7 @@ namespace Orleans.Runtime.Scheduler
                             execTimeCounters[contextObj.SourceActivation].Enqueue(taskLength.Ticks);
                         }
                         
-#endif
+//#endif
                         if (taskLength > masterScheduler.TurnWarningLength)
                         {
                             SchedulerStatisticsGroup.NumLongRunningTurns.Increment();
@@ -535,28 +536,11 @@ namespace Orleans.Runtime.Scheduler
             var msg = string.Format("{0} {1}", what, DumpStatus());
             log.Warn(errorCode, msg);
         }
-    }
-}
 
-public class FixedSizedQueue<T> : Queue<T>
-{
-    public int Size { get; set; }
-
-    public FixedSizedQueue(int s) {
-        Size = s;
-    }
-
-    public new void Enqueue(T item)
-    {
-        base.Enqueue(item);
-        if (Count > Size)
+        public double CollectStats()
         {
-            Dequeue();
+            return execTimeCounters.Select(x => x.Value.Average()).Average();
         }
     }
-
-    public String ToString()
-    {
-        return string.Join(",", ToArray());
-    }
 }
+
