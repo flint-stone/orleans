@@ -78,7 +78,7 @@ namespace Orleans.Runtime.Scheduler
                 SchedulerStatisticsGroup.OnClosureWorkItemsExecuted();
             }
 #endif
-#if DEBUG
+#if PQ_DEBUG
             logger.Info("Calling closure work item on grain {0} with closure type {1} on Message {2}",
                 (continuation.Target == null) ? "" : continuation.Target.ToString(), 
                 ToString(), _message==null?"null":_message.ToString());

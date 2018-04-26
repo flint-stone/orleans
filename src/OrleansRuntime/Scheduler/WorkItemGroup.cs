@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Orleans.Runtime.Scheduler.PoliciedScheduler;
 using Orleans.Runtime.Scheduler.Utility;
 
 
@@ -123,7 +122,7 @@ namespace Orleans.Runtime.Scheduler
 
         // This is the maximum number of work items to be processed in an activation turn. 
         // If this is set to zero or a negative number, then the full work queue is drained (MaxTimePerTurn allowing).
-        private const int MaxWorkItemsPerTurn = 2; // Unlimited
+        private const int MaxWorkItemsPerTurn = 0; // Unlimited
         // This is a soft time limit on the duration of activation macro-turn (a number of micro-turns). 
         // If a activation was running its micro-turns longer than this, we will give up the thread.
         // If this is set to zero or a negative number, then the full work queue is drained (MaxWorkItemsPerTurn allowing).
@@ -406,7 +405,7 @@ namespace Orleans.Runtime.Scheduler
 #endif
                         totalItemsProcessed++;
                         var taskLength = stopwatch.Elapsed - taskStart;
-//#if PQ_DEBUG
+
                         var contextObj = task.AsyncState as PriorityContext;
                         if(contextObj?.SourceActivation != null) // If the task originates from another activation
                         {
@@ -414,7 +413,6 @@ namespace Orleans.Runtime.Scheduler
                             execTimeCounters[contextObj.SourceActivation].Enqueue(taskLength.Ticks);
                         }
                         
-//#endif
                         if (taskLength > masterScheduler.TurnWarningLength)
                         {
                             SchedulerStatisticsGroup.NumLongRunningTurns.Increment();
@@ -425,8 +423,7 @@ namespace Orleans.Runtime.Scheduler
                     }
                     count++;
                 }
-                while (((count <= MaxWorkItemsPerTurn)) &&
-                //while (((MaxWorkItemsPerTurn <= 0) || (count <= MaxWorkItemsPerTurn)) &&
+                while (((MaxWorkItemsPerTurn <= 0) || (count <= MaxWorkItemsPerTurn)) &&
                     ((ActivationSchedulingQuantum <= TimeSpan.Zero) || (stopwatch.Elapsed < ActivationSchedulingQuantum)));
                 stopwatch.Stop();
 #if PQ_DEBUG
