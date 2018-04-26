@@ -188,7 +188,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             {
                 statCollectionCounter = 100;
                 foreach (var kv in tenantStatCounters) tenantStatCounters[kv.Key].Enqueue(kv.Key.CollectStats());
-                logger.Info($"Priniting execution times in ticks: {string.Join("********************",tenantStatCounters.Select(x=>x.Key.ToString()+':' + String.Join(",", x.Value)))}");
+                logger.Info($"Printing execution times in ticks: {string.Join("********************",tenantStatCounters.Select(x=>x.Key.ToString()+':' + String.Join(",", x.Value)))}");
             }
         }
 
