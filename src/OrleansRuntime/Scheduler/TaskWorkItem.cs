@@ -50,6 +50,11 @@ namespace Orleans.Runtime.Scheduler
 #endif
         }
 
+        public override void Execute(PriorityContext context)
+        {
+            Execute();
+        }
+
         internal static bool IsTaskRunning(Task t)
         {
             return !(

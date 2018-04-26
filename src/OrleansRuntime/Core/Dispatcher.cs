@@ -433,8 +433,15 @@ namespace Orleans.Runtime
                     logger.Info("Queue invoke work item with path {0}", (string)message.RequestContextData["Path"]);
                 }              
 #endif
-                scheduler.QueueWorkItem(new InvokeWorkItem(targetActivation, message, this),
-                    targetActivation.SchedulingContext);
+                var invokeWorkItem = new InvokeWorkItem(targetActivation, message, this);
+                if (invokeWorkItem.ControllerContext != null)
+                {
+                    scheduler.QueueControllerWorkItem(invokeWorkItem, targetActivation.SchedulingContext);
+                }
+                else
+                {
+                    scheduler.QueueWorkItem(invokeWorkItem, targetActivation.SchedulingContext);
+                } 
             }
         }
 

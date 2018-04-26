@@ -13,7 +13,7 @@ namespace Orleans.Runtime.Scheduler
 
         internal static Task WrapWorkItemWithPriorityAsTask(IWorkItem todo, PriorityContext context, TaskScheduler sched)
         {
-            var task = new Task(state => RunWorkItemTask(todo, sched), context);
+            var task = new Task(state => RunWorkItemTaskWithPriority(todo, sched, context), context);
             return task;
         }
 
@@ -23,6 +23,19 @@ namespace Orleans.Runtime.Scheduler
             {
                 RuntimeContext.SetExecutionContext(todo.SchedulingContext, sched);
                 todo.Execute();
+            }
+            finally
+            {
+                RuntimeContext.ResetExecutionContext();
+            }
+        }
+
+        private static void RunWorkItemTaskWithPriority(IWorkItem todo, TaskScheduler sched, PriorityContext context)
+        {
+            try
+            {
+                RuntimeContext.SetExecutionContext(todo.SchedulingContext, sched);
+                todo.Execute(context);
             }
             finally
             {

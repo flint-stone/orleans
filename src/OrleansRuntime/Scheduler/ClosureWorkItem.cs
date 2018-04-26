@@ -7,6 +7,9 @@ namespace Orleans.Runtime.Scheduler
     {
         private readonly Action continuation;
         private readonly Func<string> nameGetter;
+        private static readonly Logger logger = LogManager.GetLogger("ClosureWorkItem", LoggerType.Runtime);
+        private static ActivationAddress source;
+        private readonly Message _message;
 
         public override string Name { get { return nameGetter==null ? "" : nameGetter(); } }
 
@@ -21,7 +24,9 @@ namespace Orleans.Runtime.Scheduler
 #endif
             this.PriorityContext =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline")
-                    ? (int) message.RequestContextData["Deadline"] : 0;
+                    ? (long) message.RequestContextData["Deadline"] : 0;
+            source = message.SendingAddress;
+            _message = message;
         }
 
         public ClosureWorkItem(Action closure, Func<string> getName, Message message)
@@ -36,7 +41,9 @@ namespace Orleans.Runtime.Scheduler
 #endif
             this.PriorityContext =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline")
-                    ? (int) message.RequestContextData["Deadline"] : 0;
+                    ? (long) message.RequestContextData["Deadline"] : 0;
+            source = message.SendingAddress;
+            _message = message;
         }
 
         public ClosureWorkItem(Action closure)
@@ -71,7 +78,17 @@ namespace Orleans.Runtime.Scheduler
                 SchedulerStatisticsGroup.OnClosureWorkItemsExecuted();
             }
 #endif
+#if PQ_DEBUG
+            logger.Info("Calling closure work item on grain {0} with closure type {1} on Message {2}",
+                (continuation.Target == null) ? "" : continuation.Target.ToString(), 
+                ToString(), _message==null?"null":_message.ToString());
+#endif
             continuation();
+        }
+
+        public override void Execute(PriorityContext context)
+        {
+            Execute();
         }
 
         public override WorkItemType ItemType { get { return WorkItemType.Closure; } }

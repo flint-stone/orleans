@@ -345,6 +345,13 @@ namespace Orleans.Runtime
                     var invokeInterceptor = this.CurrentStreamProviderRuntime?.GetInvokeInterceptor();
 #pragma warning restore 618
                     var requestInvoker = new GrainMethodInvoker(target, request, invoker, siloInterceptors, interfaceToImplementationMapping, invokeInterceptor);
+
+#if PQ_DEBUG
+                    logger.Info(
+                        "Calling invoke work item on grain {0} with invoke type {1} from invokable {2}, request invoker {3}:{4}:{5}",
+                        target.GetType().FullName + " ： " + message.TargetActivation??" ", invokable.GetType().FullName, invokable.GetType().FullName,
+                        requestInvoker.Method.Name, requestInvoker.Method.ReflectedType, requestInvoker);
+#endif
                     await requestInvoker.Invoke();
                     resultObject = requestInvoker.Result;
                 }

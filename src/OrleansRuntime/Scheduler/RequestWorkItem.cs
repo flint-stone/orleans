@@ -11,6 +11,7 @@ namespace Orleans.Runtime.Scheduler
         {
             target = t;
             request = m;
+            SourceActivation = m.SendingAddress;
         }
 
         #region IWorkItem Members
@@ -25,6 +26,11 @@ namespace Orleans.Runtime.Scheduler
         public override void Execute()
         {
             target.HandleNewRequest(request);
+        }
+
+        public override void Execute(PriorityContext context)
+        {
+            Execute();
         }
 
         #endregion

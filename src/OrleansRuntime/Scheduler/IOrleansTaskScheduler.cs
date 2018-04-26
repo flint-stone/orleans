@@ -19,6 +19,7 @@ namespace Orleans.Runtime.Scheduler
         void StopApplicationTurns();
         void Stop();
         void QueueWorkItem(IWorkItem workItem, ISchedulingContext context);
+        void QueueControllerWorkItem(IWorkItem workItem, ISchedulingContext context);
         WorkItemGroup RegisterWorkContext(ISchedulingContext context);
         void UnregisterWorkContext(ISchedulingContext context);
         WorkItemGroup GetWorkItemGroup(ISchedulingContext context);

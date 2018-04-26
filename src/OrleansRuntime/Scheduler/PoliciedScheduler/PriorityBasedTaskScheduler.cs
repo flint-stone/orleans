@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Orleans.Runtime.Configuration;
+using Orleans.Runtime.Scheduler.Utility;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 {
@@ -15,10 +16,23 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
     internal class PriorityBasedTaskScheduler : TaskScheduler, IOrleansTaskScheduler
     {
         #region Private
+
+        #region Global Schedulings
         private readonly LoggerImpl logger = LogManager.GetLogger("Scheduler.IPriorityBasedTaskScheduler", LoggerType.Runtime);
         private readonly ConcurrentDictionary<ISchedulingContext, WorkItemGroup> workgroupDirectory; // work group directory
         private bool applicationTurnsStopped;
         private static TimeSpan TurnWarningLengthThreshold { get; set; }
+        #endregion
+
+        #region Tenancies
+
+        private readonly Dictionary<short, Tuple<ulong, HashSet<ulong>>> tenants;
+        private readonly Dictionary<short, long> timeLimitsOnTenants;
+        private readonly Dictionary<WorkItemGroup, FixedSizedQueue<double>> tenantStatCounters;
+        private const int MaximumStatCounterSize = 100;
+        // TODO: FIX LATER
+        private int statCollectionCounter = 100;
+        #endregion
         #endregion
 
         #region IPriorityBasedTaskScheduler
@@ -54,6 +68,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
                     config.TurnWarningLengthThreshold, config.EnableWorkerThreadInjection, config.LimitManager.GetLimit(LimitNames.LIMIT_MAX_PENDING_ITEMS),
                     performanceMetrics)
         {
+            // Tenancies
+            tenants = new Dictionary<short, Tuple<ulong, HashSet<ulong>>>();
+            timeLimitsOnTenants = new Dictionary<short, long>();
+            tenantStatCounters = new Dictionary<WorkItemGroup, FixedSizedQueue<double>>();
         }
 
         private PriorityBasedTaskScheduler(int maxActiveThreads, TimeSpan delayWarningThreshold, TimeSpan activationSchedulingQuantum,
@@ -137,8 +155,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 
 #if PQ_DEBUG
             logger.Info("Work Item {0} has remaining ticks of {1}, current queue size {2}", workItem, workItem.PriorityContext, RunQueue.Length);
-#endif
-
+#endif   
             // We must wrap any work item in Task and enqueue it as a task to the right scheduler via Task.Start.
             // This will make sure the TaskScheduler.Current is set correctly on any task that is created implicitly in the execution of this workItem.
             if (workItemGroup == null)
@@ -146,7 +163,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
                 var priorityContext = new PriorityContext
                 {
                     Priority = 0.0,
-                    Context = context
+                    Context = context,
+                    SourceActivation = workItem.SourceActivation
                 };
                 var t = TaskSchedulerUtils.WrapWorkItemWithPriorityAsTask(workItem, priorityContext, this);
                 t.Start(this);
@@ -157,11 +175,66 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
                 var priorityContext = new PriorityContext
                 {
                     Priority = workItem.PriorityContext,
-                    Context = context
+                    Context = context,
+                    SourceActivation = workItem.SourceActivation
                 };
                 var t = TaskSchedulerUtils.WrapWorkItemWithPriorityAsTask(workItem, priorityContext, workItemGroup.TaskRunner);
                 t.Start(workItemGroup.TaskRunner);
             }
+
+            //TODO: FIX LATER
+            if (--statCollectionCounter <= 0)
+            {
+                statCollectionCounter = 100;
+                foreach (var kv in tenantStatCounters) tenantStatCounters[kv.Key].Enqueue(kv.Key.CollectStats());
+                logger.Info($"Printing execution times in ticks: {string.Join("********************",tenantStatCounters.Select(x=>x.Key.ToString()+':' + String.Join(",", x.Value)))}");
+            }
+        }
+
+        public void QueueControllerWorkItem(IWorkItem workItem, ISchedulingContext context)
+        {
+#if DEBUG
+            if (logger.IsVerbose2) logger.Verbose2("QueueControllerWorkItem " + context);
+#endif
+
+#if PQ_DEBUG
+            logger.Info("Controller WorkItem {0} has remaining ticks of {1}, current queue size {2}", workItem, workItem.PriorityContext, RunQueue.Length);
+            if (!(workItem is InvokeWorkItem))
+            {
+                var error = string.Format(
+                    "WorkItem {0} on context {1} is not a Invoke WorkItem", workItem, context);
+                logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
+                throw new InvalidOperationException(error);
+            }
+#endif
+            // Populate Topology info
+            var controllerContext = ((InvokeWorkItem)workItem).ControllerContext;
+
+            ulong controllerId = ((InvokeWorkItem)workItem).SourceActivation.Grain.Key.N1;
+            var schedulingContext = context as SchedulingContext;
+            if (tenants.ContainsKey(controllerContext.AppId))
+            {
+                tenants[controllerContext.AppId].Item2.Add(schedulingContext.Activation.Grain.Key.N1);
+            }
+            else
+            {
+                // Initialize entries in *ALL* per-dataflow maps
+                tenants.Add(controllerContext.AppId, new Tuple<ulong, HashSet<ulong>>(controllerId, new HashSet<ulong>()));
+                timeLimitsOnTenants.Add(controllerContext.AppId, controllerContext.Time);
+
+                tenants[controllerContext.AppId].Item2.Add(schedulingContext.Activation.Grain.Key.N1);
+            }
+            var wig = GetWorkItemGroup(schedulingContext);
+            if (wig==null)
+            {
+                var error = string.Format(
+                    "WorkItem {0} on context {1} does not match a work item group", workItem, context);
+                logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
+                throw new InvalidOperationException(error);
+            }
+            if (!tenantStatCounters.ContainsKey(wig)) tenantStatCounters.Add(wig, new FixedSizedQueue<double>(MaximumStatCounterSize));
+            
+            QueueWorkItem(workItem, context);
         }
 
         // Only required if you have work groups flagged by a context that is not a WorkGroupingContext
