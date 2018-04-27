@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Orleans.Runtime.Configuration;
+using Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies;
 using Orleans.Runtime.Scheduler.Utility;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler
@@ -13,8 +14,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 
 
     [DebuggerDisplay("IPriorityBasedTaskScheduler RunQueue={RunQueue.Length}")]
-    internal class PriorityBasedTaskScheduler : TaskScheduler, IOrleansTaskScheduler
-    {
+    internal class PriorityBasedTaskScheduler : TaskScheduler, IOrleansTaskScheduler { 
         #region Private
 
         #region Global Schedulings
@@ -24,19 +24,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
         private static TimeSpan TurnWarningLengthThreshold { get; set; }
         #endregion
 
-        #region Tenancies
-
-        private readonly Dictionary<short, Tuple<ulong, HashSet<ulong>>> tenants;
-        private readonly Dictionary<short, long> timeLimitsOnTenants;
-        private readonly Dictionary<WorkItemGroup, FixedSizedQueue<double>> tenantStatCounters;
-        private const int MaximumStatCounterSize = 100;
-        // TODO: FIX LATER
-        private int statCollectionCounter = 100;
-        #endregion
         #endregion
 
         #region IPriorityBasedTaskScheduler
 
+        public ISchedulingStrategy SchedulingStrategy { get; set; }
         public IWorkQueue RunQueue { get; private set; }
         public WorkerPool Pool { get; private set; }
         // This is the maximum number of pending work items for a single activation before we write a warning log.
@@ -68,10 +60,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
                     config.TurnWarningLengthThreshold, config.EnableWorkerThreadInjection, config.LimitManager.GetLimit(LimitNames.LIMIT_MAX_PENDING_ITEMS),
                     performanceMetrics)
         {
-            // Tenancies
-            tenants = new Dictionary<short, Tuple<ulong, HashSet<ulong>>>();
-            timeLimitsOnTenants = new Dictionary<short, long>();
-            tenantStatCounters = new Dictionary<WorkItemGroup, FixedSizedQueue<double>>();
+
         }
 
         private PriorityBasedTaskScheduler(int maxActiveThreads, TimeSpan delayWarningThreshold, TimeSpan activationSchedulingQuantum,
@@ -103,6 +92,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
         #region IOrleansTaskScheduler
         public void Start()
         {
+            SchedulingStrategy.Scheduler = this;
+            SchedulingStrategy.Initialization();
             Pool.Start();
         }
 
@@ -171,24 +162,18 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             }
             else
             {
-                // Create Task wrapper for this work item
                 var priorityContext = new PriorityContext
                 {
-                    Priority = workItem.PriorityContext,
+                    Priority = (double)SchedulingStrategy.GetPriority(workItem),
                     Context = context,
                     SourceActivation = workItem.SourceActivation
                 };
                 var t = TaskSchedulerUtils.WrapWorkItemWithPriorityAsTask(workItem, priorityContext, workItemGroup.TaskRunner);
                 t.Start(workItemGroup.TaskRunner);
             }
-
+                
             //TODO: FIX LATER
-            if (--statCollectionCounter <= 0)
-            {
-                statCollectionCounter = 100;
-                foreach (var kv in tenantStatCounters) tenantStatCounters[kv.Key].Enqueue(kv.Key.CollectStats());
-                logger.Info($"Printing execution times in ticks: {string.Join("********************",tenantStatCounters.Select(x=>x.Key.ToString()+':' + String.Join(",", x.Value)))}");
-            }
+            SchedulingStrategy.OnWorkItemInsert(workItem, workItemGroup);
         }
 
         public void QueueControllerWorkItem(IWorkItem workItem, ISchedulingContext context)
@@ -207,33 +192,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
                 throw new InvalidOperationException(error);
             }
 #endif
-            // Populate Topology info
-            var controllerContext = ((InvokeWorkItem)workItem).ControllerContext;
-
-            ulong controllerId = ((InvokeWorkItem)workItem).SourceActivation.Grain.Key.N1;
-            var schedulingContext = context as SchedulingContext;
-            if (tenants.ContainsKey(controllerContext.AppId))
-            {
-                tenants[controllerContext.AppId].Item2.Add(schedulingContext.Activation.Grain.Key.N1);
-            }
-            else
-            {
-                // Initialize entries in *ALL* per-dataflow maps
-                tenants.Add(controllerContext.AppId, new Tuple<ulong, HashSet<ulong>>(controllerId, new HashSet<ulong>()));
-                timeLimitsOnTenants.Add(controllerContext.AppId, controllerContext.Time);
-
-                tenants[controllerContext.AppId].Item2.Add(schedulingContext.Activation.Grain.Key.N1);
-            }
-            var wig = GetWorkItemGroup(schedulingContext);
-            if (wig==null)
-            {
-                var error = string.Format(
-                    "WorkItem {0} on context {1} does not match a work item group", workItem, context);
-                logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
-                throw new InvalidOperationException(error);
-            }
-            if (!tenantStatCounters.ContainsKey(wig)) tenantStatCounters.Add(wig, new FixedSizedQueue<double>(MaximumStatCounterSize));
-            
+            SchedulingStrategy.OnReceivingControllerInstructions(workItem, context);
             QueueWorkItem(workItem, context);
         }
 

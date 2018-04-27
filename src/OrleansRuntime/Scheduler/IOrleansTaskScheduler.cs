@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Orleans.Runtime.Configuration;
+using Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies;
 
 namespace Orleans.Runtime.Scheduler
 {
     internal interface IOrleansTaskScheduler : ITaskScheduler, IHealthCheckParticipant
     {
+        ISchedulingStrategy SchedulingStrategy { get; set; }
         IWorkQueue RunQueue { get; }
         WorkerPool Pool { get; }
         LimitValue MaxPendingItemsLimit { get; }

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Orleans.Runtime.Configuration;
+using Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 {
@@ -21,6 +22,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 
         #region IOrleansTaskScheduler
 
+        public ISchedulingStrategy SchedulingStrategy { get; set; }
         public IWorkQueue RunQueue { get; private set; }
         public WorkerPool Pool { get; private set; }
         // This is the maximum number of pending work items for a single activation before we write a warning log.
