@@ -5,7 +5,7 @@ using Orleans.Runtime.Scheduler.Utility;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
-    internal class DefaultSchedulingStrategy : ISchedulingStrategy
+    internal class TestSchedulingStrategy : ISchedulingStrategy
     {
         private const double DEFAULT_PRIORITY = 0.0;
         private const int DEFAULT_TASK_QUANTUM_MILLIS = 100;

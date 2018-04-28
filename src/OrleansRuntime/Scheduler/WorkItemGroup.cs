@@ -25,7 +25,8 @@ namespace Orleans.Runtime.Scheduler
         private readonly IOrleansTaskScheduler masterScheduler;
         private WorkGroupStatus state;
         private readonly Object lockable;
-        private readonly Queue<Task> workItems;
+        // private readonly Queue<Task> workItems;
+        private readonly SortedDictionary<double, Queue<Task>> workItemDictionary;
 
         private long totalItemsEnQueued;    // equals total items queued, + 1
         private long totalItemsProcessed;
@@ -34,6 +35,7 @@ namespace Orleans.Runtime.Scheduler
         private readonly long quantumExpirations;
         private readonly int workItemGroupStatisticsNumber;
         private Dictionary<ActivationAddress, FixedSizedQueue<long>> execTimeCounters;
+
         internal ActivationTaskScheduler TaskRunner { get; private set; }
         
         public DateTime TimeQueued { get; set; }
@@ -67,7 +69,8 @@ namespace Orleans.Runtime.Scheduler
 
         private int WorkItemCount
         {
-            get { return workItems.Count; } 
+            //get { return workItems.Count; }
+            get { return workItemDictionary.Values.Select(x => x.Count).Sum(); }      
         }
 
         internal float AverageQueueLenght
@@ -138,7 +141,8 @@ namespace Orleans.Runtime.Scheduler
             masterScheduler = sched;
             SchedulingContext = schedulingContext;
             state = WorkGroupStatus.Waiting;
-            workItems = new Queue<Task>();
+            // workItems = new Queue<Task>();
+            workItemDictionary = new SortedDictionary<double, Queue<Task>>();
             lockable = new Object();
             totalItemsEnQueued = 0;
             totalItemsProcessed = 0;
@@ -146,6 +150,7 @@ namespace Orleans.Runtime.Scheduler
             quantumExpirations = 0;
             TaskRunner = new ActivationTaskScheduler(this);
             execTimeCounters = new Dictionary<ActivationAddress, FixedSizedQueue<long>>();
+            workItemDictionary[0.0] = new Queue<Task>();
             log = IsSystemPriority ? LogManager.GetLogger("Scheduler." + Name + ".WorkItemGroup", LoggerType.Runtime) : appLogger;
 
             if (StatisticsCollector.CollectShedulerQueuesStats)
@@ -166,7 +171,8 @@ namespace Orleans.Runtime.Scheduler
                             sb.Append("QueueLength = " + WorkItemCount);
                             sb.Append(String.Format(", State = {0}", state));
                             if (state == WorkGroupStatus.Runnable)
-                                sb.Append(String.Format("; oldest item is {0} old", workItems.Count >= 0 ? workItems.Peek().ToString() : "null"));
+                                sb.Append(String.Format("; oldest item is {0} old", workItemDictionary.Values.Select(x => x.Count).Sum() >= 0 ? workItemDictionary[workItemDictionary.Keys.First()].Peek().ToString() : "null"));
+                                //sb.Append(String.Format("; oldest item is {0} old", workItems.Count >= 0 ? workItems.Peek().ToString() : "null"));  
                         }
                         return sb.ToString();
                     });
@@ -206,7 +212,20 @@ namespace Orleans.Runtime.Scheduler
                 if (StatisticsCollector.CollectGlobalShedulerStats)
                     SchedulerStatisticsGroup.OnWorkItemEnqueue();
 #endif
-                workItems.Enqueue(task);
+                // workItems.Enqueue(task);
+                var contextObj = task.AsyncState as PriorityContext;
+                // var priority = contextObj?.Priority ?? CurrentPriority.Peek();
+                var priority = workItemDictionary.Keys.First();
+                if (contextObj != null)
+                {
+                    // TODO: FIX LATER
+                    priority = contextObj.Priority == 0.0 ? PriorityContext : contextObj.Priority;
+                }
+                if (!workItemDictionary.ContainsKey(priority))
+                {
+                    workItemDictionary.Add(priority, new Queue<Task>());
+                }
+                workItemDictionary[priority].Enqueue(task);
 #if DEBUG
                 if (log.IsVerbose3) log.Verbose3("Add to RunQueue {0}, #{1}, onto {2}", task, thisSequenceNumber, SchedulingContext);
 #endif
@@ -219,10 +238,10 @@ namespace Orleans.Runtime.Scheduler
                     log.Warn(ErrorCode.SchedulerTooManyPendingItems, String.Format("{0} pending work items for group {1}, exceeding the warning threshold of {2}",
                         count, Name, maxPendingItemsLimit));
                 }
-                var contextObj = task.AsyncState as PriorityContext;
-                if (PriorityContext < (contextObj?.Priority ?? 0.0))
+                
+                if (PriorityContext < priority)
                 {
-                    PriorityContext = contextObj?.Priority ?? 0.0;
+                    PriorityContext = priority;
 #if PQ_DEBUG
                     log.Info("Changing WIG {0} priority to : {1} with context {2}", this, PriorityContext, contextObj);
 #endif
@@ -273,12 +292,17 @@ namespace Orleans.Runtime.Scheduler
                 if (StatisticsCollector.CollectShedulerQueuesStats)
                     queueTracking.OnStopExecution();
 
-                foreach (Task task in workItems)
+                foreach (var kv in workItemDictionary)
                 {
-                    // Ignore all queued Tasks, so in case they are faulted they will not cause UnobservedException.
-                    task.Ignore();
+                    foreach (Task task in kv.Value)
+                    {
+                        // Ignore all queued Tasks, so in case they are faulted they will not cause UnobservedException.
+                        task.Ignore();
+                    }
+                    workItemDictionary[kv.Key].Clear();
+                    workItemDictionary.Remove(kv.Key);
                 }
-                workItems.Clear();
+                
             }
         }
         #region IWorkItem Members
@@ -357,11 +381,28 @@ namespace Orleans.Runtime.Scheduler
                         }
                         log.Info("Dumping Status From Execute before execution: {0}", b);
 #endif
+                        /*
                         if (workItems.Count > 0)
                             task = workItems.Dequeue();
                         else// If the list is empty, then we're done
                             break;
+                            */
+
+                        // TODO: workItemDictionary with count>0
+                        // var queue = workItemDictionary[CurrentPriority.Peek()];
+                        var queue = workItemDictionary.First().Value;
+                        if (queue.Count > 0)
+                        {
+                            task = queue.Dequeue();
+                        }
+                        else
+                        {
+                            // finish current priority, break and take wig off the queue
+                            workItemDictionary.Remove(workItemDictionary.Keys.First());
+                            break;
+                        }
                     }
+
 
 #if TRACK_DETAILED_STATS
                     if (StatisticsCollector.CollectGlobalShedulerStats)

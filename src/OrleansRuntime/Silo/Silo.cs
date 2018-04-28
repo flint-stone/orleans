@@ -241,8 +241,8 @@ namespace Orleans.Runtime
             // services.AddFromExisting<IOrleansTaskScheduler, OrleansTaskScheduler>();
             services.AddSingleton<PriorityBasedTaskScheduler>();
             services.AddFromExisting<IOrleansTaskScheduler, PriorityBasedTaskScheduler>();
-            services.AddSingleton<DefaultSchedulingStrategy>();
-            services.AddFromExisting<ISchedulingStrategy, DefaultSchedulingStrategy>();
+            services.AddSingleton<TestSchedulingStrategy>();
+            services.AddFromExisting<ISchedulingStrategy, TestSchedulingStrategy>();
             services.AddSingleton<GrainFactory>(sp => sp.GetService<InsideRuntimeClient>().ConcreteGrainFactory);
             services.AddFromExisting<IGrainFactory, GrainFactory>();
             services.AddFromExisting<IInternalGrainFactory, GrainFactory>();
