@@ -201,7 +201,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
         {
             if (context == null) return null;
 
-            var wg = new WorkItemGroup(this, context);
+            var wg = new WorkItemGroup(this, context, SchedulingStrategy);
+            wg.SchedulingStrategy = SchedulingStrategy;
             workgroupDirectory.TryAdd(context, wg);
             return wg;
         }

@@ -1,9 +1,11 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies;
 using Orleans.Runtime.Scheduler.Utility;
 
 
@@ -26,7 +28,8 @@ namespace Orleans.Runtime.Scheduler
         private WorkGroupStatus state;
         private readonly Object lockable;
         // private readonly Queue<Task> workItems;
-        private readonly SortedDictionary<double, Queue<Task>> workItemDictionary;
+        // private readonly SortedDictionary<double, Queue<Task>> workItemDictionary;
+        private IEnumerable workItems;
 
         private long totalItemsEnQueued;    // equals total items queued, + 1
         private long totalItemsProcessed;
@@ -36,6 +39,8 @@ namespace Orleans.Runtime.Scheduler
         private readonly int workItemGroupStatisticsNumber;
         private Dictionary<ActivationAddress, FixedSizedQueue<long>> execTimeCounters;
 
+        internal ISchedulingStrategy SchedulingStrategy { get; set; }
+        
         internal ActivationTaskScheduler TaskRunner { get; private set; }
         
         public DateTime TimeQueued { get; set; }
@@ -70,7 +75,8 @@ namespace Orleans.Runtime.Scheduler
         private int WorkItemCount
         {
             //get { return workItems.Count; }
-            get { return workItemDictionary.Values.Select(x => x.Count).Sum(); }      
+            // get { return workItemDictionary.Values.Select(x => x.Count).Sum(); }     
+            get { return SchedulingStrategy.CountWIGTasks(workItems); }
         }
 
         internal float AverageQueueLenght
@@ -136,13 +142,15 @@ namespace Orleans.Runtime.Scheduler
         //private static readonly int MaxWaitingThreads = 500;
         private const int CounterQueueSize = 30;
 
-        internal WorkItemGroup(IOrleansTaskScheduler sched, ISchedulingContext schedulingContext)
+        internal WorkItemGroup(IOrleansTaskScheduler sched, ISchedulingContext schedulingContext, ISchedulingStrategy schedulingStrategy = null)
         {
             masterScheduler = sched;
             SchedulingContext = schedulingContext;
             state = WorkGroupStatus.Waiting;
+            SchedulingStrategy = schedulingStrategy;
+            workItems = SchedulingStrategy.CreateWorkItemQueue();
             // workItems = new Queue<Task>();
-            workItemDictionary = new SortedDictionary<double, Queue<Task>>();
+            // workItemDictionary = new SortedDictionary<double, Queue<Task>>();
             lockable = new Object();
             totalItemsEnQueued = 0;
             totalItemsProcessed = 0;
@@ -150,7 +158,7 @@ namespace Orleans.Runtime.Scheduler
             quantumExpirations = 0;
             TaskRunner = new ActivationTaskScheduler(this);
             execTimeCounters = new Dictionary<ActivationAddress, FixedSizedQueue<long>>();
-            workItemDictionary[0.0] = new Queue<Task>();
+            // workItemDictionary[0.0] = new Queue<Task>();
             log = IsSystemPriority ? LogManager.GetLogger("Scheduler." + Name + ".WorkItemGroup", LoggerType.Runtime) : appLogger;
 
             if (StatisticsCollector.CollectShedulerQueuesStats)
@@ -171,8 +179,9 @@ namespace Orleans.Runtime.Scheduler
                             sb.Append("QueueLength = " + WorkItemCount);
                             sb.Append(String.Format(", State = {0}", state));
                             if (state == WorkGroupStatus.Runnable)
-                                sb.Append(String.Format("; oldest item is {0} old", workItemDictionary.Values.Select(x => x.Count).Sum() >= 0 ? workItemDictionary[workItemDictionary.Keys.First()].Peek().ToString() : "null"));
-                                //sb.Append(String.Format("; oldest item is {0} old", workItems.Count >= 0 ? workItems.Peek().ToString() : "null"));  
+                                sb.Append(String.Format("; oldest item is {0} old", SchedulingStrategy.GetOldestTask(workItems)!=null? SchedulingStrategy.GetOldestTask(workItems).ToString(): "null"));
+                            // sb.Append(String.Format("; oldest item is {0} old", workItemDictionary.Values.Select(x => x.Count).Sum() >= 0 ? workItemDictionary[workItemDictionary.Keys.First()].Peek().ToString() : "null"));
+                            //sb.Append(String.Format("; oldest item is {0} old", workItems.Count >= 0 ? workItems.Peek().ToString() : "null"));  
                         }
                         return sb.ToString();
                     });
@@ -212,9 +221,11 @@ namespace Orleans.Runtime.Scheduler
                 if (StatisticsCollector.CollectGlobalShedulerStats)
                     SchedulerStatisticsGroup.OnWorkItemEnqueue();
 #endif
+                SchedulingStrategy.AddToWorkItemQueue(task, workItems, this);
                 // workItems.Enqueue(task);
-                var contextObj = task.AsyncState as PriorityContext;
+                // var contextObj = task.AsyncState as PriorityContext;
                 // var priority = contextObj?.Priority ?? CurrentPriority.Peek();
+                /*
                 var priority = workItemDictionary.Keys.First();
                 if (contextObj != null)
                 {
@@ -225,7 +236,7 @@ namespace Orleans.Runtime.Scheduler
                 {
                     workItemDictionary.Add(priority, new Queue<Task>());
                 }
-                workItemDictionary[priority].Enqueue(task);
+                workItemDictionary[priority].Enqueue(task);*/
 #if DEBUG
                 if (log.IsVerbose3) log.Verbose3("Add to RunQueue {0}, #{1}, onto {2}", task, thisSequenceNumber, SchedulingContext);
 #endif
@@ -239,6 +250,7 @@ namespace Orleans.Runtime.Scheduler
                         count, Name, maxPendingItemsLimit));
                 }
                 
+                /*
                 if (PriorityContext < priority)
                 {
                     PriorityContext = priority;
@@ -246,7 +258,9 @@ namespace Orleans.Runtime.Scheduler
                     log.Info("Changing WIG {0} priority to : {1} with context {2}", this, PriorityContext, contextObj);
 #endif
                 }
+                */
 
+                SchedulingStrategy.OnAddWIGToRunQueue(task, this);
                 if (state != WorkGroupStatus.Waiting) return;
 
                 state = WorkGroupStatus.Runnable;
@@ -292,6 +306,7 @@ namespace Orleans.Runtime.Scheduler
                 if (StatisticsCollector.CollectShedulerQueuesStats)
                     queueTracking.OnStopExecution();
 
+                /*
                 foreach (var kv in workItemDictionary)
                 {
                     foreach (Task task in kv.Value)
@@ -302,7 +317,8 @@ namespace Orleans.Runtime.Scheduler
                     workItemDictionary[kv.Key].Clear();
                     workItemDictionary.Remove(kv.Key);
                 }
-                
+                */
+                SchedulingStrategy.OnClosingWIG(workItems);
             }
         }
         #region IWorkItem Members
@@ -390,6 +406,8 @@ namespace Orleans.Runtime.Scheduler
 
                         // TODO: workItemDictionary with count>0
                         // var queue = workItemDictionary[CurrentPriority.Peek()];
+
+                        /*
                         var queue = workItemDictionary.First().Value;
                         if (queue.Count > 0)
                         {
@@ -400,7 +418,10 @@ namespace Orleans.Runtime.Scheduler
                             // finish current priority, break and take wig off the queue
                             workItemDictionary.Remove(workItemDictionary.Keys.First());
                             break;
-                        }
+                        }*/
+
+                        task = SchedulingStrategy.GetNextTaskForExecution(workItems);
+                        if (task == null) break;
                     }
 
 
@@ -581,4 +602,5 @@ namespace Orleans.Runtime.Scheduler
         }
     }
 }
+
 

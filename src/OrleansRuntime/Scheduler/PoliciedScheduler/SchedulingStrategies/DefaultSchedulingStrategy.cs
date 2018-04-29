@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ using Orleans.Runtime.Scheduler.Utility;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
-    internal class TestSchedulingStrategy : ISchedulingStrategy
+    internal class DefaultSchedulingStrategy : ISchedulingStrategy
     {
         private const double DEFAULT_PRIORITY = 0.0;
         private const int DEFAULT_TASK_QUANTUM_MILLIS = 100;
@@ -24,11 +25,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private const int MaximumStatCounterSize = 100;
         // TODO: FIX LATER
         private int statCollectionCounter = 100;
-        
+
         #endregion
 
         public IOrleansTaskScheduler Scheduler { get; set; }
-        
+
         #region IOrleansTaskScheduler
         public void CollectStatistics()
         {
@@ -37,7 +38,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public IComparable GetPriority(IWorkItem workItem)
         {
-            if (Scheduler.GetWorkItemGroup(workItem.SchedulingContext)!=null ) return workItem.PriorityContext;
+            if (Scheduler.GetWorkItemGroup(workItem.SchedulingContext) != null) return workItem.PriorityContext;
             return DEFAULT_PRIORITY;
         }
 
@@ -58,20 +59,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             tenantStatCounters = new Dictionary<WorkItemGroup, FixedSizedQueue<double>>();
         }
 
-        public void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig)
-        {
-            // Do the math
-            if (--statCollectionCounter <= 0)
-            {
-                statCollectionCounter = 100;
-                foreach (var kv in tenantStatCounters) tenantStatCounters[kv.Key].Enqueue(kv.Key.CollectStats());
-                logger.Info($"Printing execution times in ticks: {string.Join("********************", tenantStatCounters.Select(x => x.Key.ToString() + ':' + String.Join(",", x.Value)))}");
-            }
-
-            // Change quantum if required
-            // Or insert signal item for priority change?
-            // if()
-        }
+        public void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig) { }
 
         public void OnReceivingControllerInstructions(IWorkItem workItem, ISchedulingContext context)
         {
@@ -104,27 +92,17 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         }
         #endregion
 
-        #region WorkItemGroup
+        #region WorkItemGroup 
+        // Concurrent execution starts beflow
+
         public IEnumerable CreateWorkItemQueue()
         {
-            return new SortedDictionary<double, Queue<Task>>();
+            return new Queue<Task>();
         }
 
         public void AddToWorkItemQueue(Task task, IEnumerable workItems, WorkItemGroup wig)
         {
-            var workItemDictionary = workItems as SortedDictionary<double, Queue<Task>>;
-            var priority = workItemDictionary.Keys.First();
-            var contextObj = task.AsyncState as PriorityContext;
-            if (contextObj != null)
-            {
-                // TODO: FIX LATER
-                priority = contextObj.Priority == 0.0 ? wig.PriorityContext : contextObj.Priority;
-            }
-            if (!workItemDictionary.ContainsKey(priority))
-            {
-                workItemDictionary.Add(priority, new Queue<Task>());
-            }
-            workItemDictionary[priority].Enqueue(task);
+            ((Queue<Task>) workItems).Enqueue(task);
         }
 
         public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
@@ -139,47 +117,27 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void OnClosingWIG(IEnumerable workItems)
         {
-            var workItemDictionary = workItems as SortedDictionary<double, Queue<Task>>;
-            foreach (var kv in workItemDictionary)
-            {
-                foreach (Task task in kv.Value)
-                {
-                    // Ignore all queued Tasks, so in case they are faulted they will not cause UnobservedException.
-                    task.Ignore();
-                }
-                workItemDictionary[kv.Key].Clear();
-                workItemDictionary.Remove(kv.Key);
-            }
+            foreach(var workItem in (Queue<Task>)workItems) workItem.Ignore();
+            ((Queue<Task>)workItems).Clear();
         }
 
         public Task GetNextTaskForExecution(IEnumerable workItems)
         {
-            var workItemDictionary = workItems as SortedDictionary<double, Queue<Task>>;
-
-            var queue = workItemDictionary.First().Value;
-            if (queue.Count > 0)
-            {
-                return queue.Dequeue();
-            }
-           
-            // finish current priority, break and take wig off the queue
-            workItemDictionary.Remove(workItemDictionary.Keys.First());
-            return null;     
+            if (!((Queue<Task>)workItems).Any()) return null;
+            return ((Queue<Task>) workItems).Dequeue();
         }
 
         public int CountWIGTasks(IEnumerable workItems)
         {
-            return ((SortedDictionary<double, Queue<Task>>)workItems).Values.Select(x => x.Count).Sum();
+            return ((Queue<Task>)workItems).Count();
         }
 
         public Task GetOldestTask(IEnumerable workItems)
         {
-            var workItemDictionary = workItems as SortedDictionary<double, Queue<Task>>;
-            return workItemDictionary.Values.Select(x => x.Count).Sum() >= 0
-                ? workItemDictionary[workItemDictionary.Keys.First()].Peek()
-                : null;
+            return ((Queue<Task>)workItems).Any()? ((Queue<Task>)workItems).Peek():null;
         }
 
         #endregion
+
     }
 }
