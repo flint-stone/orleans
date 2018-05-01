@@ -831,7 +831,7 @@ namespace Orleans.Runtime
 
         public override string ToString()
         {
-#if PQ_DEBUG
+#if DEBUG
             return String.Format("[Activation: {0}{1}{2}{3} {4} State={5}]",
                  Silo,
                  Grain,
@@ -869,10 +869,10 @@ namespace Orleans.Runtime
         }
 
         public string Name
-        {
+        {                  
             get
             {
-#if PQ_DEBUG
+#if DEBUG
                 return String.Format("[Activation: {0}{1}{2}{3} {4}]",
                      Silo,
                      Grain,

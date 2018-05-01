@@ -29,6 +29,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         Task GetNextTaskForExecution(IEnumerable workItems);
         int CountWIGTasks(IEnumerable workItems);
         Task GetOldestTask(IEnumerable workItems);
+        String GetWorkItemQueueStatus(IEnumerable workItems);
         #endregion
 
     }

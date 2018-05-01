@@ -61,13 +61,14 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig)
         {
             // Do the math
+            /*
             if (--statCollectionCounter <= 0)
             {
                 statCollectionCounter = 100;
                 foreach (var kv in tenantStatCounters) tenantStatCounters[kv.Key].Enqueue(kv.Key.CollectStats());
                 logger.Info($"Printing execution times in ticks: {string.Join("********************", tenantStatCounters.Select(x => x.Key.ToString() + ':' + String.Join(",", x.Value)))}");
             }
-
+            */
             // Change quantum if required
             // Or insert signal item for priority change?
             // if()
@@ -107,13 +108,15 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         #region WorkItemGroup
         public IEnumerable CreateWorkItemQueue()
         {
-            return new SortedDictionary<double, Queue<Task>>();
+            var workItemDictionary = new SortedDictionary<double, Queue<Task>>();
+            workItemDictionary[0.0] = new Queue<Task>();
+            return workItemDictionary;
         }
 
         public void AddToWorkItemQueue(Task task, IEnumerable workItems, WorkItemGroup wig)
         {
             var workItemDictionary = workItems as SortedDictionary<double, Queue<Task>>;
-            var priority = workItemDictionary.Keys.First();
+            var priority = workItemDictionary.Count>0?workItemDictionary.Keys.First():0.0;
             var contextObj = task.AsyncState as PriorityContext;
             if (contextObj != null)
             {
@@ -178,6 +181,20 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return workItemDictionary.Values.Select(x => x.Count).Sum() >= 0
                 ? workItemDictionary[workItemDictionary.Keys.First()].Peek()
                 : null;
+        }
+
+        public string GetWorkItemQueueStatus(IEnumerable workItems)
+        {
+            return string.Join("|||",
+                ((SortedDictionary<double, Queue<Task>>)workItems).Select(x =>
+                    x.Key + ":" + string.Join(",",
+                        x.Value.Select(y =>
+                            {
+                                var contextObj = y.AsyncState as PriorityContext;
+                                return "<" + y.ToString() + "-" +
+                                       (contextObj?.Priority.ToString() ?? "null") + ">";
+                            }
+                        ))));
         }
 
         #endregion

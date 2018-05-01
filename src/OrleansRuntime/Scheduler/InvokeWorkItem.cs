@@ -53,7 +53,7 @@ namespace Orleans.Runtime.Scheduler
             {
                 var grain = activation.GrainInstance;
                 var runtimeClient = (ISiloRuntimeClient)grain.GrainReference.RuntimeClient;
-                logger.Info($"Invoke: {message}");
+                // logger.Info($"Invoke: {message}");
                 Task task = runtimeClient.Invoke(grain, this.activation, this.message);
                 task.ContinueWith(t =>
                 {
@@ -78,15 +78,15 @@ namespace Orleans.Runtime.Scheduler
             {
                 var grain = activation.GrainInstance;
                 var runtimeClient = (ISiloRuntimeClient)grain.GrainReference.RuntimeClient;
-                logger.Info($"Invoke: {message}");
+                //logger.Info($"Invoke: {message}");
                 Task task = runtimeClient.Invoke(grain, this.activation, this.message);
                 task.ContinueWith(delegate
                 {
-                    logger.Info($"InvokeWithContinuation: {message}");
+                    //logger.Info($"InvokeWithContinuation: {message}");
                     // Note: This runs for all outcomes of resultPromiseTask - both Success or Fault
                     activation.DecrementInFlightCount();
                     this.dispatcher.OnActivationCompletedRequest(activation, message);
-                    logger.Info($"Complete Request: {message} on activation {activation}");
+                    //logger.Info($"Complete Request: {message} on activation {activation}");
                 }, context).Ignore();
             }
             catch (Exception exc)

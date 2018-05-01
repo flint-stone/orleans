@@ -249,6 +249,8 @@ namespace Orleans.Runtime.Scheduler
                     log.Warn(ErrorCode.SchedulerTooManyPendingItems, String.Format("{0} pending work items for group {1}, exceeding the warning threshold of {2}",
                         count, Name, maxPendingItemsLimit));
                 }
+
+                
                 
                 /*
                 if (PriorityContext < priority)
@@ -271,6 +273,11 @@ namespace Orleans.Runtime.Scheduler
                 log.Info("RunQueue Contents: {0}", sb.ToString());
 #endif
             }
+//            if (totalItemsEnQueued / 100 == 0)
+//            {
+//                log.Info("Dumping Status From EnqueueTask: {0}", DumpStatus());
+//            }
+
         }
 
         /// <summary>
@@ -421,7 +428,11 @@ namespace Orleans.Runtime.Scheduler
                         }*/
 
                         task = SchedulingStrategy.GetNextTaskForExecution(workItems);
-                        if (task == null) break;
+                        if (task == null)
+                        {
+                            // log.Info("433 Dumping Status From Execute after executing {0} tasks {1}", count, PriorityContext);
+                            break;
+                        }
                     }
 
 
@@ -439,7 +450,7 @@ namespace Orleans.Runtime.Scheduler
                     if (log.IsVerbose2) log.Verbose2("About to execute task {0} in SchedulingContext={1}", task, SchedulingContext);
 #endif
                     var asyncState = task.AsyncState as PriorityContext;
-                    log.Info($"About to execute task {task}:{task.Id}:{asyncState}  in SchedulingContext={SchedulingContext.DetailedStatus()}");
+                    // log.Info($"About to execute task {task}:{task.Id}:{asyncState}  in SchedulingContext={SchedulingContext.DetailedStatus()}");
                     var taskStart = stopwatch.Elapsed;
 
                     try
@@ -487,12 +498,13 @@ namespace Orleans.Runtime.Scheduler
                 }
                 while (((MaxWorkItemsPerTurn <= 0) || (count <= MaxWorkItemsPerTurn)) &&
                     ((ActivationSchedulingQuantum <= TimeSpan.Zero) || (stopwatch.Elapsed < ActivationSchedulingQuantum)));
-                stopwatch.Stop();
+                
 #if PQ_DEBUG
                 log.Info("Dumping Status From Execute after executing {0} items: {1}:{2}", count, DumpStatus(), PriorityContext);
                 log.Info("Dumping Execution time counters From Execute: {0}", string.Join("|", execTimeCounters.Select(x => x.Key.ToString() + x.Value.ToString())));
 #endif
-
+                // log.Info("506 Dumping Status From Execute after executing {0} tasks {1}:{2} with {3} millis", count, SchedulingContext, PriorityContext, stopwatch.Elapsed);
+                stopwatch.Stop();
             }
             catch (Exception ex)
             {
@@ -571,13 +583,15 @@ namespace Orleans.Runtime.Scheduler
                     sb.AppendFormat("Detailed SchedulingContext=<{0}>", SchedulingContext.DetailedStatus());
                 }
 
-#if PQ_DEBUG
-                foreach (var task in workItems)
-                {
-                    var contextObj = task.AsyncState as PriorityContext;
-                    var priority = contextObj?.Priority ?? 0.0;
-                    sb.Append(task + ":" + priority);
-                }
+#if DEBUG
+                //                foreach (var task in workItems)
+                //                {
+                //                    var contextObj = task.AsyncState as PriorityContext;
+                //                    var priority = contextObj?.Priority ?? 0.0;
+                //                    sb.Append(task + ":" + priority);
+                //                }
+                
+                sb.Append(SchedulingStrategy.GetWorkItemQueueStatus(workItems));
 #endif
                 return sb.ToString();
             }

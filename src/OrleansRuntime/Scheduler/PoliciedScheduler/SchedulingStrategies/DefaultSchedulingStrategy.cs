@@ -88,7 +88,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
                 throw new InvalidOperationException(error);
             }
-            if (!tenantStatCounters.ContainsKey(wig)) tenantStatCounters.Add(wig, new FixedSizedQueue<double>(MaximumStatCounterSize));
+            if (!tenantStatCounters.ContainsKey(wig))
+            {
+                tenantStatCounters.Add(wig, new FixedSizedQueue<double>(MaximumStatCounterSize));
+            }
         }
         #endregion
 
@@ -135,6 +138,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public Task GetOldestTask(IEnumerable workItems)
         {
             return ((Queue<Task>)workItems).Any()? ((Queue<Task>)workItems).Peek():null;
+        }
+
+        public string GetWorkItemQueueStatus(IEnumerable workItems)
+        {
+            return string.Join(",", (Queue<Task>) workItems);
         }
 
         #endregion
