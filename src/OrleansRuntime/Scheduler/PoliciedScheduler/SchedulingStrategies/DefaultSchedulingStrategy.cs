@@ -93,10 +93,18 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 tenantStatCounters.Add(wig, new FixedSizedQueue<double>(MaximumStatCounterSize));
             }
         }
-        #endregion
 
+        public WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context)
+        {
+            var wig = new WorkItemGroup(ots, context);
+            wig.WorkItemManager = new DefaultWorkItemManager();
+            return wig;
+        }
+
+        #endregion
+    /*
         #region WorkItemGroup 
-        // Concurrent execution starts beflow
+        // Concurrent execution starts below
 
         public IEnumerable CreateWorkItemQueue()
         {
@@ -146,6 +154,61 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         }
 
         #endregion
+        */
+    }
 
+    internal class DefaultWorkItemManager : IWorkItemManager
+     {
+        private Queue<Task> workItems { get; set; }
+        public DefaultWorkItemManager()
+        {
+            workItems = new Queue<Task>();
+        }
+        public IEnumerable CreateWorkItemQueue()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddToWorkItemQueue(Task task,  WorkItemGroup wig)
+        {
+            workItems.Enqueue(task);
+        }
+
+        public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
+        {
+            var contextObj = task.AsyncState as PriorityContext;
+            var priority = contextObj?.Priority ?? 0.0;
+            if (wig.PriorityContext < priority)
+            {
+                wig.PriorityContext = priority;
+            }
+        }
+
+        public void OnClosingWIG()
+        {
+            foreach (var workItem in workItems) workItem.Ignore();
+            workItems.Clear();
+        }
+
+        public Task GetNextTaskForExecution()
+        {
+            if (!workItems.Any()) return null;
+            return workItems.Dequeue();
+        }
+
+        public int CountWIGTasks()
+        {
+            return workItems.Count();
+        }
+
+        public Task GetOldestTask()
+        {
+            return workItems.Any() ? workItems.Peek() : null;
+        }
+
+        public string GetWorkItemQueueStatus()
+        {
+            return string.Join(",", workItems);
+        }
     }
 }

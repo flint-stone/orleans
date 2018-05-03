@@ -18,8 +18,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         void Initialization();
         void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig);
         void OnReceivingControllerInstructions(IWorkItem workItem, ISchedulingContext context);
+        WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context);
         #endregion
 
+        /*
         #region WorkItemGroup
 
         IEnumerable CreateWorkItemQueue();
@@ -31,6 +33,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         Task GetOldestTask(IEnumerable workItems);
         String GetWorkItemQueueStatus(IEnumerable workItems);
         #endregion
+    */
 
     }
 }

@@ -103,8 +103,17 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
             if (!tenantStatCounters.ContainsKey(wig)) tenantStatCounters.Add(wig, new FixedSizedQueue<double>(MaximumStatCounterSize));
         }
+
+        public WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context)
+        {
+            var wig = new WorkItemGroup(ots, context);
+            wig.WorkItemManager = new TestWorkItemManager();
+            return wig;
+        }
+
         #endregion
 
+        /*
         #region WorkItemGroup
         public IEnumerable CreateWorkItemQueue()
         {
@@ -198,5 +207,98 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         }
 
         #endregion
+    */
+    }
+
+    internal class TestWorkItemManager : IWorkItemManager
+    {
+        private SortedDictionary<double, Queue<Task>> workItems;
+        public TestWorkItemManager()
+        {
+            workItems = new SortedDictionary<double, Queue<Task>>();
+        }
+        public IEnumerable CreateWorkItemQueue()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddToWorkItemQueue(Task task, WorkItemGroup wig)
+        {
+            var priority = workItems.Count > 0 ? workItems.Keys.First() : 0.0;
+            var contextObj = task.AsyncState as PriorityContext;
+            if (contextObj != null)
+            {
+                // TODO: FIX LATER
+                priority = contextObj.Priority == 0.0 ? wig.PriorityContext : contextObj.Priority;
+            }
+            if (!workItems.ContainsKey(priority))
+            {
+                workItems.Add(priority, new Queue<Task>());
+            }
+            workItems[priority].Enqueue(task);
+        }
+
+        public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
+        {
+            var contextObj = task.AsyncState as PriorityContext;
+            var priority = contextObj?.Priority ?? 0.0;
+            if (wig.PriorityContext < priority)
+            {
+                wig.PriorityContext = priority;
+            }
+        }
+
+        public void OnClosingWIG()
+        {
+            foreach (var kv in workItems)
+            {
+                foreach (Task task in kv.Value)
+                {
+                    // Ignore all queued Tasks, so in case they are faulted they will not cause UnobservedException.
+                    task.Ignore();
+                }
+                workItems[kv.Key].Clear();
+                workItems.Remove(kv.Key);
+            }
+        }
+
+        public Task GetNextTaskForExecution()
+        {
+            var queue = workItems.First().Value;
+            if (queue.Count > 0)
+            {
+                return queue.Dequeue();
+            }
+
+            // finish current priority, break and take wig off the queue
+            workItems.Remove(workItems.Keys.First());
+            return null;
+        }
+
+        public int CountWIGTasks()
+        {
+            return workItems.Values.Select(x => x.Count).Sum();
+        }
+
+        public Task GetOldestTask()
+        {
+            return workItems.Values.Select(x => x.Count).Sum() >= 0
+                ? workItems[workItems.Keys.First()].Peek()
+                : null;
+        }
+
+        public string GetWorkItemQueueStatus()
+        {
+            return string.Join("|||",
+                workItems.Select(x =>
+                    x.Key + ":" + string.Join(",",
+                        x.Value.Select(y =>
+                            {
+                                var contextObj = y.AsyncState as PriorityContext;
+                                return "<" + y.ToString() + "-" +
+                                       (contextObj?.Priority.ToString() ?? "null") + ">";
+                            }
+                        ))));
+        }
     }
 }
