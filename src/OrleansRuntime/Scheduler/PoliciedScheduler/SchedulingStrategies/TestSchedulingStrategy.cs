@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -28,8 +27,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         #endregion
 
         public IOrleansTaskScheduler Scheduler { get; set; }
-        
-        #region IOrleansTaskScheduler
+
+        #region ISchedulingStrategy
         public void CollectStatistics()
         {
             return;
@@ -113,101 +112,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         #endregion
 
-        /*
-        #region WorkItemGroup
-        public IEnumerable CreateWorkItemQueue()
-        {
-            var workItemDictionary = new SortedDictionary<double, Queue<Task>>();
-            workItemDictionary[0.0] = new Queue<Task>();
-            return workItemDictionary;
-        }
-
-        public void AddToWorkItemQueue(Task task, IEnumerable workItems, WorkItemGroup wig)
-        {
-            var workItemDictionary = workItems as SortedDictionary<double, Queue<Task>>;
-            var priority = workItemDictionary.Count>0?workItemDictionary.Keys.First():0.0;
-            var contextObj = task.AsyncState as PriorityContext;
-            if (contextObj != null)
-            {
-                // TODO: FIX LATER
-                priority = contextObj.Priority == 0.0 ? wig.PriorityContext : contextObj.Priority;
-            }
-            if (!workItemDictionary.ContainsKey(priority))
-            {
-                workItemDictionary.Add(priority, new Queue<Task>());
-            }
-            workItemDictionary[priority].Enqueue(task);
-        }
-
-        public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
-        {
-            var contextObj = task.AsyncState as PriorityContext;
-            var priority = contextObj?.Priority ?? 0.0;
-            if (wig.PriorityContext < priority)
-            {
-                wig.PriorityContext = priority;
-            }
-        }
-
-        public void OnClosingWIG(IEnumerable workItems)
-        {
-            var workItemDictionary = workItems as SortedDictionary<double, Queue<Task>>;
-            foreach (var kv in workItemDictionary)
-            {
-                foreach (Task task in kv.Value)
-                {
-                    // Ignore all queued Tasks, so in case they are faulted they will not cause UnobservedException.
-                    task.Ignore();
-                }
-                workItemDictionary[kv.Key].Clear();
-                workItemDictionary.Remove(kv.Key);
-            }
-        }
-
-        public Task GetNextTaskForExecution(IEnumerable workItems)
-        {
-            var workItemDictionary = workItems as SortedDictionary<double, Queue<Task>>;
-
-            var queue = workItemDictionary.First().Value;
-            if (queue.Count > 0)
-            {
-                return queue.Dequeue();
-            }
-           
-            // finish current priority, break and take wig off the queue
-            workItemDictionary.Remove(workItemDictionary.Keys.First());
-            return null;     
-        }
-
-        public int CountWIGTasks(IEnumerable workItems)
-        {
-            return ((SortedDictionary<double, Queue<Task>>)workItems).Values.Select(x => x.Count).Sum();
-        }
-
-        public Task GetOldestTask(IEnumerable workItems)
-        {
-            var workItemDictionary = workItems as SortedDictionary<double, Queue<Task>>;
-            return workItemDictionary.Values.Select(x => x.Count).Sum() >= 0
-                ? workItemDictionary[workItemDictionary.Keys.First()].Peek()
-                : null;
-        }
-
-        public string GetWorkItemQueueStatus(IEnumerable workItems)
-        {
-            return string.Join("|||",
-                ((SortedDictionary<double, Queue<Task>>)workItems).Select(x =>
-                    x.Key + ":" + string.Join(",",
-                        x.Value.Select(y =>
-                            {
-                                var contextObj = y.AsyncState as PriorityContext;
-                                return "<" + y.ToString() + "-" +
-                                       (contextObj?.Priority.ToString() ?? "null") + ">";
-                            }
-                        ))));
-        }
-
-        #endregion
-    */
     }
 
     internal class TestWorkItemManager : IWorkItemManager
@@ -216,10 +120,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public TestWorkItemManager()
         {
             workItems = new SortedDictionary<double, Queue<Task>>();
-        }
-        public IEnumerable CreateWorkItemQueue()
-        {
-            throw new NotImplementedException();
         }
 
         public void AddToWorkItemQueue(Task task, WorkItemGroup wig)

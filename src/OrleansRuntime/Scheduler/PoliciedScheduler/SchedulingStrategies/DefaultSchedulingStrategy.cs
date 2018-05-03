@@ -1,6 +1,4 @@
 ﻿using System;
-using System.CodeDom;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -30,7 +28,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public IOrleansTaskScheduler Scheduler { get; set; }
 
-        #region IOrleansTaskScheduler
+        #region ISchedulingStrategy
         public void CollectStatistics()
         {
             return;
@@ -102,59 +100,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         }
 
         #endregion
-    /*
-        #region WorkItemGroup 
-        // Concurrent execution starts below
-
-        public IEnumerable CreateWorkItemQueue()
-        {
-            return new Queue<Task>();
-        }
-
-        public void AddToWorkItemQueue(Task task, IEnumerable workItems, WorkItemGroup wig)
-        {
-            ((Queue<Task>) workItems).Enqueue(task);
-        }
-
-        public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
-        {
-            var contextObj = task.AsyncState as PriorityContext;
-            var priority = contextObj?.Priority ?? 0.0;
-            if (wig.PriorityContext < priority)
-            {
-                wig.PriorityContext = priority;
-            }
-        }
-
-        public void OnClosingWIG(IEnumerable workItems)
-        {
-            foreach(var workItem in (Queue<Task>)workItems) workItem.Ignore();
-            ((Queue<Task>)workItems).Clear();
-        }
-
-        public Task GetNextTaskForExecution(IEnumerable workItems)
-        {
-            if (!((Queue<Task>)workItems).Any()) return null;
-            return ((Queue<Task>) workItems).Dequeue();
-        }
-
-        public int CountWIGTasks(IEnumerable workItems)
-        {
-            return ((Queue<Task>)workItems).Count();
-        }
-
-        public Task GetOldestTask(IEnumerable workItems)
-        {
-            return ((Queue<Task>)workItems).Any()? ((Queue<Task>)workItems).Peek():null;
-        }
-
-        public string GetWorkItemQueueStatus(IEnumerable workItems)
-        {
-            return string.Join(",", (Queue<Task>) workItems);
-        }
-
-        #endregion
-        */
     }
 
     internal class DefaultWorkItemManager : IWorkItemManager
@@ -163,10 +108,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public DefaultWorkItemManager()
         {
             workItems = new Queue<Task>();
-        }
-        public IEnumerable CreateWorkItemQueue()
-        {
-            throw new NotImplementedException();
         }
 
         public void AddToWorkItemQueue(Task task,  WorkItemGroup wig)

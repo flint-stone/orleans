@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
@@ -20,20 +17,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         void OnReceivingControllerInstructions(IWorkItem workItem, ISchedulingContext context);
         WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context);
         #endregion
-
-        /*
-        #region WorkItemGroup
-
-        IEnumerable CreateWorkItemQueue();
-        void AddToWorkItemQueue(Task task, IEnumerable workItems, WorkItemGroup wig);
-        void OnAddWIGToRunQueue(Task task, WorkItemGroup wig);
-        void OnClosingWIG(IEnumerable workItems);
-        Task GetNextTaskForExecution(IEnumerable workItems);
-        int CountWIGTasks(IEnumerable workItems);
-        Task GetOldestTask(IEnumerable workItems);
-        String GetWorkItemQueueStatus(IEnumerable workItems);
-        #endregion
-    */
 
     }
 }
