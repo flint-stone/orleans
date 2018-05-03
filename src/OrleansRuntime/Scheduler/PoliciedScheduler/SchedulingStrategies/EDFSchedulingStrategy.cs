@@ -1,14 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Orleans.Runtime.Scheduler.Utility;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
-    internal class TestSchedulingStrategy : ISchedulingStrategy
+    internal class EDFSchedulingStrategy : ISchedulingStrategy
     {
         private const double DEFAULT_PRIORITY = 0.0;
+        private const double DEFAULT_WIG_EXEUCTION_COST = 0.0;
         private const int DEFAULT_TASK_QUANTUM_MILLIS = 100;
         private const int DEFAULT_TASK_QUANTUM_NUM_TASKS = 0;
 
@@ -19,20 +21,21 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         private Dictionary<short, Tuple<ulong, HashSet<ulong>>> tenants;
         private Dictionary<short, long> timeLimitsOnTenants;
-        private Dictionary<WorkItemGroup, FixedSizedQueue<double>> tenantStatCounters;
+        private Dictionary<WorkItemGroup, double> tenantCostEstimate;
+        private Dictionary<ActivationAddress, WorkItemGroup> addressToWIG;
         private const int MaximumStatCounterSize = 100;
         // TODO: FIX LATER
         private int statCollectionCounter = 100;
-        
+
         #endregion
 
         public IOrleansTaskScheduler Scheduler { get; set; }
 
         #region ISchedulingStrategy
-
+ 
         public IComparable GetPriority(IWorkItem workItem)
         {
-            if (Scheduler.GetWorkItemGroup(workItem.SchedulingContext)!=null ) return workItem.PriorityContext;
+            if (Scheduler.GetWorkItemGroup(workItem.SchedulingContext) != null) return workItem.PriorityContext;
             return DEFAULT_PRIORITY;
         }
 
@@ -40,20 +43,22 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             tenants = new Dictionary<short, Tuple<ulong, HashSet<ulong>>>();
             timeLimitsOnTenants = new Dictionary<short, long>();
-            tenantStatCounters = new Dictionary<WorkItemGroup, FixedSizedQueue<double>>();
+            tenantCostEstimate = new Dictionary<WorkItemGroup, double>();
+            addressToWIG = new Dictionary<ActivationAddress, WorkItemGroup>();
         }
 
         public void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig)
         {
-            // Do the math
-            /*
-            if (--statCollectionCounter <= 0)
+            
+            // Collect stat from WIGs
+            if (tenantCostEstimate.Any() && --statCollectionCounter <= 0) 
             {
                 statCollectionCounter = 100;
-                foreach (var kv in tenantStatCounters) tenantStatCounters[kv.Key].Enqueue(kv.Key.CollectStats());
-                logger.Info($"Printing execution times in ticks: {string.Join("********************", tenantStatCounters.Select(x => x.Key.ToString() + ':' + String.Join(",", x.Value)))}");
+                // TODO: fix single level counter
+                foreach (var kv in tenantCostEstimate) tenantCostEstimate[kv.Key] = kv.Key.CollectStats();
+                logger.Info($"Printing execution times in ticks: {string.Join("********************", tenantCostEstimate.Select(x => x.Key.ToString() + ':' + x.Value))}");
             }
-            */
+            
             // Change quantum if required
             // Or insert signal item for priority change?
             // if()
@@ -79,6 +84,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 tenants[controllerContext.AppId].Item2.Add(schedulingContext.Activation.Grain.Key.N1);
             }
             var wig = Scheduler.GetWorkItemGroup(schedulingContext);
+            
             if (wig == null)
             {
                 var error = string.Format(
@@ -86,13 +92,39 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
                 throw new InvalidOperationException(error);
             }
-            if (!tenantStatCounters.ContainsKey(wig)) tenantStatCounters.Add(wig, new FixedSizedQueue<double>(MaximumStatCounterSize));
+            // populate addressToWIG for fast lookup
+            if (!addressToWIG.ContainsKey(((SchedulingContext)wig.SchedulingContext).Activation.Address))
+                addressToWIG[((SchedulingContext)wig.SchedulingContext).Activation.Address] = wig;
+            if (!tenantCostEstimate.ContainsKey(wig)) tenantCostEstimate.Add(wig, DEFAULT_WIG_EXEUCTION_COST);
+            PopulateDependencyUpstream(((InvokeWorkItem) workItem).SourceActivation, wig, wig);
+        }
+
+        private void PopulateDependencyUpstream(ActivationAddress sourceActivation, WorkItemGroup wig, WorkItemGroup toAdd)
+        {
+            if (sourceActivation == null) return;
+            WorkItemGroup upstreamWig;
+            if(!addressToWIG.TryGetValue(sourceActivation, out upstreamWig))
+            {
+                var error = string.Format(
+                    "Activation Address to WIG does not return a valid wig for activation {0}", sourceActivation);
+                logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
+                throw new InvalidOperationException(error);
+            }
+            ((EDFWorkItemManager)wig.WorkItemManager).UpstreamGroups.Add(upstreamWig);
+            var paths = ((EDFWorkItemManager) upstreamWig.WorkItemManager).DownStreamPaths;
+            foreach (var path in paths)
+            {
+                var pre = path.Peek();
+                if (pre.Equals(wig)) path.Push(toAdd);
+                PopulateDependencyUpstream(((SchedulingContext)pre.SchedulingContext).Activation.Address, upstreamWig, toAdd);
+            }
+            
         }
 
         public WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context)
         {
             var wig = new WorkItemGroup(ots, context);
-            wig.WorkItemManager = new TestWorkItemManager();
+            wig.WorkItemManager = new EDFWorkItemManager();
             return wig;
         }
 
@@ -100,12 +132,17 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
     }
 
-    internal class TestWorkItemManager : IWorkItemManager
+    internal class EDFWorkItemManager : IWorkItemManager
     {
         private SortedDictionary<double, Queue<Task>> workItems;
-        public TestWorkItemManager()
+        internal  List<WorkItemGroup> UpstreamGroups { get; set; } // upstream WIGs groups for backtracking
+        internal List<Stack<WorkItemGroup>> DownStreamPaths { get; set; } // downstream WIG paths groups for calculation
+
+        public EDFWorkItemManager()
         {
             workItems = new SortedDictionary<double, Queue<Task>>();
+            UpstreamGroups = new List<WorkItemGroup>();
+            DownStreamPaths = new List<Stack<WorkItemGroup>>();
         }
 
         public void AddToWorkItemQueue(Task task, WorkItemGroup wig)
@@ -179,11 +216,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 workItems.Select(x =>
                     x.Key + ":" + string.Join(",",
                         x.Value.Select(y =>
-                            {
-                                var contextObj = y.AsyncState as PriorityContext;
-                                return "<" + y.ToString() + "-" +
-                                       (contextObj?.Priority.ToString() ?? "null") + ">";
-                            }
+                        {
+                            var contextObj = y.AsyncState as PriorityContext;
+                            return "<" + y.ToString() + "-" +
+                                   (contextObj?.Priority.ToString() ?? "null") + ">";
+                        }
                         ))));
         }
 

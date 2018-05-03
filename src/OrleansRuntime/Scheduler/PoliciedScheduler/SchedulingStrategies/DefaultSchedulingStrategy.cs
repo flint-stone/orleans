@@ -29,25 +29,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public IOrleansTaskScheduler Scheduler { get; set; }
 
         #region ISchedulingStrategy
-        public void CollectStatistics()
-        {
-            return;
-        }
 
         public IComparable GetPriority(IWorkItem workItem)
         {
             if (Scheduler.GetWorkItemGroup(workItem.SchedulingContext) != null) return workItem.PriorityContext;
             return DEFAULT_PRIORITY;
-        }
-
-        public int GetQuantumNumTasks()
-        {
-            return DEFAULT_TASK_QUANTUM_NUM_TASKS;
-        }
-
-        public int GetQuantumMillis()
-        {
-            return DEFAULT_TASK_QUANTUM_MILLIS;
         }
 
         public void Initialization()

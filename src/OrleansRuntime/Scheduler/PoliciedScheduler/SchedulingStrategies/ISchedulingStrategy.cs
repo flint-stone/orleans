@@ -8,14 +8,16 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         #region IOrleansTaskScheduler
 
-        void CollectStatistics();
         IComparable GetPriority(IWorkItem workItem);
-        int GetQuantumNumTasks();
-        int GetQuantumMillis();
+
         void Initialization();
+
         void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig);
+
         void OnReceivingControllerInstructions(IWorkItem workItem, ISchedulingContext context);
+
         WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context);
+
         #endregion
 
     }
