@@ -200,5 +200,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                             }
                         ))));
         }
+
+        public void OnReAddWIGToRunQueue() { }
     }
 }

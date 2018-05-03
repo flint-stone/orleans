@@ -151,5 +151,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             return string.Join(",", workItems);
         }
-    }
+
+        public void OnReAddWIGToRunQueue() { }
+     }
 }
