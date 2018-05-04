@@ -55,7 +55,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             {
                 statCollectionCounter = 100;
                 // TODO: fix single level counter
-                foreach (var kv in tenantCostEstimate) tenantCostEstimate[kv.Key] = kv.Key.CollectStats();
+                foreach (var kv in tenantCostEstimate.ToArray()) tenantCostEstimate[kv.Key] = kv.Key.CollectStats();
                 logger.Info($"Printing execution times in ticks: {string.Join("********************", tenantCostEstimate.Select(x => x.Key.ToString() + ':' + x.Value))}");
             }
             
@@ -92,13 +92,28 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
                 throw new InvalidOperationException(error);
             }
-            // populate addressToWIG for fast lookup
-            if (!addressToWIG.ContainsKey(((SchedulingContext)wig.SchedulingContext).Activation.Address))
-                addressToWIG[((SchedulingContext)wig.SchedulingContext).Activation.Address] = wig;
+            
             if (!tenantCostEstimate.ContainsKey(wig)) tenantCostEstimate.Add(wig, DEFAULT_WIG_EXEUCTION_COST);
+            WorkItemGroup upstreamWig;
+            if (!addressToWIG.TryGetValue(((InvokeWorkItem)workItem).SourceActivation, out upstreamWig))
+            {
+                var error = string.Format(
+                    "Activation Address to WIG does not return a valid wig for activation {0}", ((InvokeWorkItem) workItem).SourceActivation);
+                logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
+                throw new InvalidOperationException(error);
+            }
+            // Remove cyclic invokes
+            if (!((EDFWorkItemManager) upstreamWig.WorkItemManager).UpstreamGroups.Contains(wig) && upstreamWig!= wig)
+            {
+                ((EDFWorkItemManager)wig.WorkItemManager).UpstreamGroups.Add(upstreamWig);
+            }
+            if (schedulingContext.Activation.Grain.Key.N1 == controllerContext.ControllerKey) return;
             PopulateDependencyUpstream(((InvokeWorkItem) workItem).SourceActivation, wig, wig);
+
         }
 
+        // TODO: Add a unit test
+        // TODO: Needs remodelling
         private void PopulateDependencyUpstream(ActivationAddress sourceActivation, WorkItemGroup wig, WorkItemGroup toAdd)
         {
             if (sourceActivation == null) return;
@@ -110,21 +125,36 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
                 throw new InvalidOperationException(error);
             }
-            ((EDFWorkItemManager)wig.WorkItemManager).UpstreamGroups.Add(upstreamWig);
+            // ((EDFWorkItemManager)wig.WorkItemManager).UpstreamGroups.Add(upstreamWig);
             var paths = ((EDFWorkItemManager) upstreamWig.WorkItemManager).DownStreamPaths;
             foreach (var path in paths)
             {
                 var pre = path.Peek();
-                if (pre.Equals(wig)) path.Push(toAdd);
-                PopulateDependencyUpstream(((SchedulingContext)pre.SchedulingContext).Activation.Address, upstreamWig, toAdd);
+                if (pre.Equals(wig) )
+                {
+                    var upstreamAncestors = ((EDFWorkItemManager) upstreamWig.WorkItemManager).UpstreamGroups;
+                    if (!upstreamAncestors.Contains(wig) && !upstreamAncestors.Contains(toAdd))
+                    {
+                        path.Push(toAdd); // acyclic
+                        PopulateDependencyUpstream(((SchedulingContext)pre.SchedulingContext).Activation.Address, upstreamWig, toAdd);
+                    }                 
+                    return;
+                }             
             }
-            
+            // no path found
+            var newPath = new Stack<WorkItemGroup>();
+            newPath.Push(toAdd);
+            paths.Add(newPath);
+            Console.WriteLine("Current WIG " + wig + ": " + ((EDFWorkItemManager)wig.WorkItemManager).ExplainDependencies());
         }
 
         public WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context)
         {
             var wig = new WorkItemGroup(ots, context);
             wig.WorkItemManager = new EDFWorkItemManager();
+            // populate addressToWIG for fast lookup
+            if (context.ContextType.Equals(SchedulingContextType.Activation) && !addressToWIG.ContainsKey(((SchedulingContext)context).Activation.Address))
+                addressToWIG[((SchedulingContext)context).Activation.Address] = wig;
             return wig;
         }
 
@@ -225,5 +255,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         }
 
         public void OnReAddWIGToRunQueue() { }
+
+        public string ExplainDependencies()
+        {
+            return "UpStreamSet: " + string.Join(",", UpstreamGroups) + ". DownStreamPaths: " +
+                   string.Join(";", DownStreamPaths.Select(x=>string.Join("-", x)));
+        }
     }
 }
