@@ -85,6 +85,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return wig;
         }
 
+        public double FetchWorkItemMetric(WorkItemGroup workItem)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
     }
 
@@ -104,7 +109,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
         {
             var contextObj = task.AsyncState as PriorityContext;
-            var priority = contextObj?.Priority ?? 0.0;
+            var priority = contextObj?.Timestamp ?? 0.0;
             if (wig.PriorityContext < priority)
             {
                 wig.PriorityContext = priority;

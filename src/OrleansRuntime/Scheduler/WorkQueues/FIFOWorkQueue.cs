@@ -8,7 +8,7 @@ using System.Threading;
 namespace Orleans.Runtime.Scheduler
 {
     /// <summary>
-    /// Priority Based Work Queue
+    /// Timestamp Based Work Queue
     /// </summary>
     internal class FIFOWorkQueue : IWorkQueue
     {

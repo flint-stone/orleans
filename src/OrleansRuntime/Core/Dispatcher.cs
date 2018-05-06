@@ -168,7 +168,7 @@ namespace Orleans.Runtime
                         // Note that this has to run in a non-null scheduler context, so we always queue it to the catalog's context
                         var origin = message.SendingSilo;
 #if PQ_DEBUG
-                        logger.Info("Queue closure work item at ReceiveMessage with time remaining {0}", message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline") ? (string)message.RequestContextData["Deadline"] : "null");
+                        logger.Info("Queue closure work item at ReceiveMessage with time remaining {0}", message?.RequestContextData != null && message.RequestContextData.ContainsKey("Timestamp") ? (string)message.RequestContextData["Timestamp"] : "null");
 #endif
                         if (scheduler.GetType() == typeof(PriorityBasedTaskScheduler))
                         {
@@ -502,7 +502,7 @@ namespace Orleans.Runtime
             // IMPORTANT: do not do anything on activation context anymore, since this activation is invalid already.
 #if PQ_DEBUG
             // logger.Info("Queue closure work item with path {0}", message?.RequestContextData != null && message.RequestContextData.ContainsKey("Path")?(string)message.RequestContextData["Path"]:"null");
-            logger.Info("Queue closure work item at ProcessRequestToInvalidActivation with time remaining {0}", message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline") ? (String)message.RequestContextData["Deadline"] : "null");
+            logger.Info("Queue closure work item at ProcessRequestToInvalidActivation with time remaining {0}", message?.RequestContextData != null && message.RequestContextData.ContainsKey("Timestamp") ? (String)message.RequestContextData["Timestamp"] : "null");
 #endif
             if (scheduler.GetType() == typeof(PriorityBasedTaskScheduler))
             {
@@ -517,7 +517,7 @@ namespace Orleans.Runtime
                     catalog.SchedulingContext);
             }
         }
-
+        
         internal void ProcessRequestsToInvalidActivation(
             List<Message> messages,
             ActivationAddress oldAddress,
@@ -540,7 +540,7 @@ namespace Orleans.Runtime
             }
 #if PQ_DEBUG
             // How to assign priority to these folks?
-            logger.Info("Queue closure work item at ProcessRequestsToInvalidActivation with time remaining {0}", messages[0]?.RequestContextData != null && messages[0].RequestContextData.ContainsKey("Deadline") ? messages[0].RequestContextData["Deadline"] : "null");
+            logger.Info("Queue closure work item at ProcessRequestsToInvalidActivation with time remaining {0}", messages[0]?.RequestContextData != null && messages[0].RequestContextData.ContainsKey("Timestamp") ? messages[0].RequestContextData["Timestamp"] : "null");
 #endif
 
             // IMPORTANT: do not do anything on activation context anymore, since this activation is invalid already.

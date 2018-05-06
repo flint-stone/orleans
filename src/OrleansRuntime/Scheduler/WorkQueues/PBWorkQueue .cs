@@ -12,7 +12,7 @@ using Orleans.Runtime.Scheduler;
 namespace Orleans.Runtime.Scheduler
 {
     /// <summary>
-    /// Priority Based Work Queue
+    /// Timestamp Based Work Queue
     /// </summary>
     internal class PBWorkQueue : IWorkQueue
     {

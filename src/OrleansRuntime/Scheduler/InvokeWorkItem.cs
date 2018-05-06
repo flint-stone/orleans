@@ -25,8 +25,8 @@ namespace Orleans.Runtime.Scheduler
             this.dispatcher = dispatcher;
             this.SchedulingContext = activation.SchedulingContext;
             // Interpreting Scheduling Context From Application
-            this.PriorityContext = message?.RequestContextData!=null && message.RequestContextData.ContainsKey("Deadline")?
-                (long) message.RequestContextData["Deadline"]:0;
+            this.PriorityContext = message?.RequestContextData!=null && message.RequestContextData.ContainsKey("Timestamp")?
+                (long) message.RequestContextData["Timestamp"]:0;
             this.ControllerContext =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("ControllerContext")
                     ? (ControllerContext) message.RequestContextData["ControllerContext"]

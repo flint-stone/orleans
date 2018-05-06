@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
@@ -20,5 +21,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         #endregion
 
+        double FetchWorkItemMetric(WorkItemGroup workItem);
     }
 }

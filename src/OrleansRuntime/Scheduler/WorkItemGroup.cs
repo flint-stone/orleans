@@ -366,7 +366,7 @@ namespace Orleans.Runtime.Scheduler
                         foreach (var t in workItems)
                         {
                             var c = t.AsyncState as PriorityContext;
-                            var tr = c?.Priority?? 0.0;
+                            var tr = c?.Timestamp?? 0.0;
                             b.Append(c + ":" + tr);
                         }
                         log.Info("Dumping Status From Execute before execution: {0}", b);
@@ -397,7 +397,7 @@ namespace Orleans.Runtime.Scheduler
 
 #if PQ_DEBUG
                     var contextObj = task.AsyncState as PriorityContext;
-                    var priority = contextObj?.Priority ?? 0.0;
+                    var priority = contextObj?.Timestamp ?? 0.0;
                     log.Info("Dumping Status : About to execute task {0} in SchedulingContext={1} with time remain of {2}", task, SchedulingContext, priority);
 #endif
 #if PQ_DEBUG
@@ -479,7 +479,7 @@ namespace Orleans.Runtime.Scheduler
                             // Change priority contect to the next task (temporarily disabled)
 //                            Task next = workItems.Peek();
 //                            var contextObj = next.AsyncState as PriorityContext;
-//                            PriorityContext = contextObj?.Priority ?? 0.0;
+//                            PriorityContext = contextObj?.Timestamp ?? 0.0;
                             WorkItemManager.OnReAddWIGToRunQueue();
                             masterScheduler.RunQueue.Add(this);
 #if PQ_DEBUG

@@ -223,9 +223,9 @@
 //                        count, Name, maxPendingItemsLimit));
 //                }
 //                var contextObj = task.AsyncState as PriorityContext;
-//                if (PriorityContext < (contextObj?.Priority ?? 0.0))
+//                if (PriorityContext < (contextObj?.Timestamp ?? 0.0))
 //                {
-//                    PriorityContext = contextObj?.Priority ?? 0.0;
+//                    PriorityContext = contextObj?.Timestamp ?? 0.0;
 //#if PQ_DEBUG
 //                    log.Info("Changing WIG {0} priority to : {1} with context {2}", this, PriorityContext, contextObj);
 //#endif
@@ -355,7 +355,7 @@
 //                        foreach (var t in workItems)
 //                        {
 //                            var c = t.AsyncState as PriorityContext;
-//                            var tr = c?.Priority?? 0.0;
+//                            var tr = c?.Timestamp?? 0.0;
 //                            b.Append(c + ":" + tr);
 //                        }
 //                        log.Info("Dumping Status From Execute before execution: {0}", b);
@@ -373,7 +373,7 @@
 //
 //#if PQ_DEBUG
 //                    var contextObj = task.AsyncState as PriorityContext;
-//                    var priority = contextObj?.Priority ?? 0.0;
+//                    var priority = contextObj?.Timestamp ?? 0.0;
 //                    log.Info("Dumping Status : About to execute task {0} in SchedulingContext={1} with time remain of {2}", task, SchedulingContext, priority);
 //#endif
 //#if PQ_DEBUG
@@ -454,7 +454,7 @@
 //                            // Change priority contect to the next task (temporarily disabled)
 //                            //                            Task next = workItems.Peek();
 //                            //                            var contextObj = next.AsyncState as PriorityContext;
-//                            //                            PriorityContext = contextObj?.Priority ?? 0.0;
+//                            //                            PriorityContext = contextObj?.Timestamp ?? 0.0;
 //                            masterScheduler.RunQueue.Add(this);
 //#if PQ_DEBUG
 //                            log.Info("Changing WIG {0} priority to : {1} with context {2}", this, PriorityContext, contextObj);
@@ -516,7 +516,7 @@
 //                foreach (var task in workItems)
 //                {
 //                    var contextObj = task.AsyncState as PriorityContext;
-//                    var priority = contextObj?.Priority ?? 0.0;
+//                    var priority = contextObj?.Timestamp ?? 0.0;
 //                    sb.Append(task + ":" + priority);
 //                }
 //#endif
