@@ -21,7 +21,7 @@ namespace Orleans.Runtime.Scheduler
 
         public DateTime TimeQueued { get; set; }
   
-        public double PriorityContext { get; set; }
+        public long PriorityContext { get; set; }
   
         public ActivationAddress SourceActivation { get; set; }
 

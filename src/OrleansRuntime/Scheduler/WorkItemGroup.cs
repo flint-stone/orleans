@@ -59,7 +59,7 @@ namespace Orleans.Runtime.Scheduler
             get { return SchedulingUtils.IsSystemContext(SchedulingContext); }
         }
 
-        public double PriorityContext { get; set; }
+        public long PriorityContext { get; set; }
         public ActivationAddress SourceActivation { get; set; }
 
         public string Name { get { return SchedulingContext == null ? "unknown" : SchedulingContext.Name; } }

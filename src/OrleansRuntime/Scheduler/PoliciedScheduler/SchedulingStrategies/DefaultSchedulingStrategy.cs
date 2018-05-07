@@ -8,7 +8,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
     internal class DefaultSchedulingStrategy : ISchedulingStrategy
     {
-        private const double DEFAULT_PRIORITY = 0.0;
+        public const long DEFAULT_PRIORITY = 0L;
         private const int DEFAULT_TASK_QUANTUM_MILLIS = 100;
         private const int DEFAULT_TASK_QUANTUM_NUM_TASKS = 0;
 
@@ -109,7 +109,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
         {
             var contextObj = task.AsyncState as PriorityContext;
-            var priority = contextObj?.Timestamp ?? 0.0;
+            var priority = contextObj?.Timestamp ?? DefaultSchedulingStrategy.DEFAULT_PRIORITY;
             if (wig.PriorityContext < priority)
             {
                 wig.PriorityContext = priority;

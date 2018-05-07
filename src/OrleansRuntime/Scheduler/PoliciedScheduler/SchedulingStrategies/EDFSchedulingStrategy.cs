@@ -12,7 +12,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
     internal class EDFSchedulingStrategy : ISchedulingStrategy
     {
-        private const double DEFAULT_PRIORITY = 0.0;
+        public const long DEFAULT_PRIORITY = 0L;
         private const double DEFAULT_WIG_EXECUTION_COST = 0.0;
         private const int DEFAULT_TASK_QUANTUM_MILLIS = 100;
         private const int DEFAULT_TASK_QUANTUM_NUM_TASKS = 0;
@@ -119,8 +119,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         }
         
-        // TODO: Add a unit test
-        // TODO: Needs remodelling
         private void PopulateDependencyUpstream(ActivationAddress sourceActivation, WorkItemGroup wig, WorkItemGroup toAdd)
         {
             if (sourceActivation == null) return;
@@ -133,27 +131,32 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 throw new InvalidOperationException(error);
             }
             // ((EDFWorkItemManager)wig.WorkItemManager).UpstreamGroups.Add(upstreamWig);
+            if (upstreamWig.Equals(toAdd)) return; //remove self-invokation
             var workItemManager = upstreamWig.WorkItemManager as EDFWorkItemManager;
             var paths = workItemManager.DownStreamPaths;
+            if (workItemManager.UpstreamGroups.Contains(wig) || workItemManager.UpstreamGroups.Contains(toAdd)) return;
+            bool found = false;
             foreach (var path in paths)
             {
                 var pre = path.Peek();
                 if (pre.Equals(wig) )
                 {
-                    var upstreamAncestors = workItemManager.UpstreamGroups;
-                    if (!upstreamAncestors.Contains(wig) && !upstreamAncestors.Contains(toAdd))
-                    {
-                        path.Push(toAdd); // acyclic
-                        PopulateDependencyUpstream(((SchedulingContext)pre.SchedulingContext).Activation.Address, upstreamWig, toAdd);
-                    }                 
-                    return;
+                    path.Push(toAdd); // acyclic
+                    //PopulateDependencyUpstream(((SchedulingContext)pre.SchedulingContext).Activation.Address, upstreamWig, toAdd);
+                                    
+                   // return;
+                    found = true;
                 }             
             }
-            // no path found
-            var newPath = new Stack<WorkItemGroup>();
-            newPath.Push(toAdd);
-            paths.Add(newPath);
-            Console.WriteLine("Current WIG " + wig + ": " + workItemManager.ExplainDependencies());
+            if (!found)
+            {
+                // no path found
+                var newPath = new Stack<WorkItemGroup>();
+                newPath.Push(toAdd);
+                paths.Add(newPath);
+            }
+            foreach(var upstream in workItemManager.UpstreamGroups) PopulateDependencyUpstream(((SchedulingContext)upstream.SchedulingContext).Activation.Address, upstreamWig, toAdd);
+            Console.WriteLine("Current upstreamWIG " + upstreamWig + ": " + workItemManager.ExplainDependencies()); 
         }
 
         public WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context)
@@ -202,13 +205,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             if (contextObj != null)
             {
                 // TODO: FIX LATER
-                priority = contextObj.Timestamp == 0.0 ? wig.PriorityContext : contextObj.Timestamp;
+                priority = contextObj.Timestamp == 0L ? wig.PriorityContext : contextObj.Timestamp;
             }
-            if (!workItems.ContainsKey(priority))
-            {
-                workItems.Add(priority, new Queue<Task>());
-            }
-
+            
             double maximumPathCost = Double.MinValue;
             foreach (var stack in DownStreamPaths)
             {
@@ -227,19 +226,23 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             // ***
             var timestamp = priority;
             priority = timestamp + DataflowSLA - MaximumDownStreamPathCost;
+            if (!workItems.ContainsKey(priority))
+            {
+                workItems.Add(priority, new Queue<Task>());
+            }
             workItems[priority].Enqueue(task);
         }
 
         public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
         {
             var contextObj = task.AsyncState as PriorityContext;
-            var priority = contextObj?.Timestamp ?? 0.0;
+            var priority = contextObj?.Timestamp ?? EDFSchedulingStrategy.DEFAULT_PRIORITY;
             if (wig.PriorityContext < priority)
             {
                 wig.PriorityContext = priority;
             }
         }
-
+       
         public void OnClosingWIG()
         {
             foreach (var kv in workItems)
