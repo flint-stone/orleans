@@ -21,6 +21,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         #endregion
 
-        double FetchWorkItemMetric(WorkItemGroup workItem);
+        long FetchWorkItemMetric(WorkItemGroup workItem);
     }
 }
