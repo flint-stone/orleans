@@ -244,18 +244,18 @@ namespace Orleans.Runtime
 //            services.AddFromExisting<ISchedulingStrategy, DefaultSchedulingStrategy>();
 
             // FIFO
-            services.AddSingleton<FIFOTaskScheduler>();
-            services.AddFromExisting<IOrleansTaskScheduler, FIFOTaskScheduler>();
-            services.AddSingleton<DefaultSchedulingStrategy>();
-            services.AddFromExisting<ISchedulingStrategy, DefaultSchedulingStrategy>();
-
-            // PB
-//            services.AddSingleton<PriorityBasedTaskScheduler>();
-//            services.AddFromExisting<IOrleansTaskScheduler, PriorityBasedTaskScheduler>();
+//            services.AddSingleton<FIFOTaskScheduler>();
+//            services.AddFromExisting<IOrleansTaskScheduler, FIFOTaskScheduler>();
 //            services.AddSingleton<DefaultSchedulingStrategy>();
 //            services.AddFromExisting<ISchedulingStrategy, DefaultSchedulingStrategy>();
-//            services.AddSingleton<PriorityBasedEDFSchedulingStrategy>();
-//            services.AddFromExisting<ISchedulingStrategy, PriorityBasedEDFSchedulingStrategy>();
+
+            // PB
+            services.AddSingleton<PriorityBasedTaskScheduler>();
+            services.AddFromExisting<IOrleansTaskScheduler, PriorityBasedTaskScheduler>();
+//            services.AddSingleton<DefaultSchedulingStrategy>();
+//            services.AddFromExisting<ISchedulingStrategy, DefaultSchedulingStrategy>();
+            services.AddSingleton<PriorityBasedEDFSchedulingStrategy>();
+            services.AddFromExisting<ISchedulingStrategy, PriorityBasedEDFSchedulingStrategy>();
 //            services.AddSingleton<WindowIDSchedulingStrategy>();
 //            services.AddFromExisting<ISchedulingStrategy, WindowIDSchedulingStrategy>();
             services.AddSingleton<GrainFactory>(sp => sp.GetService<InsideRuntimeClient>().ConcreteGrainFactory);

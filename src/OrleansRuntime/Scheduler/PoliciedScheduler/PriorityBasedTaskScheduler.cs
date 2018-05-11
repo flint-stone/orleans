@@ -7,7 +7,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Orleans.Runtime.Configuration;
 using Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies;
-using Orleans.Runtime.Scheduler.Utility;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 {

@@ -1,25 +1,14 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
-using DataStructures;
-using Orleans.Runtime.Scheduler.Utility;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
     internal class PriorityBasedEDFSchedulingStrategy : ISchedulingStrategy
     {
-        // public const long DEFAULT_PRIORITY = 0L;
-        // private const long DEFAULT_WIG_EXECUTION_COST = 0L;
-        private const int DEFAULT_TASK_QUANTUM_MILLIS = 100;
-        private const int DEFAULT_TASK_QUANTUM_NUM_TASKS = 0;
-
-
-        private LoggerImpl _logger; // = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
+       private LoggerImpl _logger; // = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
 
         #region Tenancies
         public ConcurrentDictionary<WorkItemGroup, long> TenantCostEstimate { get; set; }
@@ -27,8 +16,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private Dictionary<short, Tuple<ulong, HashSet<ulong>>> tenants;
         private Dictionary<short, long> timeLimitsOnTenants;
         private Dictionary<ActivationAddress, WorkItemGroup> addressToWIG;
-        private const int MaximumStatCounterSize = 100;
-        // TODO: FIX LATER
         private int statCollectionCounter = 100;
 
         #endregion
@@ -130,7 +117,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 _logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
                 throw new InvalidOperationException(error);
             }
-            // ((PriorityBasedEDFWorkItemManager)wig.WorkItemManager).UpstreamGroups.Add(upstreamWig);
+
             if (upstreamWig.Equals(toAdd)) return; //remove self-invokation
             var workItemManager = upstreamWig.WorkItemManager as PriorityBasedEDFWorkItemManager;
             var paths = workItemManager.DownStreamPaths;
@@ -142,9 +129,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 if (pre.Equals(wig) )
                 {
                     path.Push(toAdd); // acyclic
-                    //PopulateDependencyUpstream(((SchedulingContext)pre.SchedulingContext).Activation.Address, upstreamWig, toAdd);
-                                    
-                   // return;
                     found = true;
                 }             
             }
@@ -412,7 +396,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void AddToWorkItemQueue(Task task, WorkItemGroup wig)
         {
-            // var timestamp = workItems.Count > 0 ? workItems.Keys.First() : 0L;
             var contextObj = task.AsyncState as PriorityContext;
             if (contextObj != null && contextObj.Timestamp != 0L)
             {
@@ -515,7 +498,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public Task GetNextTaskForExecution()
         {
-            // var kv = workItems.First();
 #if PQ_DEBUG
             _logger.Info($"Dequeue priority {kv.Key}");
 #endif

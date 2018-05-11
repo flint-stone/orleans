@@ -8,11 +8,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
     internal class TestSchedulingStrategy : ISchedulingStrategy
     {
-        public const long DEFAULT_PRIORITY = 0L;
-        private const int DEFAULT_TASK_QUANTUM_MILLIS = 100;
-        private const int DEFAULT_TASK_QUANTUM_NUM_TASKS = 0;
-
-
         private readonly LoggerImpl logger = LogManager.GetLogger("Scheduler.PoliciedScheduler.SchedulingStrategies", LoggerType.Runtime);
 
         #region Tenancies
@@ -21,8 +16,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private Dictionary<short, long> timeLimitsOnTenants;
         private Dictionary<WorkItemGroup, FixedSizedQueue<double>> tenantStatCounters;
         private const int MaximumStatCounterSize = 100;
-        // TODO: FIX LATER
-        private int statCollectionCounter = 100;
         
         #endregion
 
@@ -31,7 +24,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public IComparable GetPriority(IWorkItem workItem)
         {
             if (Scheduler.GetWorkItemGroup(workItem.SchedulingContext)!=null ) return workItem.PriorityContext;
-            return DEFAULT_PRIORITY;
+            return SchedulerConstants.DEFAULT_PRIORITY;
         }
 
         public void Initialization()
@@ -134,7 +127,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
         {
             var contextObj = task.AsyncState as PriorityContext;
-            var priority = contextObj?.Timestamp ?? TestSchedulingStrategy.DEFAULT_PRIORITY;
+            var priority = contextObj?.Timestamp ?? SchedulerConstants.DEFAULT_PRIORITY;
             if (wig.PriorityContext < priority)
             {
                 wig.PriorityContext = priority;
