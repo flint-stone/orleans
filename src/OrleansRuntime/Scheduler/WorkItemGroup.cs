@@ -137,7 +137,7 @@ namespace Orleans.Runtime.Scheduler
         //private static readonly int MaxWaitingThreads = 500;
         private const int CounterQueueSize = 30;
 
-        internal WorkItemGroup(IOrleansTaskScheduler sched, ISchedulingContext schedulingContext, ISchedulingStrategy schedulingStrategy = null)
+        internal WorkItemGroup(IOrleansTaskScheduler sched, ISchedulingContext schedulingContext)
         {
             masterScheduler = sched;
             SchedulingContext = schedulingContext;
@@ -449,6 +449,7 @@ namespace Orleans.Runtime.Scheduler
                         thread.CurrentTask = null;
                     }
                     count++;
+                    // WorkItemManager.Strategy.PeekNextDeadline();
                 }
                 while (((MaxWorkItemsPerTurn <= 0) || (count <= MaxWorkItemsPerTurn)) &&
                     ((ActivationSchedulingQuantum <= TimeSpan.Zero) || (stopwatch.Elapsed < ActivationSchedulingQuantum)));
@@ -508,10 +509,11 @@ namespace Orleans.Runtime.Scheduler
 
         public override string ToString()
         {
-            return String.Format("{0}WorkItemGroup:Name={1},WorkGroupStatus={2}",
+            return String.Format("{0}WorkItemGroup:Name={1},WorkGroupStatus={2},Priority={3}",
                 IsSystemGroup ? "System*" : "",
                 Name,
-                state);
+                state,
+                this.PriorityContext);
         }
 
         public string DumpStatus()

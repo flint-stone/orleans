@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using DataStructures;
@@ -22,12 +23,14 @@ namespace Orleans.Runtime.Scheduler
         private readonly QueueTrackingStatistic mainQueueTracking;
         private readonly QueueTrackingStatistic systemQueueTracking;
         private readonly QueueTrackingStatistic tasksQueueTracking;
+        private ConcurrentPriorityQueue<IWorkItem> cpq;
 
         public int Length { get { return mainQueue.Count + systemQueue.Count; } }
 
         internal PBWorkQueue()
         {
-            mainQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer()));
+            cpq = new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer());
+            mainQueue = new BlockingCollection<IWorkItem>(cpq);
             systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer()));
             queueArray = new BlockingCollection<IWorkItem>[] { systemQueue, mainQueue };
 
@@ -62,7 +65,7 @@ namespace Orleans.Runtime.Scheduler
                     if (StatisticsCollector.CollectShedulerQueuesStats)
                         mainQueueTracking.OnEnQueueRequest(1, mainQueue.Count);
     #endif
-                    mainQueue.Add(workItem);                    
+                    mainQueue.Add(workItem);      
                 }
 #else
     #if TRACK_DETAILED_STATS
@@ -105,6 +108,15 @@ namespace Orleans.Runtime.Scheduler
                         SchedulerStatisticsGroup.OnWorkItemDequeue();
                     }
 #endif
+                    /*
+                    if (cpq != null && cpq.Any())
+                    {
+                        var ret = cpq.Peek();
+                        Console.WriteLine($"{ret}");
+                        //return ret;
+                    }
+                    */
+                    // Console.WriteLine("{0}", cpq.Peek());
                     return todo;
                 }
                 
@@ -173,6 +185,12 @@ namespace Orleans.Runtime.Scheduler
             mainQueueTracking.OnStopExecution();
             systemQueueTracking.OnStopExecution();
             tasksQueueTracking.OnStopExecution();
+        }
+
+        public IWorkItem Peek()
+        {
+            var ret = cpq.Peek();
+            return ret;
         }
 
         public void Dispose()

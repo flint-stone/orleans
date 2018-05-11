@@ -6,7 +6,7 @@ using Orleans.Runtime.Scheduler.Utility;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
-    internal class TestSchedulingStrategy : ISchedulingStrategy
+    internal class WindowIDSchedulingStrategy : ISchedulingStrategy
     {
         public const long DEFAULT_PRIORITY = 0L;
         private const int DEFAULT_TASK_QUANTUM_MILLIS = 100;
@@ -23,14 +23,14 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private const int MaximumStatCounterSize = 100;
         // TODO: FIX LATER
         private int statCollectionCounter = 100;
-        
+
         #endregion
 
         public IOrleansTaskScheduler Scheduler { get; set; }
 
         public IComparable GetPriority(IWorkItem workItem)
         {
-            if (Scheduler.GetWorkItemGroup(workItem.SchedulingContext)!=null ) return workItem.PriorityContext;
+            if (Scheduler.GetWorkItemGroup(workItem.SchedulingContext) != null) return workItem.PriorityContext;
             return DEFAULT_PRIORITY;
         }
 
@@ -41,21 +41,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             tenantStatCounters = new Dictionary<WorkItemGroup, FixedSizedQueue<double>>();
         }
 
-        public void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig)
-        {
-            // Do the math
-            /*
-            if (--statCollectionCounter <= 0)
-            {
-                statCollectionCounter = 100;
-                foreach (var kv in tenantStatCounters) tenantStatCounters[kv.Key].Enqueue(kv.Key.CollectStats());
-                logger.Info($"Printing execution times in ticks: {string.Join("********************", tenantStatCounters.Select(x => x.Key.ToString() + ':' + String.Join(",", x.Value)))}");
-            }
-            */
-            // Change quantum if required
-            // Or insert signal item for priority change?
-            // if()
-        }
+        public void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig) { }
 
         public void OnReceivingControllerInstructions(IWorkItem workItem, ISchedulingContext context)
         {
@@ -84,13 +70,16 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
                 throw new InvalidOperationException(error);
             }
-            if (!tenantStatCounters.ContainsKey(wig)) tenantStatCounters.Add(wig, new FixedSizedQueue<double>(MaximumStatCounterSize));
+            if (!tenantStatCounters.ContainsKey(wig))
+            {
+                tenantStatCounters.Add(wig, new FixedSizedQueue<double>(MaximumStatCounterSize));
+            }
         }
 
         public WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context)
         {
             var wig = new WorkItemGroup(ots, context);
-            wig.WorkItemManager = new TestWorkItemManager();
+            wig.WorkItemManager = new WindowIDWorkItemManager();
             return wig;
         }
 
@@ -103,38 +92,26 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             throw new NotImplementedException();
         }
-
     }
 
-    internal class TestWorkItemManager : IWorkItemManager
-    {
-        private SortedDictionary<double, Queue<Task>> workItems;
+    internal class WindowIDWorkItemManager : IWorkItemManager
+     {
+        private Queue<Task> workItems { get; set; }
         public ISchedulingStrategy Strategy { get; set; }
-        public TestWorkItemManager()
+        public WindowIDWorkItemManager()
         {
-            workItems = new SortedDictionary<double, Queue<Task>>();
+            workItems = new Queue<Task>();
         }
 
-        public void AddToWorkItemQueue(Task task, WorkItemGroup wig)
+         public void AddToWorkItemQueue(Task task,  WorkItemGroup wig)
         {
-            var priority = workItems.Count > 0 ? workItems.Keys.First() : 0.0;
-            var contextObj = task.AsyncState as PriorityContext;
-            if (contextObj != null)
-            {
-                // TODO: FIX LATER
-                priority = contextObj.Timestamp == 0.0 ? wig.PriorityContext : contextObj.Timestamp;
-            }
-            if (!workItems.ContainsKey(priority))
-            {
-                workItems.Add(priority, new Queue<Task>());
-            }
-            workItems[priority].Enqueue(task);
+            workItems.Enqueue(task);
         }
 
         public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
         {
             var contextObj = task.AsyncState as PriorityContext;
-            var priority = contextObj?.Timestamp ?? TestSchedulingStrategy.DEFAULT_PRIORITY;
+            var priority = contextObj?.Timestamp ?? WindowIDSchedulingStrategy.DEFAULT_PRIORITY;
             if (wig.PriorityContext < priority)
             {
                 wig.PriorityContext = priority;
@@ -143,57 +120,31 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void OnClosingWIG()
         {
-            foreach (var kv in workItems)
-            {
-                foreach (Task task in kv.Value)
-                {
-                    // Ignore all queued Tasks, so in case they are faulted they will not cause UnobservedException.
-                    task.Ignore();
-                }
-                workItems[kv.Key].Clear();
-                workItems.Remove(kv.Key);
-            }
+            foreach (var workItem in workItems) workItem.Ignore();
+            workItems.Clear();
         }
 
         public Task GetNextTaskForExecution()
         {
-            var queue = workItems.First().Value;
-            if (queue.Count > 0)
-            {
-                return queue.Dequeue();
-            }
-
-            // finish current priority, break and take wig off the queue
-            workItems.Remove(workItems.Keys.First());
-            return null;
+            if (!workItems.Any()) return null;
+            return workItems.Dequeue();
         }
 
         public int CountWIGTasks()
         {
-            return workItems.Values.Select(x => x.Count).Sum();
+            return workItems.Count();
         }
 
         public Task GetOldestTask()
         {
-            return workItems.Values.Select(x => x.Count).Sum() >= 0
-                ? workItems[workItems.Keys.First()].Peek()
-                : null;
+            return workItems.Any() ? workItems.Peek() : null;
         }
 
         public string GetWorkItemQueueStatus()
         {
-            return string.Join("|||",
-                workItems.Select(x =>
-                    x.Key + ":" + string.Join(",",
-                        x.Value.Select(y =>
-                            {
-                                var contextObj = y.AsyncState as PriorityContext;
-                                return "<" + y.ToString() + "-" +
-                                       (contextObj?.Timestamp.ToString() ?? "null") + ">";
-                            }
-                        ))));
+            return string.Join(",", workItems);
         }
 
         public void OnReAddWIGToRunQueue() { }
-    }
+     }
 }

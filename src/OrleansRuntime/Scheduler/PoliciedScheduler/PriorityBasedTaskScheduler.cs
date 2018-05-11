@@ -199,7 +199,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
         // Only required if you have work groups flagged by a context that is not a WorkGroupingContext
         public WorkItemGroup RegisterWorkContext(ISchedulingContext context)
         {
-            if (context == null) return null;
+            if (context == null)
+                return null;
 
             // var wg = new WorkItemGroup(this, context, SchedulingStrategy);
             var wg = SchedulingStrategy.CreateWorkItemGroup(this, context);
@@ -390,6 +391,15 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
                 logger.Warn(ErrorCode.SchedulerTaskExecuteIncomplete1, "TryExecuteTaskInline: Incomplete base.TryExecuteTask for Task Id={0} with Status={1}",
                     task.Id, task.Status);
             return done;
+        }
+
+        #endregion
+
+        #region PriorityBasedTaskScheduler
+
+        internal IWorkItem NextInRunQueue()
+        {
+            return RunQueue.Peek();
         }
 
         #endregion

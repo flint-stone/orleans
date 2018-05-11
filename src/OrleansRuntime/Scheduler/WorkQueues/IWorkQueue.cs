@@ -12,5 +12,6 @@ namespace Orleans.Runtime.Scheduler
         IWorkItem GetSystem(CancellationToken ct, TimeSpan timeout);
         void DumpStatus(StringBuilder sb);
         void RunDown();
+        IWorkItem Peek();
     }
 }

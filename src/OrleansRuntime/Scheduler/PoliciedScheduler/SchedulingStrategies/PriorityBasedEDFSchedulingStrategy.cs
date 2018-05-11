@@ -34,8 +34,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         #endregion
 
         public IOrleansTaskScheduler Scheduler { get; set; }
-
-        #region ISchedulingStrategy
  
         public IComparable GetPriority(IWorkItem workItem)
         {
@@ -61,7 +59,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 statCollectionCounter = 100;
                 // TODO: fix single level counter
                 foreach (var kv in TenantCostEstimate.ToArray()) TenantCostEstimate[kv.Key] = (long)kv.Key.CollectStats();
-                _logger.Info($"Printing execution times in ticks: {string.Join("********************", TenantCostEstimate.Select(x => x.Key.ToString() + ':' + x.Value))}");
+                // _logger.Info($"Printing execution times in ticks: {string.Join("********************", TenantCostEstimate.Select(x => x.Key.ToString() + ':' + x.Value))}");
             }
             
             // Change quantum if required
@@ -176,7 +174,16 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return TenantCostEstimate.ContainsKey(workItem) ? TenantCostEstimate[workItem] : SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
         }
 
-        #endregion
+        public long PeekNextDeadline()
+        {
+            var workItem = ((PriorityBasedTaskScheduler)Scheduler).NextInRunQueue();
+            if (workItem != null)
+            {
+                // Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItem}");
+                return workItem.PriorityContext;
+            }
+            return SchedulerConstants.DEFAULT_PRIORITY;
+        }
 
     }
     /*
@@ -380,9 +387,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private readonly WorkItemGroup workItemGroup;
         internal List<WorkItemGroup> UpstreamGroups { get; set; } // upstream WIGs groups for backtracking
         internal List<Stack<WorkItemGroup>> DownStreamPaths { get; set; } // downstream WIG paths groups for calculation
-        internal ISchedulingStrategy Strategy { get; set; }
+        public ISchedulingStrategy Strategy { get; set; }
         internal long MaximumDownStreamPathCost { get; set; }
         internal long DataflowSLA { get; set; }
+        internal bool WindowedGrain { get; set; }
 
         public PriorityBasedEDFWorkItemManager(ISchedulingStrategy strategy, WorkItemGroup wig)
         {
@@ -394,6 +402,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             DataflowSLA = DEFAULT_DATAFLOW_SLA;
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
             workItemGroup = wig;
+
+            var schedulingContext = wig.SchedulingContext as SchedulingContext;
+            if (schedulingContext?.Activation?.Grain != null && (schedulingContext.Activation.Grain.Key.N1 == 281513631416320 ||
+                                                          schedulingContext.Activation.Grain.Key.N1 == 562988608126976 ||
+                                                          schedulingContext.Activation.Grain.Key.N1 == 844463584837632 ||
+                                                          schedulingContext.Activation.Grain.Key.N1 == 1125938561548288)) WindowedGrain = true;
         }
 
         public void AddToWorkItemQueue(Task task, WorkItemGroup wig)
@@ -421,22 +435,28 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                         // TODO: fix later with window information
                         var cost = Strategy.FetchWorkItemMetric(elem);
                         pathCost += cost;
-#if DEBUG
+#if PQ_DEBUG
                         _logger.Info(
                             $"-----> {elem}: {cost} {pathCost}");
 #endif
                     }
+                    pathCost = Strategy.FetchWorkItemMetric(workItemGroup);
                     if (pathCost > MaximumDownStreamPathCost) MaximumDownStreamPathCost = pathCost;
                 }
                 // ***
                 // Setting priority of the task
                 // ***
                 var priority = timestamp + DataflowSLA - MaximumDownStreamPathCost;
-                if (!workItems.ContainsKey(priority))
+                if (WindowedGrain)
+                {
+                    priority = (timestamp / 100000000 + 1) * 100000000 + DataflowSLA - MaximumDownStreamPathCost;
+                }
+
+                    if (!workItems.ContainsKey(priority))
                 {
                     workItems.Add(priority, new Queue<Task>());
                 }
-#if PQ_DEBUG
+#if DEBUG
             _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}, {task}, {timestamp} : {DataflowSLA} : {MaximumDownStreamPathCost} : {priority}");
 #endif
                 workItems[priority].Enqueue(task);
@@ -481,7 +501,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void OnClosingWIG()
         {
-            foreach (var kv in workItems)
+            foreach (var kv in workItems.ToArray())
             {
                 foreach (Task task in kv.Value.ToArray())
                 {
@@ -499,6 +519,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #if PQ_DEBUG
             _logger.Info($"Dequeue priority {kv.Key}");
 #endif
+            
             if (workItems.Any() && workItems.First().Value.Any())
             {
                 return workItems.First().Value.Dequeue();
@@ -527,7 +548,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 workItems.Select(x =>
                     x.Key + ":" + string.Join(",",
                         x.Value.Select(y =>
-                        {
+                        { 
+
                             var contextObj = y.AsyncState as PriorityContext;
                             return "<" + y.ToString() + "-" +
                                    (contextObj?.Timestamp.ToString() ?? "null") + ">";
