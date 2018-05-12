@@ -1,7 +1,6 @@
 ﻿#define PRIORITIZE_SYSTEM_TASKS
 
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
@@ -12,7 +11,7 @@ using Orleans.Runtime.Scheduler;
 namespace Orleans.Runtime.Scheduler
 {
     /// <summary>
-    /// Priority Based Work Queue
+    /// Timestamp Based Work Queue
     /// </summary>
     internal class PBWorkQueue : IWorkQueue
     {
@@ -22,12 +21,14 @@ namespace Orleans.Runtime.Scheduler
         private readonly QueueTrackingStatistic mainQueueTracking;
         private readonly QueueTrackingStatistic systemQueueTracking;
         private readonly QueueTrackingStatistic tasksQueueTracking;
+        private ConcurrentPriorityQueue<IWorkItem> cpq;
 
         public int Length { get { return mainQueue.Count + systemQueue.Count; } }
 
         internal PBWorkQueue()
         {
-            mainQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer()));
+            cpq = new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer());
+            mainQueue = new BlockingCollection<IWorkItem>(cpq);
             systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer()));
             queueArray = new BlockingCollection<IWorkItem>[] { systemQueue, mainQueue };
 
@@ -62,7 +63,7 @@ namespace Orleans.Runtime.Scheduler
                     if (StatisticsCollector.CollectShedulerQueuesStats)
                         mainQueueTracking.OnEnQueueRequest(1, mainQueue.Count);
     #endif
-                    mainQueue.Add(workItem);                    
+                    mainQueue.Add(workItem);      
                 }
 #else
     #if TRACK_DETAILED_STATS
@@ -173,6 +174,12 @@ namespace Orleans.Runtime.Scheduler
             mainQueueTracking.OnStopExecution();
             systemQueueTracking.OnStopExecution();
             tasksQueueTracking.OnStopExecution();
+        }
+
+        public IWorkItem Peek()
+        {
+            var ret = cpq.Peek();
+            return ret;
         }
 
         public void Dispose()

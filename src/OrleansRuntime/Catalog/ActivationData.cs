@@ -869,7 +869,7 @@ namespace Orleans.Runtime
         }
 
         public string Name
-        {
+        {                  
             get
             {
 #if PQ_DEBUG

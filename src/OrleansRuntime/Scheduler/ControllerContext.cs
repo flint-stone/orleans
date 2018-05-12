@@ -7,11 +7,13 @@ namespace Orleans.Runtime.Scheduler
     {
         public short AppId { get; set; }
         public long Time { get; set; }
+        public ulong ControllerKey { get; set; }
 
-        public ControllerContext(short appId, long time)
+        public ControllerContext(short appId, long time, ulong controllerKey)
         {
             AppId = appId;
             Time = time;
+            ControllerKey = controllerKey;
         }
     }
 }

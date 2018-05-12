@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies;
 using Orleans.Runtime.Scheduler.Utility;
 
 
@@ -25,7 +26,6 @@ namespace Orleans.Runtime.Scheduler
         private readonly IOrleansTaskScheduler masterScheduler;
         private WorkGroupStatus state;
         private readonly Object lockable;
-        private readonly Queue<Task> workItems;
 
         private long totalItemsEnQueued;    // equals total items queued, + 1
         private long totalItemsProcessed;
@@ -34,6 +34,10 @@ namespace Orleans.Runtime.Scheduler
         private readonly long quantumExpirations;
         private readonly int workItemGroupStatisticsNumber;
         private Dictionary<ActivationAddress, FixedSizedQueue<long>> execTimeCounters;
+
+        // internal ISchedulingStrategy SchedulingStrategy { get; set; }
+        internal IWorkItemManager WorkItemManager { get; set; }
+        
         internal ActivationTaskScheduler TaskRunner { get; private set; }
         
         public DateTime TimeQueued { get; set; }
@@ -55,7 +59,7 @@ namespace Orleans.Runtime.Scheduler
             get { return SchedulingUtils.IsSystemContext(SchedulingContext); }
         }
 
-        public double PriorityContext { get; set; }
+        public long PriorityContext { get; set; }
         public ActivationAddress SourceActivation { get; set; }
 
         public string Name { get { return SchedulingContext == null ? "unknown" : SchedulingContext.Name; } }
@@ -67,7 +71,7 @@ namespace Orleans.Runtime.Scheduler
 
         private int WorkItemCount
         {
-            get { return workItems.Count; } 
+            get { return WorkItemManager.CountWIGTasks(); }
         }
 
         internal float AverageQueueLenght
@@ -138,7 +142,6 @@ namespace Orleans.Runtime.Scheduler
             masterScheduler = sched;
             SchedulingContext = schedulingContext;
             state = WorkGroupStatus.Waiting;
-            workItems = new Queue<Task>();
             lockable = new Object();
             totalItemsEnQueued = 0;
             totalItemsProcessed = 0;
@@ -146,6 +149,7 @@ namespace Orleans.Runtime.Scheduler
             quantumExpirations = 0;
             TaskRunner = new ActivationTaskScheduler(this);
             execTimeCounters = new Dictionary<ActivationAddress, FixedSizedQueue<long>>();
+            // workItemDictionary[0.0] = new Queue<Task>();
             log = IsSystemPriority ? LogManager.GetLogger("Scheduler." + Name + ".WorkItemGroup", LoggerType.Runtime) : appLogger;
 
             if (StatisticsCollector.CollectShedulerQueuesStats)
@@ -166,7 +170,7 @@ namespace Orleans.Runtime.Scheduler
                             sb.Append("QueueLength = " + WorkItemCount);
                             sb.Append(String.Format(", State = {0}", state));
                             if (state == WorkGroupStatus.Runnable)
-                                sb.Append(String.Format("; oldest item is {0} old", workItems.Count >= 0 ? workItems.Peek().ToString() : "null"));
+                                sb.Append(String.Format("; oldest item is {0} old", WorkItemManager.GetOldestTask()!=null? WorkItemManager.GetOldestTask().ToString() : "null"));
                         }
                         return sb.ToString();
                     });
@@ -206,7 +210,7 @@ namespace Orleans.Runtime.Scheduler
                 if (StatisticsCollector.CollectGlobalShedulerStats)
                     SchedulerStatisticsGroup.OnWorkItemEnqueue();
 #endif
-                workItems.Enqueue(task);
+                WorkItemManager.AddToWorkItemQueue(task, this);
 #if DEBUG
                 if (log.IsVerbose3) log.Verbose3("Add to RunQueue {0}, #{1}, onto {2}", task, thisSequenceNumber, SchedulingContext);
 #endif
@@ -219,15 +223,8 @@ namespace Orleans.Runtime.Scheduler
                     log.Warn(ErrorCode.SchedulerTooManyPendingItems, String.Format("{0} pending work items for group {1}, exceeding the warning threshold of {2}",
                         count, Name, maxPendingItemsLimit));
                 }
-                var contextObj = task.AsyncState as PriorityContext;
-                if (PriorityContext < (contextObj?.Priority ?? 0.0))
-                {
-                    PriorityContext = contextObj?.Priority ?? 0.0;
-#if PQ_DEBUG
-                    log.Info("Changing WIG {0} priority to : {1} with context {2}", this, PriorityContext, contextObj);
-#endif
-                }
 
+                WorkItemManager.OnAddWIGToRunQueue(task, this);
                 if (state != WorkGroupStatus.Waiting) return;
 
                 state = WorkGroupStatus.Runnable;
@@ -273,12 +270,7 @@ namespace Orleans.Runtime.Scheduler
                 if (StatisticsCollector.CollectShedulerQueuesStats)
                     queueTracking.OnStopExecution();
 
-                foreach (Task task in workItems)
-                {
-                    // Ignore all queued Tasks, so in case they are faulted they will not cause UnobservedException.
-                    task.Ignore();
-                }
-                workItems.Clear();
+                WorkItemManager.OnClosingWIG();
             }
         }
         #region IWorkItem Members
@@ -352,16 +344,27 @@ namespace Orleans.Runtime.Scheduler
                         foreach (var t in workItems)
                         {
                             var c = t.AsyncState as PriorityContext;
-                            var tr = c?.Priority?? 0.0;
+                            var tr = c?.Timestamp?? 0.0;
                             b.Append(c + ":" + tr);
                         }
                         log.Info("Dumping Status From Execute before execution: {0}", b);
 #endif
+                        /*
                         if (workItems.Count > 0)
                             task = workItems.Dequeue();
                         else// If the list is empty, then we're done
                             break;
+                            */
+
+                        // TODO: workItemDictionary with count>0
+
+                        task = WorkItemManager.GetNextTaskForExecution();
+                        if (task == null)
+                        {
+                            break;
+                        }
                     }
+
 
 #if TRACK_DETAILED_STATS
                     if (StatisticsCollector.CollectGlobalShedulerStats)
@@ -370,14 +373,16 @@ namespace Orleans.Runtime.Scheduler
 
 #if PQ_DEBUG
                     var contextObj = task.AsyncState as PriorityContext;
-                    var priority = contextObj?.Priority ?? 0.0;
+                    var priority = contextObj?.Timestamp ?? 0.0;
                     log.Info("Dumping Status : About to execute task {0} in SchedulingContext={1} with time remain of {2}", task, SchedulingContext, priority);
 #endif
 #if PQ_DEBUG
                     if (log.IsVerbose2) log.Verbose2("About to execute task {0} in SchedulingContext={1}", task, SchedulingContext);
 #endif
                     var asyncState = task.AsyncState as PriorityContext;
+#if PQ_DEBUG
                     log.Info($"About to execute task {task}:{task.Id}:{asyncState}  in SchedulingContext={SchedulingContext.DetailedStatus()}");
+#endif
                     var taskStart = stopwatch.Elapsed;
 
                     try
@@ -425,12 +430,14 @@ namespace Orleans.Runtime.Scheduler
                 }
                 while (((MaxWorkItemsPerTurn <= 0) || (count <= MaxWorkItemsPerTurn)) &&
                     ((ActivationSchedulingQuantum <= TimeSpan.Zero) || (stopwatch.Elapsed < ActivationSchedulingQuantum)));
-                stopwatch.Stop();
+
 #if PQ_DEBUG
                 log.Info("Dumping Status From Execute after executing {0} items: {1}:{2}", count, DumpStatus(), PriorityContext);
                 log.Info("Dumping Execution time counters From Execute: {0}", string.Join("|", execTimeCounters.Select(x => x.Key.ToString() + x.Value.ToString())));
+                log.Info("Dumping Status From Execute after executing {0} tasks {1}:{2} with {3} millis", count, SchedulingContext, PriorityContext, stopwatch.Elapsed);
 #endif
 
+                stopwatch.Stop();
             }
             catch (Exception ex)
             {
@@ -451,7 +458,8 @@ namespace Orleans.Runtime.Scheduler
                             // Change priority contect to the next task (temporarily disabled)
 //                            Task next = workItems.Peek();
 //                            var contextObj = next.AsyncState as PriorityContext;
-//                            PriorityContext = contextObj?.Priority ?? 0.0;
+//                            PriorityContext = contextObj?.Timestamp ?? 0.0;
+                            WorkItemManager.OnReAddWIGToRunQueue(this);
                             masterScheduler.RunQueue.Add(this);
 #if PQ_DEBUG
                             log.Info("Changing WIG {0} priority to : {1} with context {2}", this, PriorityContext, contextObj);
@@ -475,14 +483,15 @@ namespace Orleans.Runtime.Scheduler
             Execute();
         }
 
-        #endregion
+#endregion
 
         public override string ToString()
         {
-            return String.Format("{0}WorkItemGroup:Name={1},WorkGroupStatus={2}",
+            return String.Format("{0}WorkItemGroup:Name={1},WorkGroupStatus={2},Priority={3}",
                 IsSystemGroup ? "System*" : "",
                 Name,
-                state);
+                state,
+                this.PriorityContext);
         }
 
         public string DumpStatus()
@@ -509,13 +518,8 @@ namespace Orleans.Runtime.Scheduler
                     sb.AppendFormat("Detailed SchedulingContext=<{0}>", SchedulingContext.DetailedStatus());
                 }
 
-#if PQ_DEBUG
-                foreach (var task in workItems)
-                {
-                    var contextObj = task.AsyncState as PriorityContext;
-                    var priority = contextObj?.Priority ?? 0.0;
-                    sb.Append(task + ":" + priority);
-                }
+#if DEBUG
+                sb.Append(WorkItemManager.GetWorkItemQueueStatus());
 #endif
                 return sb.ToString();
             }
@@ -540,4 +544,5 @@ namespace Orleans.Runtime.Scheduler
         }
     }
 }
+
 

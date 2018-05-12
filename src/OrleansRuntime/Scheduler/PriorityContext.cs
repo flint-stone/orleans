@@ -4,12 +4,12 @@ namespace Orleans.Runtime.Scheduler
 {
     internal class PriorityContext
     {
-        public double Priority;
+        public long Timestamp;
         public ISchedulingContext Context { get; set; }
         public ActivationAddress SourceActivation { get; set; }
         public override String ToString()
         {
-            return Context + " : " + Priority;
+            return Context + " : " + Timestamp;
         }
     }
 }

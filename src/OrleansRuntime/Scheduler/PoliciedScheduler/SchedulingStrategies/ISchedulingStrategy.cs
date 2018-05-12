@@ -1,15 +1,24 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
-    interface ISchedulingStrategy
+    internal interface ISchedulingStrategy
     {
-        IComparable GetPriority();
-        int GetQuantumNumTasks();
-        int GetQuantumMillis();
+        IOrleansTaskScheduler Scheduler { get; set; }
+
+        IComparable GetPriority(IWorkItem workItem);
+
+        void Initialization();
+
+        void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig);
+
+        void OnReceivingControllerInstructions(IWorkItem workItem, ISchedulingContext context);
+
+        WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context);
+
+        long FetchWorkItemMetric(WorkItemGroup workItem);
+
+        long PeekNextDeadline();
+
     }
 }

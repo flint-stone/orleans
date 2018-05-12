@@ -168,6 +168,11 @@ namespace Orleans.Runtime.Scheduler
             tasksQueueTracking.OnStopExecution();
         }
 
+        public IWorkItem Peek()
+        {
+            throw new NotImplementedException();
+        }
+
         public void Dispose()
         {
             queueArray = null;

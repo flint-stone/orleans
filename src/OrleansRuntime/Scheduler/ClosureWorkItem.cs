@@ -23,8 +23,8 @@ namespace Orleans.Runtime.Scheduler
             }
 #endif
             this.PriorityContext =
-                message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline")
-                    ? (long) message.RequestContextData["Deadline"] : 0;
+                message?.RequestContextData != null && message.RequestContextData.ContainsKey("Timestamp")
+                    ? (long) message.RequestContextData["Timestamp"] : 0;
             source = message.SendingAddress;
             _message = message;
         }
@@ -40,8 +40,8 @@ namespace Orleans.Runtime.Scheduler
             }
 #endif
             this.PriorityContext =
-                message?.RequestContextData != null && message.RequestContextData.ContainsKey("Deadline")
-                    ? (long) message.RequestContextData["Deadline"] : 0;
+                message?.RequestContextData != null && message.RequestContextData.ContainsKey("Timestamp")
+                    ? (long) message.RequestContextData["Timestamp"] : 0;
             source = message.SendingAddress;
             _message = message;
         }

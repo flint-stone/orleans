@@ -135,9 +135,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestVersionGrains2.2017", "
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Versions", "Versions", "{CCBE747E-E12A-4AB0-9C36-927A43B97627}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TestFSharpInterfaces.2017", "test\TestFSharpInterfaces\TestFSharpInterfaces.2017.fsproj", "{A4F61392-36A3-457C-80D0-9CDC48F5922F}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "TestFSharpInterfaces.2017", "test\TestFSharpInterfaces\TestFSharpInterfaces.2017.fsproj", "{A4F61392-36A3-457C-80D0-9CDC48F5922F}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TestFSharp.2017", "test\TestFSharp\TestFSharp.2017.fsproj", "{8A652779-85EF-48E2-A639-1EED3CE2C39C}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "TestFSharp.2017", "test\TestFSharp\TestFSharp.2017.fsproj", "{8A652779-85EF-48E2-A639-1EED3CE2C39C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Flare", "Flare", "{698F732D-8CE8-4A8D-A014-3DCF8EF4CB99}"
 EndProject
@@ -160,6 +160,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlareTests", "Hubble\Flare\FlareTests\FlareTests.csproj", "{EFF8D649-390D-41B9-B77A-73FF600C7F99}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlareUtilityClient", "Hubble\Flare\FlareUtilityClient\FlareUtilityClient.csproj", "{73E74DE0-4ACE-4DBF-9BA3-06734407325B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataStructures", "DataStructures\DataStructures\DataStructures.csproj", "{CECE32DB-8CAB-451F-A740-8802EFFBAFC0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -844,6 +846,18 @@ Global
 		{73E74DE0-4ACE-4DBF-9BA3-06734407325B}.Release|x64.ActiveCfg = Release|x64
 		{73E74DE0-4ACE-4DBF-9BA3-06734407325B}.Release|x64.Build.0 = Release|x64
 		{73E74DE0-4ACE-4DBF-9BA3-06734407325B}.Release|x86.ActiveCfg = Release|x64
+		{CECE32DB-8CAB-451F-A740-8802EFFBAFC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CECE32DB-8CAB-451F-A740-8802EFFBAFC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CECE32DB-8CAB-451F-A740-8802EFFBAFC0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{CECE32DB-8CAB-451F-A740-8802EFFBAFC0}.Debug|x64.Build.0 = Debug|Any CPU
+		{CECE32DB-8CAB-451F-A740-8802EFFBAFC0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{CECE32DB-8CAB-451F-A740-8802EFFBAFC0}.Debug|x86.Build.0 = Debug|Any CPU
+		{CECE32DB-8CAB-451F-A740-8802EFFBAFC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CECE32DB-8CAB-451F-A740-8802EFFBAFC0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CECE32DB-8CAB-451F-A740-8802EFFBAFC0}.Release|x64.ActiveCfg = Release|Any CPU
+		{CECE32DB-8CAB-451F-A740-8802EFFBAFC0}.Release|x64.Build.0 = Release|Any CPU
+		{CECE32DB-8CAB-451F-A740-8802EFFBAFC0}.Release|x86.ActiveCfg = Release|Any CPU
+		{CECE32DB-8CAB-451F-A740-8802EFFBAFC0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -913,6 +927,7 @@ Global
 		{DBEA46D2-50FD-44F0-928B-2871AB4A8607} = {698F732D-8CE8-4A8D-A014-3DCF8EF4CB99}
 		{EFF8D649-390D-41B9-B77A-73FF600C7F99} = {698F732D-8CE8-4A8D-A014-3DCF8EF4CB99}
 		{73E74DE0-4ACE-4DBF-9BA3-06734407325B} = {698F732D-8CE8-4A8D-A014-3DCF8EF4CB99}
+		{CECE32DB-8CAB-451F-A740-8802EFFBAFC0} = {4CD3AA9E-D937-48CA-BB6C-158E12257D23}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F7DE32A6-5862-4A20-82E3-EC9AFA2AEF36}

@@ -13,9 +13,7 @@
     <AssemblyName>OrleansRuntime</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="ConcurrentDataStructures" Version="0.2.0" />
-  </ItemGroup>
-  <ItemGroup>
+    <ProjectReference Include="..\..\DataStructures\DataStructures\DataStructures.csproj" />
     <ProjectReference Include="..\Orleans\Orleans.2017.csproj" />
   </ItemGroup>
   <!-- Begin Orleans: Without these lines the project won't build properly -->

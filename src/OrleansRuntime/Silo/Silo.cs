@@ -40,6 +40,7 @@ using Orleans.Streams;
 using Orleans.Timers;
 using Orleans.MultiCluster;
 using Orleans.Runtime.Scheduler.PoliciedScheduler;
+using Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies;
 using Orleans.Runtime.Versions;
 using Orleans.Runtime.Versions.Compatibility;
 using Orleans.Streams.Core;
@@ -72,6 +73,7 @@ namespace Orleans.Runtime
         private readonly SiloInitializationParameters initializationParams;
         private readonly ISiloMessageCenter messageCenter;
         private readonly IOrleansTaskScheduler scheduler;
+        private readonly ISchedulingStrategy schedulingStrategy;
         private readonly LocalGrainDirectory localGrainDirectory;
         private readonly ActivationDirectory activationDirectory;
         private readonly IncomingMessageAgent incomingAgent;
@@ -235,10 +237,27 @@ namespace Orleans.Runtime
             services.AddSingleton<IStreamProviderManager, StreamProviderManager>();
             services.AddSingleton<GrainRuntime>();
             services.AddSingleton<IGrainRuntime, GrainRuntime>();
-            // services.AddSingleton<OrleansTaskScheduler>();
-            // services.AddFromExisting<IOrleansTaskScheduler, OrleansTaskScheduler>();
+            // Origin setting
+//            services.AddSingleton<OrleansTaskScheduler>();
+//            services.AddFromExisting<IOrleansTaskScheduler, OrleansTaskScheduler>();
+//            services.AddSingleton<DefaultSchedulingStrategy>();
+//            services.AddFromExisting<ISchedulingStrategy, DefaultSchedulingStrategy>();
+
+            // FIFO
+//            services.AddSingleton<FIFOTaskScheduler>();
+//            services.AddFromExisting<IOrleansTaskScheduler, FIFOTaskScheduler>();
+//            services.AddSingleton<DefaultSchedulingStrategy>();
+//            services.AddFromExisting<ISchedulingStrategy, DefaultSchedulingStrategy>();
+
+            // PB
             services.AddSingleton<PriorityBasedTaskScheduler>();
             services.AddFromExisting<IOrleansTaskScheduler, PriorityBasedTaskScheduler>();
+//            services.AddSingleton<DefaultSchedulingStrategy>();
+//            services.AddFromExisting<ISchedulingStrategy, DefaultSchedulingStrategy>();
+            services.AddSingleton<PriorityBasedEDFSchedulingStrategy>();
+            services.AddFromExisting<ISchedulingStrategy, PriorityBasedEDFSchedulingStrategy>();
+//            services.AddSingleton<WindowIDSchedulingStrategy>();
+//            services.AddFromExisting<ISchedulingStrategy, WindowIDSchedulingStrategy>();
             services.AddSingleton<GrainFactory>(sp => sp.GetService<InsideRuntimeClient>().ConcreteGrainFactory);
             services.AddFromExisting<IGrainFactory, GrainFactory>();
             services.AddFromExisting<IInternalGrainFactory, GrainFactory>();
@@ -367,6 +386,8 @@ namespace Orleans.Runtime
 
             // The scheduler
             scheduler = Services.GetRequiredService<IOrleansTaskScheduler>();
+            schedulingStrategy = Services.GetRequiredService<ISchedulingStrategy>();
+            scheduler.SchedulingStrategy = schedulingStrategy;
             healthCheckParticipants.Add(scheduler);
             
             runtimeClient = Services.GetRequiredService<InsideRuntimeClient>();
