@@ -536,7 +536,7 @@ namespace Orleans.Runtime.Configuration
         public const bool DEFAULT_PERFORM_DEADLOCK_DETECTION = false;
         public static readonly string DEFAULT_PLACEMENT_STRATEGY = typeof(RandomPlacement).Name;
         public static readonly string DEFAULT_MULTICLUSTER_REGISTRATION_STRATEGY = typeof(GlobalSingleInstanceRegistration).Name;
-        private static readonly TimeSpan DEFAULT_DEPLOYMENT_LOAD_PUBLISHER_REFRESH_TIME = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan DEFAULT_DEPLOYMENT_LOAD_PUBLISHER_REFRESH_TIME = TimeSpan.FromSeconds(1);
         private const int DEFAULT_ACTIVATION_COUNT_BASED_PLACEMENT_CHOOSE_OUT_OF = 2;
 
         private const bool DEFAULT_USE_VIRTUAL_RING_BUCKETS = true;

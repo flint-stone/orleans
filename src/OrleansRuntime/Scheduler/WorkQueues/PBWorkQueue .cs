@@ -106,15 +106,6 @@ namespace Orleans.Runtime.Scheduler
                         SchedulerStatisticsGroup.OnWorkItemDequeue();
                     }
 #endif
-                    /*
-                    if (cpq != null && cpq.Any())
-                    {
-                        var ret = cpq.Peek();
-                        Console.WriteLine($"{ret}");
-                        //return ret;
-                    }
-                    */
-                    // Console.WriteLine("{0}", cpq.Peek());
                     return todo;
                 }
                 

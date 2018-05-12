@@ -34,21 +34,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             tenantStatCounters = new Dictionary<WorkItemGroup, FixedSizedQueue<double>>();
         }
 
-        public void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig)
-        {
-            // Do the math
-            /*
-            if (--statCollectionCounter <= 0)
-            {
-                statCollectionCounter = 100;
-                foreach (var kv in tenantStatCounters) tenantStatCounters[kv.Key].Enqueue(kv.Key.CollectStats());
-                logger.Info($"Printing execution times in ticks: {string.Join("********************", tenantStatCounters.Select(x => x.Key.ToString() + ':' + String.Join(",", x.Value)))}");
-            }
-            */
-            // Change quantum if required
-            // Or insert signal item for priority change?
-            // if()
-        }
+        public void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig) { }
 
         public void OnReceivingControllerInstructions(IWorkItem workItem, ISchedulingContext context)
         {
@@ -66,7 +52,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 // Initialize entries in *ALL* per-dataflow maps
                 tenants.Add(controllerContext.AppId, new Tuple<ulong, HashSet<ulong>>(controllerId, new HashSet<ulong>()));
                 timeLimitsOnTenants.Add(controllerContext.AppId, controllerContext.Time);
-
                 tenants[controllerContext.AppId].Item2.Add(schedulingContext.Activation.Grain.Key.N1);
             }
             var wig = Scheduler.GetWorkItemGroup(schedulingContext);
@@ -115,7 +100,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             if (contextObj != null)
             {
                 // TODO: FIX LATER
-                priority = contextObj.Timestamp == 0.0 ? wig.PriorityContext : contextObj.Timestamp;
+                priority = contextObj.Timestamp == SchedulerConstants.DEFAULT_PRIORITY ? wig.PriorityContext : contextObj.Timestamp;
             }
             if (!workItems.ContainsKey(priority))
             {

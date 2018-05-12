@@ -46,12 +46,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 statCollectionCounter = 100;
                 // TODO: fix single level counter
                 foreach (var kv in TenantCostEstimate.ToArray()) TenantCostEstimate[kv.Key] = (long)kv.Key.CollectStats();
-                // _logger.Info($"Printing execution times in ticks: {string.Join("********************", TenantCostEstimate.Select(x => x.Key.ToString() + ':' + x.Value))}");
+                _logger.Info($"Printing execution times in ticks: {string.Join("********************", TenantCostEstimate.Select(x => x.Key.ToString() + ':' + x.Value))}");
             }
-            
-            // Change quantum if required
-            // Or insert signal item for priority change?
-            // if()
         }
         
         public void OnReceivingControllerInstructions(IWorkItem workItem, ISchedulingContext context)
@@ -163,7 +159,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             var workItem = ((PriorityBasedTaskScheduler)Scheduler).NextInRunQueue();
             if (workItem != null)
             {
-                // Console.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItem}");
+#if PQ_DEBUG
+                _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItem}");
+#endif
                 return workItem.PriorityContext;
             }
             return SchedulerConstants.DEFAULT_PRIORITY;
@@ -365,7 +363,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         
     internal class PriorityBasedEDFWorkItemManager : IWorkItemManager
     {
-        private const long DEFAULT_DATAFLOW_SLA = 5000000;
         private SortedDictionary<long, Queue<Task>> workItems;
         private readonly LoggerImpl _logger; //  = LogManager.GetLogger("Scheduler.PoliciedScheduler.SchedulingStrategies", LoggerType.Runtime);
         private readonly WorkItemGroup workItemGroup;
@@ -383,7 +380,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             UpstreamGroups = new List<WorkItemGroup>();
             DownStreamPaths = new List<Stack<WorkItemGroup>>();
             MaximumDownStreamPathCost = 0L;
-            DataflowSLA = DEFAULT_DATAFLOW_SLA;
+            DataflowSLA = SchedulerConstants.DEFAULT_DATAFLOW_SLA;
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
             workItemGroup = wig;
 
@@ -400,7 +397,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             if (contextObj != null && contextObj.Timestamp != 0L)
             {
                 // TODO: FIX LATER
-                var timestamp = contextObj.Timestamp == 0L ? wig.PriorityContext : contextObj.Timestamp;
+                var timestamp = contextObj.Timestamp == SchedulerConstants.DEFAULT_PRIORITY ? wig.PriorityContext : contextObj.Timestamp;
 #if PQ_DEBUG
                 _logger.Info(
                     $"{System.Reflection.MethodBase.GetCurrentMethod().Name} {task}: {timestamp} {wig.PriorityContext}, {contextObj.Timestamp}");
@@ -439,7 +436,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 {
                     workItems.Add(priority, new Queue<Task>());
                 }
-#if DEBUG
+#if PQ_DEBUG
             _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}, {task}, {timestamp} : {DataflowSLA} : {MaximumDownStreamPathCost} : {priority}");
 #endif
                 workItems[priority].Enqueue(task);
@@ -509,7 +506,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
 
             // finish current priority, break and take wig off the queue
-            if(!workItems.First().Value.Any())workItems.Remove(workItems.Keys.First());
+            if(!workItems.First().Value.Any()) workItems.Remove(workItems.Keys.First());
             return null;
         }
 
@@ -542,7 +539,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void OnReAddWIGToRunQueue(WorkItemGroup wig)
         {
-            var priority = workItems.Count > 0 ? workItems.Keys.First() : 0L;
+            var priority = workItems.Count > 0 ? workItems.Keys.First() : SchedulerConstants.DEFAULT_PRIORITY;
 #if PQ_DEBUG
             _logger.Info(
                 $"workitem queue: {string.Join(",", workItems.Keys)}");
