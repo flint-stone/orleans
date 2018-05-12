@@ -187,6 +187,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                         ))));
         }
 
+        public void OnReAddWIGToRunQueue(WorkItemGroup wig) { }
+
         public void OnReAddWIGToRunQueue() { }
     }
 }

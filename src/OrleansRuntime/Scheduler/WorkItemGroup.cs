@@ -481,7 +481,7 @@ namespace Orleans.Runtime.Scheduler
 //                            Task next = workItems.Peek();
 //                            var contextObj = next.AsyncState as PriorityContext;
 //                            PriorityContext = contextObj?.Timestamp ?? 0.0;
-                            WorkItemManager.OnReAddWIGToRunQueue();
+                            WorkItemManager.OnReAddWIGToRunQueue(this);
                             masterScheduler.RunQueue.Add(this);
 #if PQ_DEBUG
                             log.Info("Changing WIG {0} priority to : {1} with context {2}", this, PriorityContext, contextObj);

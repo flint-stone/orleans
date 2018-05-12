@@ -21,6 +21,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         String GetWorkItemQueueStatus();
 
-        void OnReAddWIGToRunQueue();
+        void OnReAddWIGToRunQueue(WorkItemGroup wig);
     }
 }

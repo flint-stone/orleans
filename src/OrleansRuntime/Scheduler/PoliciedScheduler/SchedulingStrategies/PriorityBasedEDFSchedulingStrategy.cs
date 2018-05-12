@@ -501,14 +501,15 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #if PQ_DEBUG
             _logger.Info($"Dequeue priority {kv.Key}");
 #endif
-            
-            if (workItems.Any() && workItems.First().Value.Any())
+            var nextDeadline = Strategy.PeekNextDeadline();
+
+            if (workItems.Any() && workItems.First().Value.Any() && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || workItems.First().Key < nextDeadline))
             {
-                return workItems.First().Value.Dequeue();
+                    return workItems.First().Value.Dequeue();
             }
 
             // finish current priority, break and take wig off the queue
-            workItems.Remove(workItems.Keys.First());
+            if(!workItems.First().Value.Any())workItems.Remove(workItems.Keys.First());
             return null;
         }
 
@@ -539,7 +540,25 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                         ))));
         }
 
-        public void OnReAddWIGToRunQueue() { }
+        public void OnReAddWIGToRunQueue(WorkItemGroup wig)
+        {
+            var priority = workItems.Count > 0 ? workItems.Keys.First() : 0L;
+#if PQ_DEBUG
+            _logger.Info(
+                $"workitem queue: {string.Join(",", workItems.Keys)}");
+            if (wig.PriorityContext <= priority)
+            {
+                _logger.Info(
+                    $"{System.Reflection.MethodBase.GetCurrentMethod().Name} {task}: {wig.PriorityContext} <= {priority}");
+            }
+            else
+            {
+                _logger.Info(
+                    $"{System.Reflection.MethodBase.GetCurrentMethod().Name} {task}: {wig.PriorityContext} > {priority}");
+            }
+#endif
+            wig.PriorityContext = priority;
+        }
 
         public string ExplainDependencies()
         {
