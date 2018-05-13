@@ -35,7 +35,6 @@ namespace Orleans.Runtime.Scheduler
         private readonly int workItemGroupStatisticsNumber;
         private Dictionary<ActivationAddress, FixedSizedQueue<long>> execTimeCounters;
 
-        // internal ISchedulingStrategy SchedulingStrategy { get; set; }
         internal IWorkItemManager WorkItemManager { get; set; }
         
         internal ActivationTaskScheduler TaskRunner { get; private set; }
@@ -149,7 +148,6 @@ namespace Orleans.Runtime.Scheduler
             quantumExpirations = 0;
             TaskRunner = new ActivationTaskScheduler(this);
             execTimeCounters = new Dictionary<ActivationAddress, FixedSizedQueue<long>>();
-            // workItemDictionary[0.0] = new Queue<Task>();
             log = IsSystemPriority ? LogManager.GetLogger("Scheduler." + Name + ".WorkItemGroup", LoggerType.Runtime) : appLogger;
 
             if (StatisticsCollector.CollectShedulerQueuesStats)

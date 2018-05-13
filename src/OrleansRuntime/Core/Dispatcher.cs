@@ -501,7 +501,6 @@ namespace Orleans.Runtime
             }
             // IMPORTANT: do not do anything on activation context anymore, since this activation is invalid already.
 #if PQ_DEBUG
-            // logger.Info("Queue closure work item with path {0}", message?.RequestContextData != null && message.RequestContextData.ContainsKey("Path")?(string)message.RequestContextData["Path"]:"null");
             logger.Info("Queue closure work item at ProcessRequestToInvalidActivation with time remaining {0}", message?.RequestContextData != null && message.RequestContextData.ContainsKey("Timestamp") ? (String)message.RequestContextData["Timestamp"] : "null");
 #endif
             if (scheduler.GetType() == typeof(PriorityBasedTaskScheduler))
