@@ -69,9 +69,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 // Initialize entries in *ALL* per-dataflow maps
                 tenants.Add(controllerContext.AppId, new Tuple<ulong, HashSet<ulong>>(controllerId, new HashSet<ulong>()));
                 timeLimitsOnTenants.Add(controllerContext.AppId, controllerContext.Time);
-                windowedKeys.Union(controllerContext.windowedKey).ToDictionary(k=>k.Key);
 
                 tenants[controllerContext.AppId].Item2.Add(schedulingContext.Activation.Grain.Key.N1);
+            }
+            foreach (var k in controllerContext.windowedKey.Keys)
+            {
+                if(!windowedKeys.ContainsKey(k)) windowedKeys.Add(k, controllerContext.windowedKey[k]);
             }
             var wig = Scheduler.GetWorkItemGroup(schedulingContext);
             
