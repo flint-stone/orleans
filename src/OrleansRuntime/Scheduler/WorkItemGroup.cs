@@ -538,7 +538,7 @@ namespace Orleans.Runtime.Scheduler
 
         public double CollectStats()
         {
-            return execTimeCounters.Select(x => x.Value.Any()?x.Value.Average():0).Average();
+            return execTimeCounters.Select(x => x.Value.Any()?x.Value.Average():0).Any()? execTimeCounters.Select(x => x.Value.Any() ? x.Value.Average() : 0).Average():0;
         }
     }
 }

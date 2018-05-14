@@ -21,6 +21,10 @@ namespace Orleans.Runtime.Scheduler
             windowedKey.Add(562988608126976, 100000000);
             windowedKey.Add(844463584837632, 100000000);
             windowedKey.Add(1125938561548288, 100000000);
+            windowedKey.Add(1407413538258944, 100000000);
+            windowedKey.Add(1688888514969600, 100000000);
+            windowedKey.Add(1970363491680256, 100000000);
+            windowedKey.Add(2251838468390912, 100000000);
         }
     }
 }
