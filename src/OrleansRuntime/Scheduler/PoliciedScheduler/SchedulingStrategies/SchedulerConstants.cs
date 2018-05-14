@@ -9,5 +9,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         internal const int DEFAULT_TASK_QUANTUM_MILLIS = 100;
         internal const int DEFAULT_TASK_QUANTUM_NUM_TASKS = 0;
         internal const long DEFAULT_DATAFLOW_SLA = 5000000;
+        internal const long DEFAULT_WINODW_SIZE = 100000000;
     }
 }

@@ -16,6 +16,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private Dictionary<short, Tuple<ulong, HashSet<ulong>>> tenants;
         private Dictionary<short, long> timeLimitsOnTenants;
         private Dictionary<ActivationAddress, WorkItemGroup> addressToWIG;
+        private Dictionary<ulong, long> windowedKeys;
         private int statCollectionCounter = 100;
 
         #endregion
@@ -35,6 +36,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             TenantCostEstimate = new ConcurrentDictionary<WorkItemGroup, long>(2, 31);
             addressToWIG = new Dictionary<ActivationAddress, WorkItemGroup>();
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
+            windowedKeys = new Dictionary<ulong, long>();
         }
 
         public void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig)
@@ -46,7 +48,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 statCollectionCounter = 100;
                 // TODO: fix single level counter
                 foreach (var kv in TenantCostEstimate.ToArray()) TenantCostEstimate[kv.Key] = (long)kv.Key.CollectStats();
-                _logger.Info($"Printing execution times in ticks: {string.Join("********************", TenantCostEstimate.Select(x => x.Key.ToString() + ':' + x.Value))}");
+                // _logger.Info($"Printing execution times in ticks: {string.Join("********************", TenantCostEstimate.Select(x => x.Key.ToString() + ':' + x.Value))}");
             }
         }
         
@@ -67,6 +69,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 // Initialize entries in *ALL* per-dataflow maps
                 tenants.Add(controllerContext.AppId, new Tuple<ulong, HashSet<ulong>>(controllerId, new HashSet<ulong>()));
                 timeLimitsOnTenants.Add(controllerContext.AppId, controllerContext.Time);
+                windowedKeys.Union(controllerContext.windowedKey).ToDictionary(k=>k.Key);
 
                 tenants[controllerContext.AppId].Item2.Add(schedulingContext.Activation.Grain.Key.N1);
             }
@@ -143,6 +146,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             var wig = new WorkItemGroup(ots, context);
             wig.WorkItemManager = new PriorityBasedEDFWorkItemManager(this, wig);
+            if (context.ContextType.Equals(SchedulingContextType.Activation) && windowedKeys.Keys.Contains(((SchedulingContext) context).Activation.Grain.Key.N1))
+            {
+                var wim = wig.WorkItemManager as PriorityBasedEDFWorkItemManager;
+                wim.WindowedGrain = true;
+                wim.WindowSize = windowedKeys[((SchedulingContext) context).Activation.Grain.Key.N1];
+            }
             // populate addressToWIG for fast lookup
             if (context.ContextType.Equals(SchedulingContextType.Activation) && !addressToWIG.ContainsKey(((SchedulingContext)context).Activation.Address))
                 addressToWIG[((SchedulingContext)context).Activation.Address] = wig;
@@ -371,7 +380,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public ISchedulingStrategy Strategy { get; set; }
         internal long MaximumDownStreamPathCost { get; set; }
         internal long DataflowSLA { get; set; }
-        internal bool WindowedGrain { get; set; }
+        public bool WindowedGrain { get; set; }
+        public long WindowSize { get; set; }
 
         public PriorityBasedEDFWorkItemManager(ISchedulingStrategy strategy, WorkItemGroup wig)
         {
@@ -383,12 +393,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             DataflowSLA = SchedulerConstants.DEFAULT_DATAFLOW_SLA;
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
             workItemGroup = wig;
-
-            var schedulingContext = wig.SchedulingContext as SchedulingContext;
-            if (schedulingContext?.Activation?.Grain != null && (schedulingContext.Activation.Grain.Key.N1 == 281513631416320 ||
-                                                          schedulingContext.Activation.Grain.Key.N1 == 562988608126976 ||
-                                                          schedulingContext.Activation.Grain.Key.N1 == 844463584837632 ||
-                                                          schedulingContext.Activation.Grain.Key.N1 == 1125938561548288)) WindowedGrain = true;
         }
 
         public void AddToWorkItemQueue(Task task, WorkItemGroup wig)
@@ -429,7 +433,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 var priority = timestamp + DataflowSLA - MaximumDownStreamPathCost;
                 if (WindowedGrain)
                 {
-                    priority = (timestamp / 100000000 + 1) * 100000000 + DataflowSLA - MaximumDownStreamPathCost;
+                    priority = (timestamp / WindowSize + 1) * WindowSize + DataflowSLA - MaximumDownStreamPathCost;
                 }
 
                     if (!workItems.ContainsKey(priority))
