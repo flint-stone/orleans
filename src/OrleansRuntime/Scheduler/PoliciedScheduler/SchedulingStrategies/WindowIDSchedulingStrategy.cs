@@ -83,6 +83,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             throw new NotImplementedException();
         }
 
+        public void SetWorkItemMetric(WorkItemGroup workItem, long metric)
+        {
+            throw new NotImplementedException();
+        }
+
         public long PeekNextDeadline()
         {
             throw new NotImplementedException();

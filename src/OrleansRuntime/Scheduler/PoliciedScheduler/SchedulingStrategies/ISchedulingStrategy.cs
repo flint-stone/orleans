@@ -18,6 +18,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         long FetchWorkItemMetric(WorkItemGroup workItem);
 
+        void SetWorkItemMetric(WorkItemGroup workItem, long metric);
+
         long PeekNextDeadline();
 
     }
