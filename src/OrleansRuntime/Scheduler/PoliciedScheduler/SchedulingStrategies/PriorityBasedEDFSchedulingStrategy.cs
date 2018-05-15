@@ -16,7 +16,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private Dictionary<short, Tuple<ulong, HashSet<ulong>>> tenants;
         private Dictionary<short, long> timeLimitsOnTenants;
         private Dictionary<ActivationAddress, WorkItemGroup> addressToWIG;
-        private Dictionary<ulong, long> windowedKeys;
+        private ConcurrentDictionary<ulong, long> windowedKeys;
         private int statCollectionCounter = 100;
 
         #endregion
@@ -36,7 +36,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             TenantCostEstimate = new ConcurrentDictionary<WorkItemGroup, long>(2, 31);
             addressToWIG = new Dictionary<ActivationAddress, WorkItemGroup>();
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
-            windowedKeys = new Dictionary<ulong, long>();
+            windowedKeys = new ConcurrentDictionary<ulong, long>();
         }
 
         public void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig)
@@ -74,7 +74,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
             foreach (var k in controllerContext.windowedKey.Keys)
             {
-                if(!windowedKeys.ContainsKey(k)) windowedKeys.Add(k, controllerContext.windowedKey[k]);
+                //if(!windowedKeys.ContainsKey(k)) windowedKeys.Add(k, controllerContext.windowedKey[k]);
+                windowedKeys.AddOrUpdate(k, controllerContext.windowedKey[k], (key, value) => value);
             }
             var wig = Scheduler.GetWorkItemGroup(schedulingContext);
             
