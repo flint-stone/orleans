@@ -379,6 +379,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private SortedDictionary<long, Queue<Task>> workItems;
         private readonly LoggerImpl _logger; //  = LogManager.GetLogger("Scheduler.PoliciedScheduler.SchedulingStrategies", LoggerType.Runtime);
         private readonly WorkItemGroup workItemGroup;
+        private bool flag;
         internal List<WorkItemGroup> UpstreamGroups { get; set; } // upstream WIGs groups for backtracking
         internal List<Stack<WorkItemGroup>> DownStreamPaths { get; set; } // downstream WIG paths groups for calculation
         public ISchedulingStrategy Strategy { get; set; }
@@ -397,6 +398,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             DataflowSLA = SchedulerConstants.DEFAULT_DATAFLOW_SLA;
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
             workItemGroup = wig;
+            flag = false;
         }
 
         public void AddToWorkItemQueue(Task task, WorkItemGroup wig)
@@ -485,6 +487,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
 #endif
             wig.PriorityContext = priority;
+            flag = true;
         }
 
         public void OnClosingWIG()
@@ -508,9 +511,14 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #endif
             var nextDeadline = Strategy.PeekNextDeadline();
 
-            if (workItems.Any() && workItems.First().Value.Any() && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || workItems.First().Key < nextDeadline))
+            if (workItems.Any() && workItems.First().Value.Any() && ((nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || workItems.First().Key < nextDeadline) || flag ))
             {
-                    return workItems.First().Value.Dequeue();
+                var item = workItems.First().Value.Dequeue();
+#if PQ_DEBUG
+            _logger.Info($"{workItemGroup} Dequeue priority {workItems.First().Key} {item}");
+#endif
+                flag = false;
+                return item;
             }
 
             // finish current priority, break and take wig off the queue
@@ -563,6 +571,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
 #endif
             wig.PriorityContext = priority;
+            flag = true;
         }
 
         public string ExplainDependencies()
