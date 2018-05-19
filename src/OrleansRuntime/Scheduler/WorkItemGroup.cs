@@ -372,13 +372,13 @@ namespace Orleans.Runtime.Scheduler
 #if PQ_DEBUG
                     var contextObj = task.AsyncState as PriorityContext;
                     var priority = contextObj?.Timestamp ?? 0.0;
-                    log.Info("Dumping Status : About to execute task {0} in SchedulingContext={1} with time remain of {2}", task, SchedulingContext, priority);
+                    log.Info("Dumping Status : About to execute task {0} in SchedulingContext={1} with priority of {2}", task, SchedulingContext, priority);
 #endif
 #if PQ_DEBUG
                     if (log.IsVerbose2) log.Verbose2("About to execute task {0} in SchedulingContext={1}", task, SchedulingContext);
 #endif
-                    var asyncState = task.AsyncState as PriorityContext;
 #if PQ_DEBUG
+                    var asyncState = task.AsyncState as PriorityContext;
                     log.Info($"About to execute task {task}:{task.Id}:{asyncState}  in SchedulingContext={SchedulingContext.DetailedStatus()}");
 #endif
                     var taskStart = stopwatch.Elapsed;
