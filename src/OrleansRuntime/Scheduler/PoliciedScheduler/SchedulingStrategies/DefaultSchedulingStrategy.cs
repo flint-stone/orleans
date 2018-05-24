@@ -31,7 +31,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context)
         {
             var wig = new WorkItemGroup(ots, context);
-            wig.WorkItemManager = new TestWorkItemManager();
+            wig.WorkItemManager = new DefaultWorkItemManager();
             return wig;
         }
 

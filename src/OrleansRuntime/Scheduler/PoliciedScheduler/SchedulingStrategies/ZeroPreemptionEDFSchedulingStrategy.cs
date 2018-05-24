@@ -292,7 +292,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     $"{System.Reflection.MethodBase.GetCurrentMethod().Name} {task}: {wig.PriorityContext} > {priority}");
             }
 #endif
-            wig.PriorityContext = priority;
+            wig.PriorityContext = (long)(ulong)priority << 32 | (uint)Environment.TickCount;
         }
 
         public void OnClosingWIG()
@@ -370,7 +370,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     $"{System.Reflection.MethodBase.GetCurrentMethod().Name} {task}: {wig.PriorityContext} > {priority}");
             }
 #endif
-            wig.PriorityContext = priority;
+            wig.PriorityContext = (long)(ulong)priority << 32 | (uint)Environment.TickCount;
         }
 
         public string ExplainDependencies()
