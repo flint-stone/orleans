@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies;
-using Orleans.Runtime.Scheduler.Utility;
+using Orleans.Runtime.Scheduler.SchedulerUtility;
 
 
 namespace Orleans.Runtime.Scheduler
@@ -368,18 +368,12 @@ namespace Orleans.Runtime.Scheduler
                     if (StatisticsCollector.CollectGlobalShedulerStats)
                         SchedulerStatisticsGroup.OnWorkItemDequeue();
 #endif
-
-#if PQ_DEBUG
                     var contextObj = task.AsyncState as PriorityContext;
+#if PQ_DEBUG
                     var priority = contextObj?.Timestamp ?? 0.0;
-                    log.Info("Dumping Status : About to execute task {0} in SchedulingContext={1} with priority of {2}", task, SchedulingContext, priority);
-#endif
-#if PQ_DEBUG
+                    log.Info("Dumping Status : About to execute task {0}:{1}:{2} in SchedulingContext={3} with priority of {4}", task, task.Id, contextObj, SchedulingContext.DetailedStatus(), priority);
+
                     if (log.IsVerbose2) log.Verbose2("About to execute task {0} in SchedulingContext={1}", task, SchedulingContext);
-#endif
-#if PQ_DEBUG
-                    var asyncState = task.AsyncState as PriorityContext;
-                    log.Info($"About to execute task {task}:{task.Id}:{asyncState}  in SchedulingContext={SchedulingContext.DetailedStatus()}");
 #endif
                     var taskStart = stopwatch.Elapsed;
 
@@ -409,7 +403,7 @@ namespace Orleans.Runtime.Scheduler
                         totalItemsProcessed++;
                         var taskLength = stopwatch.Elapsed - taskStart;
 
-                        var contextObj = task.AsyncState as PriorityContext;
+                        
                         if(contextObj?.SourceActivation != null) // If the task originates from another activation
                         {
                             if (!execTimeCounters.ContainsKey(contextObj.SourceActivation)) execTimeCounters.Add(contextObj.SourceActivation, new FixedSizedQueue<long>(CounterQueueSize));
@@ -429,9 +423,9 @@ namespace Orleans.Runtime.Scheduler
                 while (((MaxWorkItemsPerTurn <= 0) || (count <= MaxWorkItemsPerTurn)) &&
                     ((ActivationSchedulingQuantum <= TimeSpan.Zero) || (stopwatch.Elapsed < ActivationSchedulingQuantum)));
 
-#if PQ_DEBUG
-                log.Info("Dumping Status From Execute after executing {0} items: {1}:{2}", count, DumpStatus(), PriorityContext);
-                log.Info("Dumping Execution time counters From Execute: {0}", string.Join("|", execTimeCounters.Select(x => x.Key.ToString() + x.Value.ToString())));
+#if DEBUG
+                // log.Info("Dumping Queue Status From Execute {0}", DumpStatus());
+                log.Info("Dumping Execution time counters From Execute: {0}", string.Join(" | ", execTimeCounters.Select(x => x.Key.Grain==null?x.Key.ToString():x.Key.Grain.Key.N1 + " : " + x.Value.ToString())));
                 log.Info("Dumping Status From Execute after executing {0} tasks {1}:{2} with {3} millis", count, SchedulingContext, PriorityContext, stopwatch.Elapsed);
 #endif
 
