@@ -467,6 +467,8 @@ namespace Orleans.Runtime.Scheduler
                         }
                     }
                 }
+
+                WorkItemManager.UpdateWIGStatistics();
             }
         }
 

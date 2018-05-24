@@ -38,14 +38,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig)
         {
-            
             // Collect stat from WIGs
             if (TenantCostEstimate.Any() && --statCollectionCounter <= 0) 
             {
                 statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
                 // TODO: fix single level counter
-                foreach (var kv in TenantCostEstimate.ToArray()) TenantCostEstimate[kv.Key] = (long)kv.Key.CollectStats();
-                // _logger.Info($"Printing execution times in ticks: {string.Join("********************", TenantCostEstimate.Select(x => x.Key.ToString() + ':' + x.Value))}");
+                _logger.Info($"Printing execution times in ticks: {string.Join("********************", TenantCostEstimate.Select(x => x.Key.ToString() + ':' + x.Value))}");
             }
         }
         
@@ -139,6 +137,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public long FetchWorkItemMetric(WorkItemGroup workItem)
         {
             return TenantCostEstimate.ContainsKey(workItem) ? TenantCostEstimate[workItem] : SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
+        }
+
+        public void PutWorkItemMetric(WorkItemGroup workItemGroup, object metric)
+        {
+            if(TenantCostEstimate.ContainsKey(workItemGroup)) TenantCostEstimate[workItemGroup] = (long) metric;
         }
 
         public long PeekNextDeadline()
@@ -354,6 +357,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private readonly LoggerImpl _logger; //  = LogManager.GetLogger("Scheduler.PoliciedScheduler.SchedulingStrategies", LoggerType.Runtime);
         private readonly WorkItemGroup workItemGroup;
         private bool dequeuedFlag;
+        private int statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
+
         internal List<WorkItemGroup> UpstreamGroups { get; set; } // upstream WIGs groups for backtracking
         internal List<Stack<WorkItemGroup>> DownStreamPaths { get; set; } // downstream WIG paths groups for calculation
         public ISchedulingStrategy Strategy { get; set; }
@@ -498,6 +503,15 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             // finish current priority, break and take wig off the queue
             if(!workItems.First().Value.Any()) workItems.Remove(workItems.Keys.First());
             return null;
+        }
+
+        public void UpdateWIGStatistics()
+        {
+            if (--statCollectionCounter <= 0)
+            {
+                statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
+                Strategy.PutWorkItemMetric(workItemGroup, workItemGroup.CollectStats());
+            }  
         }
 
         public int CountWIGTasks()

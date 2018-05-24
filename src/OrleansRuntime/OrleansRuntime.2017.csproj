@@ -13,6 +13,9 @@
     <AssemblyName>OrleansRuntime</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Scheduler\PoliciedScheduler\SchedulingStrategies\WindowIDSchedulingStrategy.cs~RF1e9b8dbb.TMP" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\DataStructures\DataStructures\DataStructures.csproj" />
     <ProjectReference Include="..\Orleans\Orleans.2017.csproj" />
   </ItemGroup>

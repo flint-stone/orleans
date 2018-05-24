@@ -77,6 +77,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             throw new NotImplementedException();
         }
 
+        public void PutWorkItemMetric(WorkItemGroup workItemGroup, object metric)
+        {
+            throw new NotImplementedException();
+        }
+
         public long PeekNextDeadline()
         {
             throw new NotImplementedException();
@@ -146,6 +151,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return null;
         }
 
+        public void UpdateWIGStatistics() { }
+
         public int CountWIGTasks()
         {
             return workItems.Values.Select(x => x.Count).Sum();
@@ -174,6 +181,5 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void OnReAddWIGToRunQueue(WorkItemGroup wig) { }
 
-        public void OnReAddWIGToRunQueue() { }
     }
 }

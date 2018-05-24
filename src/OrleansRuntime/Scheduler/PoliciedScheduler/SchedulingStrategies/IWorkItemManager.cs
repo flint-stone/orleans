@@ -15,6 +15,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         Task GetNextTaskForExecution();
 
+        void UpdateWIGStatistics();
+
         int CountWIGTasks();
 
         Task GetOldestTask();
