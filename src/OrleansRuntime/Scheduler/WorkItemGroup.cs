@@ -58,7 +58,7 @@ namespace Orleans.Runtime.Scheduler
             get { return SchedulingUtils.IsSystemContext(SchedulingContext); }
         }
 
-        public long PriorityContext { get; set; }
+        public PriorityObject PriorityContext { get; set; } = new PriorityObject(0L, Environment.TickCount);
         public ActivationAddress SourceActivation { get; set; }
 
         public string Name { get { return SchedulingContext == null ? "unknown" : SchedulingContext.Name; } }
@@ -209,7 +209,7 @@ namespace Orleans.Runtime.Scheduler
                     SchedulerStatisticsGroup.OnWorkItemEnqueue();
 #endif
                 WorkItemManager.AddToWorkItemQueue(task, this);
-#if DEBUG
+#if PQ_DEBUG
                 if (log.IsVerbose3) log.Verbose3("Add to RunQueue {0}, #{1}, onto {2}", task, thisSequenceNumber, SchedulingContext);
 #endif
 #if PQ_DEBUG
@@ -227,7 +227,7 @@ namespace Orleans.Runtime.Scheduler
 
                 state = WorkGroupStatus.Runnable;
                 masterScheduler.RunQueue.Add(this);
-#if PQ_DEBUG
+#if DEBUG
                 StringBuilder sb = new StringBuilder();
                 masterScheduler.RunQueue.DumpStatus(sb);
                 log.Info("RunQueue Contents: {0}", sb.ToString());
@@ -423,13 +423,14 @@ namespace Orleans.Runtime.Scheduler
                 while (((MaxWorkItemsPerTurn <= 0) || (count <= MaxWorkItemsPerTurn)) &&
                     ((ActivationSchedulingQuantum <= TimeSpan.Zero) || (stopwatch.Elapsed < ActivationSchedulingQuantum)));
 
-#if DEBUG
-                // log.Info("Dumping Queue Status From Execute {0}", DumpStatus());
-                log.Info("Dumping Execution time counters From Execute: {0}", string.Join(" | ", execTimeCounters.Select(x => x.Key.Grain==null?x.Key.ToString():x.Key.Grain.Key.N1 + " : " + x.Value.ToString())));
-                log.Info("Dumping Status From Execute after executing {0} tasks {1}:{2} with {3} millis", count, SchedulingContext, PriorityContext, stopwatch.Elapsed);
-#endif
 
                 stopwatch.Stop();
+
+#if DEBUG
+//                // log.Info("Dumping Queue Status From Execute {0}", DumpStatus());
+//                log.Info("Dumping Execution time counters From Execute: {0}", string.Join(" | ", execTimeCounters.Select(x => x.Key.Grain==null?x.Key.ToString():x.Key.Grain.Key.N1 + " : " + x.Value.ToString())));
+//                log.Info("Dumping Status From Execute after executing {0} tasks {1}:{2} with {3} millis", count, SchedulingContext, PriorityContext, stopwatch.Elapsed);
+#endif
             }
             catch (Exception ex)
             {
@@ -440,6 +441,7 @@ namespace Orleans.Runtime.Scheduler
                 // Now we're not Running anymore. 
                 // If we left work items on our run list, we're Runnable, and need to go back on the silo run queue; 
                 // If our run list is empty, then we're waiting.
+
                 lock (lockable)
                 {
                     if (state != WorkGroupStatus.Shutdown)

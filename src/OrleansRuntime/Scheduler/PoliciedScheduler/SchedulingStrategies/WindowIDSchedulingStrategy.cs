@@ -112,9 +112,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             var contextObj = task.AsyncState as PriorityContext;
             var priority = contextObj?.Timestamp ?? SchedulerConstants.DEFAULT_PRIORITY;
-            if (wig.PriorityContext < priority)
+            if (wig.PriorityContext.Priority < priority)
             {
-                wig.PriorityContext = priority;
+                wig.PriorityContext.Priority = priority;
+                wig.PriorityContext.Ticks = Environment.TickCount;
             }
         }
 

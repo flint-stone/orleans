@@ -43,7 +43,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             {
                 statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
                 // TODO: fix single level counter
-                _logger.Info($"Printing execution times in ticks: {string.Join("********************", TenantCostEstimate.Select(x => x.Key.ToString() + ':' + x.Value))}");
+                //_logger.Info($"Printing execution times in ticks: {string.Join("********************", TenantCostEstimate.Select(x => x.Key.ToString() + ':' + x.Value))}");
             }
         }
         
@@ -152,7 +152,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #if PQ_DEBUG
                 _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItem}");
 #endif
-                return workItem.PriorityContext;
+                return workItem.PriorityContext.Priority;
             }
             return SchedulerConstants.DEFAULT_PRIORITY;
         }
@@ -386,7 +386,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             if (contextObj != null && contextObj.Timestamp != 0L)
             {
                 // TODO: FIX LATER
-                var timestamp = contextObj.Timestamp == SchedulerConstants.DEFAULT_PRIORITY ? wig.PriorityContext : contextObj.Timestamp;
+                var timestamp = contextObj.Timestamp == SchedulerConstants.DEFAULT_PRIORITY ? wig.PriorityContext.Priority : contextObj.Timestamp;
 #if PQ_DEBUG
                 _logger.Info(
                     $"{System.Reflection.MethodBase.GetCurrentMethod().Name} {task}: {timestamp} {wig.PriorityContext}, {contextObj.Timestamp}");
@@ -433,7 +433,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
             else
             {
-                var priority = workItems.Any()?workItems.Keys.First():wig.PriorityContext;
+                var priority = workItems.Any()?workItems.Keys.First():wig.PriorityContext.Priority;
                 if (!workItems.ContainsKey(priority))
                 {
                     workItems.Add(priority, new Queue<Task>());
@@ -465,7 +465,13 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     $"{System.Reflection.MethodBase.GetCurrentMethod().Name} {task}: {wig.PriorityContext} > {priority}");
             }
 #endif
-            wig.PriorityContext = (long)(ulong)priority << 32 | (uint)Environment.TickCount;
+            // wig.PriorityContext = (long)(ulong)priority << 32 | (uint)Environment.TickCount;
+//            var ticks = Environment.TickCount;
+//            var converted = (ushort) ((uint) ticks & 0x0000FFFF);
+//            wig.PriorityContext = new PriorityObject((long)(ulong)priority << 16 | converted, Environment.TickCount);
+//            Console.WriteLine($"{priority}:{wig.PriorityContext} {ticks}:{Convert.ToString(ticks, 2)}:{Convert.ToString(converted, 2)}");
+            // wig.PriorityContext = priority;
+            wig.PriorityContext = new PriorityObject(priority, Environment.TickCount);
             dequeuedFlag = true;
         }
 
@@ -510,7 +516,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             if (--statCollectionCounter <= 0)
             {
                 statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
-                Strategy.PutWorkItemMetric(workItemGroup, workItemGroup.CollectStats());
+                Strategy.PutWorkItemMetric(workItemGroup, Convert.ToInt64(workItemGroup.CollectStats()));
             }  
         }
 
@@ -558,7 +564,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     $"{System.Reflection.MethodBase.GetCurrentMethod().Name} {task}: {wig.PriorityContext} > {priority}");
             }
 #endif
-            wig.PriorityContext = (long)(ulong)priority << 32 | (uint)Environment.TickCount;
+            // wig.PriorityContext = (long)(ulong)priority << 32 | (uint)Environment.TickCount;
+            //wig.PriorityContext = new PriorityObject((long)(ulong)priority << 16 | (ushort)((uint)Environment.TickCount & 0x00FF), Environment.TickCount);
+            //Console.WriteLine($"{priority}:{wig.PriorityContext}");
+            // wig.PriorityContext = priority;
+            wig.PriorityContext = new PriorityObject(priority, Environment.TickCount);
             dequeuedFlag = true;
         }
 

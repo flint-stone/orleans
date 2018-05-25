@@ -146,15 +146,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public long PeekNextDeadline()
         {
-            var workItem = ((PriorityBasedTaskScheduler)Scheduler).NextInRunQueue();
-            if (workItem != null)
-            {
-#if PQ_DEBUG
-                _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItem}");
-#endif
-                return workItem.PriorityContext;
-            }
-            return SchedulerConstants.DEFAULT_PRIORITY;
+            throw new NotImplementedException();
         }
 
     }
@@ -191,7 +183,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             if (contextObj != null && contextObj.Timestamp != 0L)
             {
                 // TODO: FIX LATER
-                var timestamp = contextObj.Timestamp == SchedulerConstants.DEFAULT_PRIORITY ? wig.PriorityContext : contextObj.Timestamp;
+                var timestamp = contextObj.Timestamp == SchedulerConstants.DEFAULT_PRIORITY ? wig.PriorityContext.Priority : contextObj.Timestamp;
 #if PQ_DEBUG
                 _logger.Info(
                     $"{System.Reflection.MethodBase.GetCurrentMethod().Name} {task}: {timestamp} {wig.PriorityContext}, {contextObj.Timestamp}");
@@ -238,7 +230,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
             else
             {
-                var priority = workItems.Any()?workItems.Keys.First():wig.PriorityContext;
+                var priority = workItems.Any()?workItems.Keys.First():wig.PriorityContext.Priority;
                 if (!workItems.ContainsKey(priority))
                 {
                     workItems.Add(priority, new Queue<Task>());
@@ -270,7 +262,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     $"{System.Reflection.MethodBase.GetCurrentMethod().Name} {task}: {wig.PriorityContext} > {priority}");
             }
 #endif
-            wig.PriorityContext = (long)(ulong)priority << 32 | (uint)Environment.TickCount;
+            wig.PriorityContext = new PriorityObject(priority, Environment.TickCount);
         }
 
         public void OnClosingWIG()
@@ -292,7 +284,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #if PQ_DEBUG
             _logger.Info($"Dequeue priority {kv.Key}");
 #endif
-            var nextDeadline = Strategy.PeekNextDeadline();
 
             if (workItems.Any() && workItems.First().Value.Any())
             {
@@ -357,7 +348,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     $"{System.Reflection.MethodBase.GetCurrentMethod().Name} {task}: {wig.PriorityContext} > {priority}");
             }
 #endif
-            wig.PriorityContext = (long)(ulong)priority << 32 | (uint)Environment.TickCount;
+            wig.PriorityContext = new PriorityObject(priority, Environment.TickCount);
         }
 
         public string ExplainDependencies()

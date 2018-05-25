@@ -105,7 +105,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             if (contextObj != null)
             {
                 // TODO: FIX LATER
-                priority = contextObj.Timestamp == SchedulerConstants.DEFAULT_PRIORITY ? wig.PriorityContext : contextObj.Timestamp;
+                priority = contextObj.Timestamp == SchedulerConstants.DEFAULT_PRIORITY ? wig.PriorityContext.Priority : contextObj.Timestamp;
             }
             if (!workItems.ContainsKey(priority))
             {
@@ -118,9 +118,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             var contextObj = task.AsyncState as PriorityContext;
             var priority = contextObj?.Timestamp ?? SchedulerConstants.DEFAULT_PRIORITY;
-            if (wig.PriorityContext < priority)
+            if (wig.PriorityContext.Priority < priority)
             {
-                wig.PriorityContext = priority;
+                wig.PriorityContext.Priority = priority;
+                wig.PriorityContext.Ticks = Environment.TickCount;
             }
         }
 

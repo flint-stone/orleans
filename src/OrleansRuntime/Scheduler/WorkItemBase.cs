@@ -1,4 +1,5 @@
 using System;
+using Orleans.Runtime.Scheduler.SchedulerUtility;
 
 namespace Orleans.Runtime.Scheduler
 {
@@ -21,7 +22,7 @@ namespace Orleans.Runtime.Scheduler
 
         public DateTime TimeQueued { get; set; }
   
-        public long PriorityContext { get; set; }
+        public PriorityObject PriorityContext { get; set; }
   
         public ActivationAddress SourceActivation { get; set; }
 

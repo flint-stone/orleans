@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Orleans.Runtime.Configuration;
 using Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies;
+using Orleans.Runtime.Scheduler.SchedulerUtility;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 {
@@ -163,7 +164,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             {
                 var priorityContext = new PriorityContext
                 {
-                    Timestamp = (long)SchedulingStrategy.GetPriority(workItem),
+                    Timestamp = (PriorityObject)SchedulingStrategy.GetPriority(workItem)!=null? 
+                    ((PriorityObject)SchedulingStrategy.GetPriority(workItem)).Priority:
+                    SchedulerConstants.DEFAULT_PRIORITY,
                     Context = context,
                     SourceActivation = workItem.SourceActivation
                 };
