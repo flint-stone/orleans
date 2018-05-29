@@ -222,16 +222,17 @@ namespace Orleans.Runtime.Scheduler
                         count, Name, maxPendingItemsLimit));
                 }
 
-                WorkItemManager.OnAddWIGToRunQueue(task, this);
+                
                 if (state != WorkGroupStatus.Waiting) return;
+                WorkItemManager.OnAddWIGToRunQueue(task, this);
 
                 state = WorkGroupStatus.Runnable;
                 masterScheduler.RunQueue.Add(this);
-#if DEBUG
+//#if PQ_DEBUG
                 StringBuilder sb = new StringBuilder();
                 masterScheduler.RunQueue.DumpStatus(sb);
-                log.Info("RunQueue Contents: {0}", sb.ToString());
-#endif
+                log.Info("-- RunQueue Contents: {0}", sb.ToString());
+//#endif
             }
         }
 
@@ -537,6 +538,12 @@ namespace Orleans.Runtime.Scheduler
         public double CollectStats()
         {
             return execTimeCounters.Select(x => x.Value.Any()?x.Value.Average():0).Any()? execTimeCounters.Select(x => x.Value.Any() ? x.Value.Average() : 0).Average():0;
+            // return 10000.0;
+        }
+
+        public void LogExecTimeCounters()
+        {
+            log.Info($"{this} execution time counters collected {string.Join(";" , execTimeCounters.Select(kv => kv.Key.Grain.Key.N1 + " : " + string.Join(",", kv.Value)))}");
         }
     }
 }

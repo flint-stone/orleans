@@ -225,7 +225,7 @@ namespace Orleans.Runtime.Configuration
         private static readonly int DEFAULT_MAX_ACTIVE_THREADS = 1; // Math.Max(4, System.Environment.ProcessorCount);
         private const int DEFAULT_MIN_DOT_NET_THREAD_POOL_SIZE = 200;
         private static readonly int DEFAULT_MIN_DOT_NET_CONNECTION_LIMIT = DEFAULT_MIN_DOT_NET_THREAD_POOL_SIZE;
-        private static readonly TimeSpan DEFAULT_ACTIVATION_SCHEDULING_QUANTUM = TimeSpan.FromMilliseconds(100);
+        private static readonly TimeSpan DEFAULT_ACTIVATION_SCHEDULING_QUANTUM = TimeSpan.FromMilliseconds(150);
         internal const bool ENABLE_WORKER_THREAD_INJECTION = false;
 
         public NodeConfiguration()

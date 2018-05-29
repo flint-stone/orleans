@@ -831,7 +831,7 @@ namespace Orleans.Runtime
 
         public override string ToString()
         {
-#if DEBUG
+//#if DEBUG
             return String.Format("[Activation: {0}{1}{2}{3} {4} State={5}]",
                  Silo,
                  Grain,
@@ -839,14 +839,14 @@ namespace Orleans.Runtime
                  GetActivationInfoString(),
                  Grain.Key.N1,
                  State);
-#else
-            return String.Format("[Activation: {0}{1}{2}{3} State={4}]",
-                Silo,
-                Grain,
-                ActivationId,
-                GetActivationInfoString(),
-                State);
-#endif
+//#else
+//            return String.Format("[Activation: {0}{1}{2}{3} State={4}]",
+//                Silo,
+//                Grain,
+//                ActivationId,
+//                GetActivationInfoString(),
+//                State);
+//#endif
         }
 
         internal string ToDetailedString(bool includeExtraDetails = false)
@@ -872,20 +872,20 @@ namespace Orleans.Runtime
         {                  
             get
             {
-#if DEBUG
+// #if DEBUG
                 return String.Format("[Activation: {0}{1}{2}{3} {4}]",
                      Silo,
                      Grain,
                      ActivationId,
                      GetActivationInfoString(),
                      Grain.Key.N1);
-#else
-                return String.Format("[Activation: {0}{1}{2}{3}]",
-                     Silo,
-                     Grain,
-                     ActivationId,
-                     GetActivationInfoString());
-#endif
+//#else
+//                return String.Format("[Activation: {0}{1}{2}{3}]",
+//                     Silo,
+//                     Grain,
+//                     ActivationId,
+//                     GetActivationInfoString());
+//#endif
             }
         }
 

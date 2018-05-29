@@ -148,20 +148,36 @@ namespace Orleans.Runtime.Scheduler
 
         public void DumpStatus(StringBuilder sb)
         {
+            /*
             if (systemQueue.Count > 0)
             {
-                sb.AppendLine("System Queue:");
+                sb.Append("System Queue:");
                 foreach (var workItem in systemQueue)
                 {
-                    sb.AppendFormat("  {0}:{1}", workItem, workItem.PriorityContext).AppendLine();
+                    sb.AppendFormat("  {0}:{1}%%%%%%%%%%%", workItem, workItem.PriorityContext);
                 }
             }
             
             if (mainQueue.Count <= 0) return;
 
-            sb.AppendLine("Main Queue:");
+            sb.Append("*****************************Main Queue:");
             foreach (var workItem in mainQueue)
-                sb.AppendFormat("  {0}:{1}", workItem, workItem.PriorityContext).AppendLine();
+                sb.AppendFormat("  {0}:{1}%%%%%%%%%%%", workItem, workItem.PriorityContext);
+                */
+            if (systemQueue.Count > 0)
+            {
+                sb.AppendLine("-- System Queue:");
+                foreach (var workItem in systemQueue)
+                {
+                    sb.AppendFormat("--   {0}", workItem).AppendLine();
+                }
+            }
+
+            if (mainQueue.Count <= 0) return;
+
+            sb.AppendLine("-- Main Queue:");
+            foreach (var workItem in mainQueue)
+                sb.AppendFormat("--   {0}", workItem).AppendLine();
         }
 
         public void RunDown()

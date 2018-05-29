@@ -22,7 +22,7 @@ namespace Orleans.Runtime.Scheduler
 
         public DateTime TimeQueued { get; set; }
   
-        public PriorityObject PriorityContext { get; set; }
+        public PriorityObject PriorityContext { get; set; }= new PriorityObject(SchedulerConstants.DEFAULT_PRIORITY, Environment.TickCount);
   
         public ActivationAddress SourceActivation { get; set; }
 

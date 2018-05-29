@@ -157,6 +157,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
                     Context = context,
                     SourceActivation = workItem.SourceActivation
                 };
+                workItem.PriorityContext = new PriorityObject(SchedulerConstants.DEFAULT_PRIORITY, Environment.TickCount); 
                 var t = TaskSchedulerUtils.WrapWorkItemWithPriorityAsTask(workItem, priorityContext, this);
                 t.Start(this);
             }

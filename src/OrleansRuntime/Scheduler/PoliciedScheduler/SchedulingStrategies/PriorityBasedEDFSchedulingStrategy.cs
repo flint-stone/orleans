@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Orleans.Runtime.Scheduler.SchedulerUtility;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Orleans.Runtime.Scheduler.SchedulerUtility;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
@@ -57,9 +57,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             foreach (var k in controllerContext.windowedKey.Keys)
             {
                 windowedKeys.AddOrUpdate(k, controllerContext.windowedKey[k], (key, value) => value);
+#if PQ_DEBUG
+                _logger.Info($"Add to windowedKeys Map {k} {controllerContext.windowedKey[k]}");
+#endif 
             }
             var wig = Scheduler.GetWorkItemGroup(schedulingContext);
-            
+
             if (wig == null)
             {
                 var error = string.Format(
@@ -71,6 +74,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             // Populate info in wig
             var workitemManager = wig.WorkItemManager as PriorityBasedEDFWorkItemManager;
             workitemManager.DataflowSLA = (long) controllerContext.Time;
+            if (windowedKeys.ContainsKey(((SchedulingContext) wig.SchedulingContext).Activation.Grain.Key.N1))
+            {
+                workitemManager.WindowedGrain = true;
+                workitemManager.WindowSize =
+                    windowedKeys[((SchedulingContext) wig.SchedulingContext).Activation.Grain.Key.N1];
+            }
             if (!TenantCostEstimate.ContainsKey(wig)) TenantCostEstimate.TryAdd(wig, SchedulerConstants.DEFAULT_WIG_EXECUTION_COST);
             WorkItemGroup upstreamWig;
             if (!addressToWIG.TryGetValue(invokeWorkItem.SourceActivation, out upstreamWig))
@@ -127,6 +136,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 var wim = wig.WorkItemManager as PriorityBasedEDFWorkItemManager;
                 wim.WindowedGrain = true;
                 wim.WindowSize = windowedKeys[((SchedulingContext) context).Activation.Grain.Key.N1];
+#if PQ_DEBUG
+                _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} Windowed Key {((SchedulingContext)context).Activation.Grain.Key.N1} window size {wim.WindowSize}");
+#endif
             }
             // populate addressToWIG for fast lookup
             if (context.ContextType.Equals(SchedulingContextType.Activation) && !addressToWIG.ContainsKey(((SchedulingContext)context).Activation.Address))
@@ -358,6 +370,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private readonly WorkItemGroup workItemGroup;
         private bool dequeuedFlag;
         private int statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
+        private long wid;
+        private Random rand;
 
         internal List<WorkItemGroup> UpstreamGroups { get; set; } // upstream WIGs groups for backtracking
         internal List<Stack<WorkItemGroup>> DownStreamPaths { get; set; } // downstream WIG paths groups for calculation
@@ -378,6 +392,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
             workItemGroup = wig;
             dequeuedFlag = false;
+            rand = new Random();
         }
 
         public void AddToWorkItemQueue(Task task, WorkItemGroup wig)
@@ -416,17 +431,27 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 // Setting priority of the task
                 // ***
                 var priority = timestamp + DataflowSLA - MaximumDownStreamPathCost;
+                var oldWid = wid;
                 if (WindowedGrain)
-                {
+                {              
                     priority = (timestamp / WindowSize + 1) * WindowSize + DataflowSLA - MaximumDownStreamPathCost;
+                    if (timestamp / WindowSize > wid)
+                    {
+                        if(wid!=0L)
+                            priority = (wid + 1) * WindowSize + DataflowSLA - MaximumDownStreamPathCost;
+                        wid = timestamp / WindowSize;
+                    }
                 }
 
                     if (!workItems.ContainsKey(priority))
                 {
                     workItems.Add(priority, new Queue<Task>());
+#if PQ_DEBUG
+                    _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} Adding priority, {priority}");
+#endif
                 }
 #if PQ_DEBUG
-            _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}, {task}, {timestamp} : {DataflowSLA} : {MaximumDownStreamPathCost} : {priority}");
+            _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}, {task}, {timestamp} : {WindowSize}: {oldWid} -> {wid} : {DataflowSLA} : {MaximumDownStreamPathCost} : {priority}");
 #endif
                 workItems[priority].Enqueue(task);
 
@@ -436,6 +461,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 var priority = workItems.Any()?workItems.Keys.First():wig.PriorityContext.Priority;
                 if (!workItems.ContainsKey(priority))
                 {
+#if PQ_DEBUG
+                _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} Adding priority, {priority}");
+#endif
                     workItems.Add(priority, new Queue<Task>());
                 }
 #if PQ_DEBUG
@@ -471,7 +499,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 //            wig.PriorityContext = new PriorityObject((long)(ulong)priority << 16 | converted, Environment.TickCount);
 //            Console.WriteLine($"{priority}:{wig.PriorityContext} {ticks}:{Convert.ToString(ticks, 2)}:{Convert.ToString(converted, 2)}");
             // wig.PriorityContext = priority;
-            wig.PriorityContext = new PriorityObject(priority, Environment.TickCount);
+            // wig.PriorityContext = new PriorityObject(priority, Environment.TickCount);
+            wig.PriorityContext = new PriorityObject(priority, Environment.TickCount );
+#if PQ_DEBUG
+            _logger.Info($"OnAddWIGToRunQueue: {wig}:{wig.PriorityContext.Priority}:{wig.PriorityContext.Ticks}");
+#endif
             dequeuedFlag = true;
         }
 
@@ -492,23 +524,39 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public Task GetNextTaskForExecution()
         {
 #if PQ_DEBUG
-            _logger.Info($"Dequeue priority {kv.Key}");
+                        _logger.Info($"Dequeue priority {kv.Key}");
 #endif
-            var nextDeadline = Strategy.PeekNextDeadline();
-
-            if (workItems.Any() && workItems.First().Value.Any() && ((nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || workItems.First().Key < nextDeadline) || dequeuedFlag ))
-            {
-                var item = workItems.First().Value.Dequeue();
+                        var nextDeadline = Strategy.PeekNextDeadline();
+            
+                        if (workItems.Any() && workItems.First().Value.Any() && ((nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || workItems.First().Key < nextDeadline) || dequeuedFlag ))
+                        {
+                            var item = workItems.First().Value.Dequeue();
 #if PQ_DEBUG
-            _logger.Info($"{workItemGroup} Dequeue priority {workItems.First().Key} {item}");
+                        _logger.Info($"{workItemGroup} Dequeue priority {workItems.First().Key} {item}");
 #endif
-                dequeuedFlag = false;
-                return item;
+                            dequeuedFlag = false;
+                            return item;
+                        }
+            
+                        // finish current priority, break and take wig off the queue
+            if (!workItems.First().Value.Any())
+            {
+#if PQ_DEBUG
+                _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} Removing priority, {workItems.Keys.First()}");
+#endif
+                workItems.Remove(workItems.Keys.First());
             }
+                        return null;
 
-            // finish current priority, break and take wig off the queue
-            if(!workItems.First().Value.Any()) workItems.Remove(workItems.Keys.First());
-            return null;
+//            if (workItems.Any() && workItems.First().Value.Any())
+//            {
+//                return workItems.First().Value.Dequeue();
+//            }
+//
+//            // finish current priority, break and take wig off the queue
+//            if (!workItems.First().Value.Any()) workItems.Remove(workItems.Keys.First());
+//            return null;
+            
         }
 
         public void UpdateWIGStatistics()
@@ -517,6 +565,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             {
                 statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
                 Strategy.PutWorkItemMetric(workItemGroup, Convert.ToInt64(workItemGroup.CollectStats()));
+                workItemGroup.LogExecTimeCounters();
             }  
         }
 
