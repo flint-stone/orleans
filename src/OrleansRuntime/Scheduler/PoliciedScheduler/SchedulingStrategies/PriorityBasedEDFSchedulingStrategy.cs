@@ -430,7 +430,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     if (pathCost > maximumDownStreamPathCost) maximumDownStreamPathCost = pathCost;
                 }
                 var ownerStats = workItemGroup.CollectStats();
-                if (ownerStats.ContainsKey(contextObj.SourceActivation))
+                if (contextObj.SourceActivation!=null && ownerStats.ContainsKey(contextObj.SourceActivation))
                 {
                     maximumDownStreamPathCost += Convert.ToInt64(ownerStats[contextObj.SourceActivation]);
                 }
