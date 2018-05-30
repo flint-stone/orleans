@@ -13,6 +13,9 @@
     <AssemblyName>OrleansRuntime</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Scheduler\PoliciedScheduler\SchedulingStrategies\ZeroPreemptionEDFSchedulingStrategy.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <None Remove="Scheduler\PoliciedScheduler\SchedulingStrategies\WindowIDSchedulingStrategy.cs~RF1e9b8dbb.TMP" />
   </ItemGroup>
   <ItemGroup>

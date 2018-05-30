@@ -72,7 +72,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return wig;
         }
 
-        public long FetchWorkItemMetric(WorkItemGroup workItem)
+        public object FetchWorkItemMetric(WorkItemGroup workItem)
         {
             throw new NotImplementedException();
         }

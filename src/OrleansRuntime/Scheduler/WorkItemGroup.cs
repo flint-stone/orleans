@@ -535,10 +535,11 @@ namespace Orleans.Runtime.Scheduler
             log.Warn(errorCode, msg);
         }
 
-        public double CollectStats()
+        public Dictionary<ActivationAddress, double> CollectStats()
         {
-            return execTimeCounters.Select(x => x.Value.Any()?x.Value.Average():0).Any()? execTimeCounters.Select(x => x.Value.Any() ? x.Value.Average() : 0).Average():0;
+            //return execTimeCounters.Select(x => x.Value.Any()?x.Value.Average():0).Any()? execTimeCounters.Select(x => x.Value.Any() ? x.Value.Average() : 0).Average():0;
             // return 10000.0;
+            return execTimeCounters.ToDictionary(kv => kv.Key, kv => kv.Value.Average());
         }
 
         public void LogExecTimeCounters()
