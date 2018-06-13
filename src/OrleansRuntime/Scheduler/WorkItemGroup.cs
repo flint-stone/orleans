@@ -228,11 +228,11 @@ namespace Orleans.Runtime.Scheduler
 
                 state = WorkGroupStatus.Runnable;
                 masterScheduler.RunQueue.Add(this);
-//#if PQ_DEBUG
+#if PQ_DEBUG
                 StringBuilder sb = new StringBuilder();
                 masterScheduler.RunQueue.DumpStatus(sb);
                 log.Info("-- RunQueue Contents: {0}", sb.ToString());
-//#endif
+#endif
             }
         }
 
@@ -535,11 +535,37 @@ namespace Orleans.Runtime.Scheduler
             log.Warn(errorCode, msg);
         }
 
+//        public Dictionary<ActivationAddress, double> CollectStats()
+//        {
+//            //return execTimeCounters.Select(x => x.Value.Any()?x.Value.Average():0).Any()? execTimeCounters.Select(x => x.Value.Any() ? x.Value.Average() : 0).Average():0;
+//            // return 10000.0;
+//            return execTimeCounters.ToDictionary(kv => kv.Key, kv => kv.Value.Average());
+//        }
+
         public Dictionary<ActivationAddress, double> CollectStats()
         {
             //return execTimeCounters.Select(x => x.Value.Any()?x.Value.Average():0).Any()? execTimeCounters.Select(x => x.Value.Any() ? x.Value.Average() : 0).Average():0;
-            // return 10000.0;
+            //return execTimeCounters.ToDictionary(kv => kv.Key, kv => 10000.0);
+            // TODO: HACKING AROUND
+            if (((SchedulingContext)SchedulingContext).Activation != null)
+            {
+                var keyLong = (long)(((SchedulingContext)SchedulingContext).Activation.Grain.Key.N1);
+                if (GetStageId(keyLong) == 9)
+                {
+                    return execTimeCounters.ToDictionary(kv => kv.Key, kv => 15000.0);
+                }
+                if (GetStageId(keyLong) == 10)
+                {
+                    return execTimeCounters.ToDictionary(kv => kv.Key, kv => 80000.0);
+                }
+            }
+
             return execTimeCounters.ToDictionary(kv => kv.Key, kv => kv.Value.Average());
+        }
+
+        public static short GetStageId(long grainKey)
+        {
+            return (short)(grainKey >> 32 & 0xFFFFL);
         }
 
         public void LogExecTimeCounters()
