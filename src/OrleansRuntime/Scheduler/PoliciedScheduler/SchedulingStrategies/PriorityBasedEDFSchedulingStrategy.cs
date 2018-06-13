@@ -74,6 +74,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             // Populate info in wig
             var workitemManager = wig.WorkItemManager as PriorityBasedEDFWorkItemManager;
             workitemManager.DataflowSLA = (long) controllerContext.Time;
+#if DEBUG
+            _logger.Info($"Control grain id {controllerContext.ControllerKey} SLA {workitemManager.DataflowSLA}");
+#endif
             if (windowedKeys.ContainsKey(((SchedulingContext) wig.SchedulingContext).Activation.Grain.Key.N1))
             {
                 workitemManager.WindowedGrain = true;
@@ -429,7 +432,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
                     if (pathCost > maximumDownStreamPathCost) maximumDownStreamPathCost = pathCost;
                 }
-                var ownerStats = workItemGroup.CollectStats();
+                // var ownerStats = workItemGroup.CollectStats();
+                var ownerStats = (Dictionary<ActivationAddress, double>) Strategy.FetchWorkItemMetric(workItemGroup);
                 if (contextObj.SourceActivation!=null && ownerStats.ContainsKey(contextObj.SourceActivation))
                 {
                     maximumDownStreamPathCost += Convert.ToInt64(ownerStats[contextObj.SourceActivation]);
