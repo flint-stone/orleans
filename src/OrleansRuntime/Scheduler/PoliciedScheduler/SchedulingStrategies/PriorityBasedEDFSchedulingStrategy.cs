@@ -74,9 +74,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             // Populate info in wig
             var workitemManager = wig.WorkItemManager as PriorityBasedEDFWorkItemManager;
             workitemManager.DataflowSLA = (long) controllerContext.Time;
-#if DEBUG
-            _logger.Info($"Control grain id {controllerContext.ControllerKey} SLA {workitemManager.DataflowSLA}");
-#endif
+
             if (windowedKeys.ContainsKey(((SchedulingContext) wig.SchedulingContext).Activation.Grain.Key.N1))
             {
                 workitemManager.WindowedGrain = true;
@@ -535,29 +533,29 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public Task GetNextTaskForExecution()
         {
 #if PQ_DEBUG
-                        _logger.Info($"Dequeue priority {kv.Key}");
+            _logger.Info($"Dequeue priority {kv.Key}");
 #endif
-                        var nextDeadline = Strategy.PeekNextDeadline();
+            var nextDeadline = Strategy.PeekNextDeadline();
             
-                        if (workItems.Any() && workItems.First().Value.Any() && ((nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || workItems.First().Key < nextDeadline) || dequeuedFlag ))
-                        {
-                            var item = workItems.First().Value.Dequeue();
-#if PQ_DEBUG
-                        _logger.Info($"{workItemGroup} Dequeue priority {workItems.First().Key} {item}");
-#endif
-                            dequeuedFlag = false;
-                            return item;
-                        }
-            
-                        // finish current priority, break and take wig off the queue
-            if (!workItems.First().Value.Any())
+            if (workItems.Any() && workItems.First().Value.Any() && ((nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || workItems.First().Key < nextDeadline) || dequeuedFlag ))
             {
+                var item = workItems.First().Value.Dequeue();
 #if PQ_DEBUG
-                _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} Removing priority, {workItems.Keys.First()}");
+                _logger.Info($"{workItemGroup} Dequeue priority {workItems.First().Key} {item}");
 #endif
-                workItems.Remove(workItems.Keys.First());
+                dequeuedFlag = false;
+                // finish current priority, break and take wig off the queue
+                if (!workItems.First().Value.Any())
+                {
+#if PQ_DEBUG
+                    _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} Removing priority, {workItems.Keys.First()}");
+#endif
+                    workItems.Remove(workItems.Keys.First());
+                }
+                return item;
             }
-                        return null;
+         
+            return null;
 
 //            if (workItems.Any() && workItems.First().Value.Any())
 //            {
