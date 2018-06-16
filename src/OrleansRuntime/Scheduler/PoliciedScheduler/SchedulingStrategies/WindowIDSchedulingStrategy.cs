@@ -8,14 +8,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
     internal class WindowIDSchedulingStrategy : ISchedulingStrategy
     {
-        private readonly LoggerImpl logger = LogManager.GetLogger("Scheduler.PoliciedScheduler.SchedulingStrategies", LoggerType.Runtime);
-
-        #region Tenancies
-        private const int MaximumStatCounterSize = 100;
-        // TODO: FIX LATER
-        private int statCollectionCounter = 100;
-
-        #endregion
+        private LoggerImpl _logger;
 
         public IOrleansTaskScheduler Scheduler { get; set; }
 
@@ -25,7 +18,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return SchedulerConstants.DEFAULT_PRIORITY;
         }
 
-        public void Initialization() { }
+        public void Initialization()
+        {
+            _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
+        }
 
         public void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig) { }
 
@@ -39,7 +35,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             {
                 var error = string.Format(
                     "WorkItem {0} on context {1} does not match a work item group", workItem, context);
-                logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
+                _logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
                 throw new InvalidOperationException(error);
             }
         }

@@ -8,7 +8,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
     internal class TestSchedulingStrategy : ISchedulingStrategy
     {
-        private readonly LoggerImpl logger = LogManager.GetLogger("Scheduler.PoliciedScheduler.SchedulingStrategies", LoggerType.Runtime);
+        private LoggerImpl _logger;
 
         #region Tenancies
 
@@ -29,6 +29,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void Initialization()
         {
+            _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
             tenants = new Dictionary<short, Tuple<ulong, HashSet<ulong>>>();
             timeLimitsOnTenants = new Dictionary<short, long>();
             tenantStatCounters = new Dictionary<WorkItemGroup, FixedSizedQueue<double>>();
@@ -59,7 +60,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             {
                 var error = string.Format(
                     "WorkItem {0} on context {1} does not match a work item group", workItem, context);
-                logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
+                _logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
                 throw new InvalidOperationException(error);
             }
             if (!tenantStatCounters.ContainsKey(wig)) tenantStatCounters.Add(wig, new FixedSizedQueue<double>(MaximumStatCounterSize));

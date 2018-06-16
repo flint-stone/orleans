@@ -59,7 +59,7 @@ namespace Orleans.Runtime.Scheduler
             get { return SchedulingUtils.IsSystemContext(SchedulingContext); }
         }
 
-        public PriorityObject PriorityContext { get; set; } = new PriorityObject(0L, Environment.TickCount);
+        public PriorityObject PriorityContext { get; set; } = new PriorityObject(SchedulerConstants.DEFAULT_PRIORITY, Environment.TickCount);
         public ActivationAddress SourceActivation { get; set; }
 
         public string Name { get { return SchedulingContext == null ? "unknown" : SchedulingContext.Name; } }
@@ -428,10 +428,10 @@ namespace Orleans.Runtime.Scheduler
 
                 stopwatch.Stop();
 
-#if DEBUG
-//                // log.Info("Dumping Queue Status From Execute {0}", DumpStatus());
-//                log.Info("Dumping Execution time counters From Execute: {0}", string.Join(" | ", execTimeCounters.Select(x => x.Key.Grain==null?x.Key.ToString():x.Key.Grain.Key.N1 + " : " + x.Value.ToString())));
-               log.Info("Dumping Status From Execute after executing {0} tasks {1}:{2} with {3} millis", count, SchedulingContext, PriorityContext, stopwatch.Elapsed);
+#if PQ_EBUG
+                log.Info("Dumping Queue Status From Execute {0}", DumpStatus());
+                log.Info("Dumping Execution time counters From Execute: {0}", string.Join(" | ", execTimeCounters.Select(x => x.Key.Grain==null?x.Key.ToString():x.Key.Grain.Key.N1 + " : " + x.Value.ToString())));
+                log.Info("Dumping Status From Execute after executing {0} tasks {1}:{2} with {3} millis", count, SchedulingContext, PriorityContext, stopwatch.Elapsed);
 #endif
             }
             catch (Exception ex)
@@ -534,13 +534,6 @@ namespace Orleans.Runtime.Scheduler
             var msg = string.Format("{0} {1}", what, DumpStatus());
             log.Warn(errorCode, msg);
         }
-
-//        public Dictionary<ActivationAddress, double> CollectStats()
-//        {
-//            //return execTimeCounters.Select(x => x.Value.Any()?x.Value.Average():0).Any()? execTimeCounters.Select(x => x.Value.Any() ? x.Value.Average() : 0).Average():0;
-//            // return 10000.0;
-//            return execTimeCounters.ToDictionary(kv => kv.Key, kv => kv.Value.Average());
-//        }
 
         public Dictionary<ActivationAddress, Dictionary<string, double>> CollectStats()
         {

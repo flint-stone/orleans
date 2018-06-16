@@ -7,7 +7,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
     internal class DefaultSchedulingStrategy : ISchedulingStrategy
     {
-        private readonly LoggerImpl logger = LogManager.GetLogger("Scheduler.PoliciedScheduler.SchedulingStrategies", LoggerType.Runtime);
+        private LoggerImpl _logger;
 
         public IOrleansTaskScheduler Scheduler { get; set; }
 
@@ -18,7 +18,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void Initialization()
         {
-            throw new NotImplementedException();
+            _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
         }
 
         public void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig) { }
