@@ -373,14 +373,14 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         internal List<WorkItemGroup> UpstreamGroups { get; set; } // upstream WIGs groups for backtracking
         internal List<Stack<WorkItemGroup>> DownStreamPaths { get; set; } // downstream WIG paths groups for calculation
-        public ISchedulingStrategy Strategy { get; set; }
+        public PriorityBasedEDFSchedulingStrategy Strategy { get; set; }
         internal long DataflowSLA { get; set; }
         public bool WindowedGrain { get; set; }
         public long WindowSize { get; set; }
 
         public PriorityBasedEDFWorkItemManager(ISchedulingStrategy strategy, WorkItemGroup wig)
         {
-            Strategy = strategy;
+            Strategy = (PriorityBasedEDFSchedulingStrategy)strategy;
             workItems = new SortedDictionary<long, Queue<Task>>();
             UpstreamGroups = new List<WorkItemGroup>();
             DownStreamPaths = new List<Stack<WorkItemGroup>>();

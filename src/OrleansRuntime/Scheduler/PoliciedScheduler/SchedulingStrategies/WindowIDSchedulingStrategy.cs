@@ -40,21 +40,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             wig.WorkItemManager = new WindowIDWorkItemManager();
             return wig;
         }
-
-        public object FetchWorkItemMetric(WorkItemGroup workItem)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void PutWorkItemMetric(WorkItemGroup workItemGroup, object metric)
-        {
-            throw new NotImplementedException();
-        }
-
-        public long PeekNextDeadline()
-        {
-            throw new NotImplementedException();
-        }
     }
 
     internal class WindowIDWorkItemManager : IWorkItemManager
