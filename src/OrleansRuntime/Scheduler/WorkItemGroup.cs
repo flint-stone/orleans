@@ -470,9 +470,8 @@ namespace Orleans.Runtime.Scheduler
                             state = WorkGroupStatus.Waiting;
                         }
                     }
+                    WorkItemManager.UpdateWIGStatistics();
                 }
-
-                WorkItemManager.UpdateWIGStatistics();
             }
         }
 
@@ -573,7 +572,17 @@ namespace Orleans.Runtime.Scheduler
         public void LogExecTimeCounters()
         {
             log.Info($"{this} execution time counters collected " +
-                     $"{string.Join(";" , execTimeCounters.Select(kv => kv.Key.Grain.Key.N1 + " : { " + string.Join("|||", kv.Value.Select(tq => tq.Key + " -> " + string.Join(",", tq.Value))) + " } "))}");
+                     StatCollectionExplain(execTimeCounters));
+        }
+
+        private static string StatCollectionExplain(
+            Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>> collection)
+        {
+            return string.Join(";",
+                collection.Select(kv => kv.Key.Grain.Key.N1 + " : { " +
+                                              string.Join("|||",
+                                                  kv.Value.Select(tq => tq.Key + " -> " + string.Join(",", tq.Value))) +
+                                              " } "));
         }
     }
 }
