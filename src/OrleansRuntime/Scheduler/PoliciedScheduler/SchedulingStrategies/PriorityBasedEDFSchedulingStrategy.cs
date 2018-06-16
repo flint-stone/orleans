@@ -21,12 +21,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         #endregion
 
         public IOrleansTaskScheduler Scheduler { get; set; }
- 
-        public IComparable GetPriority(IWorkItem workItem)
-        {
-            if (Scheduler.GetWorkItemGroup(workItem.SchedulingContext) != null) return workItem.PriorityContext;
-            return SchedulerConstants.DEFAULT_PRIORITY;
-        }
 
         public void Initialization()
         {

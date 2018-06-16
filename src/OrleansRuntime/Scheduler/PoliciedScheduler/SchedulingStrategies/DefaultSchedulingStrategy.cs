@@ -11,11 +11,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public IOrleansTaskScheduler Scheduler { get; set; }
 
-        public IComparable GetPriority(IWorkItem workItem)
-        {
-            throw new NotImplementedException();
-        }
-
         public void Initialization()
         {
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);

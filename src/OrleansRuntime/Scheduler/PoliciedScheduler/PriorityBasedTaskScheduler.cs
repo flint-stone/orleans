@@ -165,9 +165,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             {
                 var priorityContext = new PriorityContext
                 {
-                    Timestamp = (PriorityObject)SchedulingStrategy.GetPriority(workItem)!=null? 
-                    ((PriorityObject)SchedulingStrategy.GetPriority(workItem)).Priority:
-                    SchedulerConstants.DEFAULT_PRIORITY,
+                    Timestamp = workItem.PriorityContext.Priority,
                     Context = context,
                     SourceActivation = workItem.SourceActivation
                 };
