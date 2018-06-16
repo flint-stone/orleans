@@ -12,7 +12,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
        private LoggerImpl _logger; // = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
 
         #region Tenancies
-        public ConcurrentDictionary<WorkItemGroup, Dictionary<ActivationAddress, double>> TenantCostEstimate { get; set; }
+        public ConcurrentDictionary<WorkItemGroup, Dictionary<ActivationAddress, Dictionary<string, double>>> TenantCostEstimate { get; set; }
 
         private Dictionary<ActivationAddress, WorkItemGroup> addressToWIG;
         private ConcurrentDictionary<ulong, long> windowedKeys;
@@ -30,7 +30,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void Initialization()
         {
-            TenantCostEstimate = new ConcurrentDictionary<WorkItemGroup, Dictionary<ActivationAddress, double>>(2, 31);
+            TenantCostEstimate = new ConcurrentDictionary<WorkItemGroup, Dictionary<ActivationAddress, Dictionary<string, double>>>();
             addressToWIG = new Dictionary<ActivationAddress, WorkItemGroup>();
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
             windowedKeys = new ConcurrentDictionary<ulong, long>();
@@ -43,7 +43,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             {
                 statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
                 // TODO: fix single level counter
-                //_logger.Info($"Printing execution times in ticks: {string.Join("********************", TenantCostEstimate.Select(x => x.Key.ToString() + ':' + x.Value))}");
+                _logger.Info($"Printing execution times in ticks: {string.Join("********************", TenantCostEstimate.Select(x => x.Key.ToString() + ':' + x.Value))}");
             }
         }
         
@@ -81,7 +81,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 workitemManager.WindowSize =
                     windowedKeys[((SchedulingContext) wig.SchedulingContext).Activation.Grain.Key.N1];
             }
-            if (!TenantCostEstimate.ContainsKey(wig)) TenantCostEstimate.TryAdd(wig, new Dictionary<ActivationAddress, double>());
+            if (!TenantCostEstimate.ContainsKey(wig)) TenantCostEstimate.TryAdd(wig, new Dictionary<ActivationAddress, Dictionary<string, double>>());
             WorkItemGroup upstreamWig;
             if (!addressToWIG.TryGetValue(invokeWorkItem.SourceActivation, out upstreamWig))
             {
@@ -149,12 +149,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public object FetchWorkItemMetric(WorkItemGroup workItem)
         {
-            return TenantCostEstimate.ContainsKey(workItem) ? TenantCostEstimate[workItem] : new Dictionary<ActivationAddress, double>();
+            return TenantCostEstimate.ContainsKey(workItem) ? TenantCostEstimate[workItem] : new Dictionary<ActivationAddress, Dictionary<string, double>>();
         }
 
         public void PutWorkItemMetric(WorkItemGroup workItemGroup, object metric)
         {
-            if(TenantCostEstimate.ContainsKey(workItemGroup)) TenantCostEstimate[workItemGroup] = (Dictionary<ActivationAddress, double>) metric;
+            if(TenantCostEstimate.ContainsKey(workItemGroup)) TenantCostEstimate[workItemGroup] = (Dictionary<ActivationAddress, Dictionary<string, double>>) metric;
         }
 
         public long PeekNextDeadline()
@@ -417,10 +417,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     foreach (var elem in stack)
                     {
                         // TODO: fix later with window information
-                        var statCollection= (Dictionary<ActivationAddress, double>)Strategy.FetchWorkItemMetric(elem);
+                        var statCollection= (Dictionary<ActivationAddress, Dictionary<string, double>>)Strategy.FetchWorkItemMetric(elem);
                         var address = ((SchedulingContext) workItemGroup.SchedulingContext).Activation.Address;
                         var cost = 0L;
-                        if (statCollection.ContainsKey(address)) cost = Convert.ToInt64(statCollection[address]);
+                        if (statCollection.ContainsKey(address) && statCollection[address].ContainsKey(task.ToString())) cost = Convert.ToInt64(statCollection[address][task.ToString()]);
                         pathCost += cost;
 #if PQ_DEBUG
                         _logger.Info(
@@ -431,10 +431,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     if (pathCost > maximumDownStreamPathCost) maximumDownStreamPathCost = pathCost;
                 }
                 // var ownerStats = workItemGroup.CollectStats();
-                var ownerStats = (Dictionary<ActivationAddress, double>) Strategy.FetchWorkItemMetric(workItemGroup);
-                if (contextObj.SourceActivation!=null && ownerStats.ContainsKey(contextObj.SourceActivation))
+                var ownerStats = (Dictionary<ActivationAddress, Dictionary<string, double>>) Strategy.FetchWorkItemMetric(workItemGroup);
+                if (contextObj.SourceActivation!=null && ownerStats.ContainsKey(contextObj.SourceActivation) && ownerStats[contextObj.SourceActivation].ContainsKey(task.ToString()))
                 {
-                    maximumDownStreamPathCost += Convert.ToInt64(ownerStats[contextObj.SourceActivation]);
+                    maximumDownStreamPathCost += Convert.ToInt64(ownerStats[contextObj.SourceActivation][task.ToString()]);
                 }
                 // ***
                 // Setting priority of the task

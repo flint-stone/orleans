@@ -34,7 +34,7 @@ namespace Orleans.Runtime.Scheduler
         private TimeSpan totalQueuingDelay;
         private readonly long quantumExpirations;
         private readonly int workItemGroupStatisticsNumber;
-        private Dictionary<ActivationAddress, FixedSizedQueue<long>> execTimeCounters;
+        private Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>> execTimeCounters;
 
         internal IWorkItemManager WorkItemManager { get; set; }
         
@@ -135,7 +135,6 @@ namespace Orleans.Runtime.Scheduler
         // per ActivationWorker. An attempt to wait when there are already too many threads waiting
         // will result in a TooManyWaitersException being thrown.
         //private static readonly int MaxWaitingThreads = 500;
-        private const int CounterQueueSize = 30;
 
         internal WorkItemGroup(IOrleansTaskScheduler sched, ISchedulingContext schedulingContext)
         {
@@ -148,7 +147,7 @@ namespace Orleans.Runtime.Scheduler
             totalQueuingDelay = TimeSpan.Zero;
             quantumExpirations = 0;
             TaskRunner = new ActivationTaskScheduler(this);
-            execTimeCounters = new Dictionary<ActivationAddress, FixedSizedQueue<long>>();
+            execTimeCounters = new Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>>();
             log = IsSystemPriority ? LogManager.GetLogger("Scheduler." + Name + ".WorkItemGroup", LoggerType.Runtime) : appLogger;
 
             if (StatisticsCollector.CollectShedulerQueuesStats)
@@ -408,8 +407,9 @@ namespace Orleans.Runtime.Scheduler
                         
                         if(contextObj?.SourceActivation != null) // If the task originates from another activation
                         {
-                            if (!execTimeCounters.ContainsKey(contextObj.SourceActivation)) execTimeCounters.Add(contextObj.SourceActivation, new FixedSizedQueue<long>(CounterQueueSize));
-                            execTimeCounters[contextObj.SourceActivation].Enqueue(taskLength.Ticks);
+                            if (!execTimeCounters.ContainsKey(contextObj.SourceActivation)) execTimeCounters.Add(contextObj.SourceActivation, new Dictionary<string, FixedSizedQueue<long>>());
+                            if (!execTimeCounters[contextObj.SourceActivation].ContainsKey(task.ToString())) execTimeCounters[contextObj.SourceActivation].Add(task.ToString(), new FixedSizedQueue<long>(SchedulerConstants.STATS_COUNTER_QUEUE_SIZE));
+                            execTimeCounters[contextObj.SourceActivation][task.ToString()].Enqueue(taskLength.Ticks);
                         }
                         
                         if (taskLength > masterScheduler.TurnWarningLength)
@@ -431,7 +431,7 @@ namespace Orleans.Runtime.Scheduler
 #if DEBUG
 //                // log.Info("Dumping Queue Status From Execute {0}", DumpStatus());
 //                log.Info("Dumping Execution time counters From Execute: {0}", string.Join(" | ", execTimeCounters.Select(x => x.Key.Grain==null?x.Key.ToString():x.Key.Grain.Key.N1 + " : " + x.Value.ToString())));
-//                log.Info("Dumping Status From Execute after executing {0} tasks {1}:{2} with {3} millis", count, SchedulingContext, PriorityContext, stopwatch.Elapsed);
+               log.Info("Dumping Status From Execute after executing {0} tasks {1}:{2} with {3} millis", count, SchedulingContext, PriorityContext, stopwatch.Elapsed);
 #endif
             }
             catch (Exception ex)
@@ -543,11 +543,12 @@ namespace Orleans.Runtime.Scheduler
 //            return execTimeCounters.ToDictionary(kv => kv.Key, kv => kv.Value.Average());
 //        }
 
-        public Dictionary<ActivationAddress, double> CollectStats()
+        public Dictionary<ActivationAddress, Dictionary<string, double>> CollectStats()
         {
             //return execTimeCounters.Select(x => x.Value.Any()?x.Value.Average():0).Any()? execTimeCounters.Select(x => x.Value.Any() ? x.Value.Average() : 0).Average():0;
             //return execTimeCounters.ToDictionary(kv => kv.Key, kv => 10000.0);
             // TODO: HACKING AROUND
+            /*
             if (((SchedulingContext)SchedulingContext).Activation != null)
             {
                 var keyLong = (long)(((SchedulingContext)SchedulingContext).Activation.Grain.Key.N1);
@@ -560,8 +561,8 @@ namespace Orleans.Runtime.Scheduler
                     return execTimeCounters.ToDictionary(kv => kv.Key, kv => 80000.0);
                 }
             }
-
-            return execTimeCounters.ToDictionary(kv => kv.Key, kv => kv.Value.Average());
+            */
+            return execTimeCounters.ToDictionary(kv => kv.Key, kv => kv.Value.ToDictionary(tq => tq.Key, tq=>tq.Value.Average()));
         }
 
         public static short GetStageId(long grainKey)
@@ -571,7 +572,8 @@ namespace Orleans.Runtime.Scheduler
 
         public void LogExecTimeCounters()
         {
-            log.Info($"{this} execution time counters collected {string.Join(";" , execTimeCounters.Select(kv => kv.Key.Grain.Key.N1 + " : " + string.Join(",", kv.Value)))}");
+            log.Info($"{this} execution time counters collected " +
+                     $"{string.Join(";" , execTimeCounters.Select(kv => kv.Key.Grain.Key.N1 + " : { " + string.Join("|||", kv.Value.Select(tq => tq.Key + " -> " + string.Join(",", tq.Value))) + " } "))}");
         }
     }
 }
