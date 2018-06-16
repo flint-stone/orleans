@@ -1,4 +1,5 @@
 using System;
+using Orleans.Runtime.Scheduler.SchedulerUtility;
 
 
 namespace Orleans.Runtime.Scheduler
@@ -6,7 +7,7 @@ namespace Orleans.Runtime.Scheduler
     internal interface IWorkItem
     {
         // TODO: Change priority to general context
-        long PriorityContext { get; set; }
+        PriorityObject PriorityContext { get; set; }
         ActivationAddress SourceActivation { get; set; }
         string Name { get; }
         WorkItemType ItemType { get; }

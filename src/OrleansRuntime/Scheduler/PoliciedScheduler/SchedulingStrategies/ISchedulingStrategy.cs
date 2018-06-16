@@ -6,8 +6,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
     {
         IOrleansTaskScheduler Scheduler { get; set; }
 
-        IComparable GetPriority(IWorkItem workItem);
-
         void Initialization();
 
         void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig);
@@ -16,7 +14,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context);
 
-        long FetchWorkItemMetric(WorkItemGroup workItem);
+        object FetchWorkItemMetric(WorkItemGroup workItem);
+
+        void PutWorkItemMetric(WorkItemGroup workItemGroup, Object metric);
 
         long PeekNextDeadline();
 

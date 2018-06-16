@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Orleans.Runtime.Scheduler.SchedulerUtility;
 
 namespace Orleans.Runtime.Scheduler
 {
@@ -25,8 +26,12 @@ namespace Orleans.Runtime.Scheduler
             this.dispatcher = dispatcher;
             this.SchedulingContext = activation.SchedulingContext;
             // Interpreting Scheduling Context From Application
-            this.PriorityContext = message?.RequestContextData!=null && message.RequestContextData.ContainsKey("Timestamp")?
-                (long) message.RequestContextData["Timestamp"]:0;
+            this.PriorityContext = new PriorityObject(
+                message?.RequestContextData != null && message.RequestContextData.ContainsKey("Timestamp")
+                    ? (long) message.RequestContextData["Timestamp"]
+                    : 0,
+                Environment.TickCount);
+
             this.ControllerContext =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("ControllerContext")
                     ? (ControllerContext) message.RequestContextData["ControllerContext"]

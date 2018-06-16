@@ -1,11 +1,12 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies;
-using Orleans.Runtime.Scheduler.Utility;
+using Orleans.Runtime.Scheduler.SchedulerUtility;
 
 
 namespace Orleans.Runtime.Scheduler
@@ -33,9 +34,8 @@ namespace Orleans.Runtime.Scheduler
         private TimeSpan totalQueuingDelay;
         private readonly long quantumExpirations;
         private readonly int workItemGroupStatisticsNumber;
-        private Dictionary<ActivationAddress, FixedSizedQueue<long>> execTimeCounters;
+        private Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>> execTimeCounters;
 
-        // internal ISchedulingStrategy SchedulingStrategy { get; set; }
         internal IWorkItemManager WorkItemManager { get; set; }
         
         internal ActivationTaskScheduler TaskRunner { get; private set; }
@@ -59,7 +59,7 @@ namespace Orleans.Runtime.Scheduler
             get { return SchedulingUtils.IsSystemContext(SchedulingContext); }
         }
 
-        public long PriorityContext { get; set; }
+        public PriorityObject PriorityContext { get; set; } = new PriorityObject(SchedulerConstants.DEFAULT_PRIORITY, Environment.TickCount);
         public ActivationAddress SourceActivation { get; set; }
 
         public string Name { get { return SchedulingContext == null ? "unknown" : SchedulingContext.Name; } }
@@ -135,7 +135,6 @@ namespace Orleans.Runtime.Scheduler
         // per ActivationWorker. An attempt to wait when there are already too many threads waiting
         // will result in a TooManyWaitersException being thrown.
         //private static readonly int MaxWaitingThreads = 500;
-        private const int CounterQueueSize = 30;
 
         internal WorkItemGroup(IOrleansTaskScheduler sched, ISchedulingContext schedulingContext)
         {
@@ -148,8 +147,7 @@ namespace Orleans.Runtime.Scheduler
             totalQueuingDelay = TimeSpan.Zero;
             quantumExpirations = 0;
             TaskRunner = new ActivationTaskScheduler(this);
-            execTimeCounters = new Dictionary<ActivationAddress, FixedSizedQueue<long>>();
-            // workItemDictionary[0.0] = new Queue<Task>();
+            execTimeCounters = new Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>>();
             log = IsSystemPriority ? LogManager.GetLogger("Scheduler." + Name + ".WorkItemGroup", LoggerType.Runtime) : appLogger;
 
             if (StatisticsCollector.CollectShedulerQueuesStats)
@@ -211,7 +209,7 @@ namespace Orleans.Runtime.Scheduler
                     SchedulerStatisticsGroup.OnWorkItemEnqueue();
 #endif
                 WorkItemManager.AddToWorkItemQueue(task, this);
-#if DEBUG
+#if PQ_DEBUG
                 if (log.IsVerbose3) log.Verbose3("Add to RunQueue {0}, #{1}, onto {2}", task, thisSequenceNumber, SchedulingContext);
 #endif
 #if PQ_DEBUG
@@ -224,15 +222,16 @@ namespace Orleans.Runtime.Scheduler
                         count, Name, maxPendingItemsLimit));
                 }
 
-                WorkItemManager.OnAddWIGToRunQueue(task, this);
+                
                 if (state != WorkGroupStatus.Waiting) return;
+                WorkItemManager.OnAddWIGToRunQueue(task, this);
 
                 state = WorkGroupStatus.Runnable;
                 masterScheduler.RunQueue.Add(this);
 #if PQ_DEBUG
                 StringBuilder sb = new StringBuilder();
                 masterScheduler.RunQueue.DumpStatus(sb);
-                log.Info("RunQueue Contents: {0}", sb.ToString());
+                log.Info("-- RunQueue Contents: {0}", sb.ToString());
 #endif
             }
         }
@@ -370,18 +369,12 @@ namespace Orleans.Runtime.Scheduler
                     if (StatisticsCollector.CollectGlobalShedulerStats)
                         SchedulerStatisticsGroup.OnWorkItemDequeue();
 #endif
-
-#if PQ_DEBUG
                     var contextObj = task.AsyncState as PriorityContext;
+#if PQ_DEBUG
                     var priority = contextObj?.Timestamp ?? 0.0;
-                    log.Info("Dumping Status : About to execute task {0} in SchedulingContext={1} with time remain of {2}", task, SchedulingContext, priority);
-#endif
-#if PQ_DEBUG
+                    log.Info("Dumping Status : About to execute task {0}:{1}:{2} in SchedulingContext={3} with priority of {4}", task, task.Id, contextObj, SchedulingContext.DetailedStatus(), priority);
+
                     if (log.IsVerbose2) log.Verbose2("About to execute task {0} in SchedulingContext={1}", task, SchedulingContext);
-#endif
-                    var asyncState = task.AsyncState as PriorityContext;
-#if PQ_DEBUG
-                    log.Info($"About to execute task {task}:{task.Id}:{asyncState}  in SchedulingContext={SchedulingContext.DetailedStatus()}");
 #endif
                     var taskStart = stopwatch.Elapsed;
 
@@ -411,11 +404,12 @@ namespace Orleans.Runtime.Scheduler
                         totalItemsProcessed++;
                         var taskLength = stopwatch.Elapsed - taskStart;
 
-                        var contextObj = task.AsyncState as PriorityContext;
+                        
                         if(contextObj?.SourceActivation != null) // If the task originates from another activation
                         {
-                            if (!execTimeCounters.ContainsKey(contextObj.SourceActivation)) execTimeCounters.Add(contextObj.SourceActivation, new FixedSizedQueue<long>(CounterQueueSize));
-                            execTimeCounters[contextObj.SourceActivation].Enqueue(taskLength.Ticks);
+                            if (!execTimeCounters.ContainsKey(contextObj.SourceActivation)) execTimeCounters.Add(contextObj.SourceActivation, new Dictionary<string, FixedSizedQueue<long>>());
+                            if (!execTimeCounters[contextObj.SourceActivation].ContainsKey(task.ToString())) execTimeCounters[contextObj.SourceActivation].Add(task.ToString(), new FixedSizedQueue<long>(SchedulerConstants.STATS_COUNTER_QUEUE_SIZE));
+                            execTimeCounters[contextObj.SourceActivation][task.ToString()].Enqueue(taskLength.Ticks);
                         }
                         
                         if (taskLength > masterScheduler.TurnWarningLength)
@@ -431,13 +425,14 @@ namespace Orleans.Runtime.Scheduler
                 while (((MaxWorkItemsPerTurn <= 0) || (count <= MaxWorkItemsPerTurn)) &&
                     ((ActivationSchedulingQuantum <= TimeSpan.Zero) || (stopwatch.Elapsed < ActivationSchedulingQuantum)));
 
-#if PQ_DEBUG
-                log.Info("Dumping Status From Execute after executing {0} items: {1}:{2}", count, DumpStatus(), PriorityContext);
-                log.Info("Dumping Execution time counters From Execute: {0}", string.Join("|", execTimeCounters.Select(x => x.Key.ToString() + x.Value.ToString())));
-                log.Info("Dumping Status From Execute after executing {0} tasks {1}:{2} with {3} millis", count, SchedulingContext, PriorityContext, stopwatch.Elapsed);
-#endif
 
                 stopwatch.Stop();
+
+#if PQ_EBUG
+                log.Info("Dumping Queue Status From Execute {0}", DumpStatus());
+                log.Info("Dumping Execution time counters From Execute: {0}", string.Join(" | ", execTimeCounters.Select(x => x.Key.Grain==null?x.Key.ToString():x.Key.Grain.Key.N1 + " : " + x.Value.ToString())));
+                log.Info("Dumping Status From Execute after executing {0} tasks {1}:{2} with {3} millis", count, SchedulingContext, PriorityContext, stopwatch.Elapsed);
+#endif
             }
             catch (Exception ex)
             {
@@ -448,6 +443,7 @@ namespace Orleans.Runtime.Scheduler
                 // Now we're not Running anymore. 
                 // If we left work items on our run list, we're Runnable, and need to go back on the silo run queue; 
                 // If our run list is empty, then we're waiting.
+
                 lock (lockable)
                 {
                     if (state != WorkGroupStatus.Shutdown)
@@ -474,6 +470,7 @@ namespace Orleans.Runtime.Scheduler
                             state = WorkGroupStatus.Waiting;
                         }
                     }
+                    WorkItemManager.UpdateWIGStatistics();
                 }
             }
         }
@@ -538,9 +535,47 @@ namespace Orleans.Runtime.Scheduler
             log.Warn(errorCode, msg);
         }
 
-        public double CollectStats()
+        public Dictionary<ActivationAddress, Dictionary<string, double>> CollectStats()
         {
-            return execTimeCounters.Select(x => x.Value.Average()).Average();
+            //return execTimeCounters.Select(x => x.Value.Any()?x.Value.Average():0).Any()? execTimeCounters.Select(x => x.Value.Any() ? x.Value.Average() : 0).Average():0;
+            //return execTimeCounters.ToDictionary(kv => kv.Key, kv => 10000.0);
+            // TODO: HACKING AROUND
+            /*
+            if (((SchedulingContext)SchedulingContext).Activation != null)
+            {
+                var keyLong = (long)(((SchedulingContext)SchedulingContext).Activation.Grain.Key.N1);
+                if (GetStageId(keyLong) == 9)
+                {
+                    return execTimeCounters.ToDictionary(kv => kv.Key, kv => 15000.0);
+                }
+                if (GetStageId(keyLong) == 10)
+                {
+                    return execTimeCounters.ToDictionary(kv => kv.Key, kv => 80000.0);
+                }
+            }
+            */
+            return execTimeCounters.ToDictionary(kv => kv.Key, kv => kv.Value.ToDictionary(tq => tq.Key, tq=>tq.Value.Average()));
+        }
+
+        public static short GetStageId(long grainKey)
+        {
+            return (short)(grainKey >> 32 & 0xFFFFL);
+        }
+
+        public void LogExecTimeCounters()
+        {
+            log.Info($"{this} execution time counters collected " +
+                     StatCollectionExplain(execTimeCounters));
+        }
+
+        private static string StatCollectionExplain(
+            Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>> collection)
+        {
+            return string.Join(";",
+                collection.Select(kv => kv.Key.Grain.Key.N1 + " : { " +
+                                              string.Join("|||",
+                                                  kv.Value.Select(tq => tq.Key + " -> " + string.Join(",", tq.Value))) +
+                                              " } "));
         }
     }
 }

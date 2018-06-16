@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Orleans.Runtime.Scheduler.Utility;
+using Orleans.Runtime.Scheduler.SchedulerUtility;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
     internal class TestSchedulingStrategy : ISchedulingStrategy
     {
-        private readonly LoggerImpl logger = LogManager.GetLogger("Scheduler.PoliciedScheduler.SchedulingStrategies", LoggerType.Runtime);
+        private LoggerImpl _logger;
 
         #region Tenancies
 
@@ -21,14 +21,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public IOrleansTaskScheduler Scheduler { get; set; }
 
-        public IComparable GetPriority(IWorkItem workItem)
-        {
-            if (Scheduler.GetWorkItemGroup(workItem.SchedulingContext)!=null ) return workItem.PriorityContext;
-            return SchedulerConstants.DEFAULT_PRIORITY;
-        }
-
         public void Initialization()
         {
+            _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
             tenants = new Dictionary<short, Tuple<ulong, HashSet<ulong>>>();
             timeLimitsOnTenants = new Dictionary<short, long>();
             tenantStatCounters = new Dictionary<WorkItemGroup, FixedSizedQueue<double>>();
@@ -59,7 +54,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             {
                 var error = string.Format(
                     "WorkItem {0} on context {1} does not match a work item group", workItem, context);
-                logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
+                _logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
                 throw new InvalidOperationException(error);
             }
             if (!tenantStatCounters.ContainsKey(wig)) tenantStatCounters.Add(wig, new FixedSizedQueue<double>(MaximumStatCounterSize));
@@ -72,7 +67,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return wig;
         }
 
-        public long FetchWorkItemMetric(WorkItemGroup workItem)
+        public object FetchWorkItemMetric(WorkItemGroup workItem)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void PutWorkItemMetric(WorkItemGroup workItemGroup, object metric)
         {
             throw new NotImplementedException();
         }
@@ -100,7 +100,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             if (contextObj != null)
             {
                 // TODO: FIX LATER
-                priority = contextObj.Timestamp == SchedulerConstants.DEFAULT_PRIORITY ? wig.PriorityContext : contextObj.Timestamp;
+                priority = contextObj.Timestamp == SchedulerConstants.DEFAULT_PRIORITY ? wig.PriorityContext.Priority : contextObj.Timestamp;
             }
             if (!workItems.ContainsKey(priority))
             {
@@ -113,9 +113,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             var contextObj = task.AsyncState as PriorityContext;
             var priority = contextObj?.Timestamp ?? SchedulerConstants.DEFAULT_PRIORITY;
-            if (wig.PriorityContext < priority)
+            if (wig.PriorityContext.Priority < priority)
             {
-                wig.PriorityContext = priority;
+                wig.PriorityContext.Priority = priority;
+                wig.PriorityContext.Ticks = Environment.TickCount;
             }
         }
 
@@ -146,6 +147,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return null;
         }
 
+        public void UpdateWIGStatistics() { }
+
         public int CountWIGTasks()
         {
             return workItems.Values.Select(x => x.Count).Sum();
@@ -174,6 +177,5 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void OnReAddWIGToRunQueue(WorkItemGroup wig) { }
 
-        public void OnReAddWIGToRunQueue() { }
     }
 }

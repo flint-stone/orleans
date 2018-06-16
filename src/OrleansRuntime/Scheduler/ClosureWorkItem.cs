@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using Orleans.Runtime.Scheduler.SchedulerUtility;
 
 namespace Orleans.Runtime.Scheduler
 {
@@ -22,9 +23,9 @@ namespace Orleans.Runtime.Scheduler
                 SchedulerStatisticsGroup.OnClosureWorkItemsCreated();
             }
 #endif
-            this.PriorityContext =
-                message?.RequestContextData != null && message.RequestContextData.ContainsKey("Timestamp")
-                    ? (long) message.RequestContextData["Timestamp"] : 0;
+            this.PriorityContext = new PriorityObject(message?.RequestContextData != null && message.RequestContextData.ContainsKey("Timestamp")
+                ? (long)message.RequestContextData["Timestamp"] : 0,
+                Environment.TickCount);
             source = message.SendingAddress;
             _message = message;
         }
@@ -39,9 +40,9 @@ namespace Orleans.Runtime.Scheduler
                 SchedulerStatisticsGroup.OnClosureWorkItemsCreated();
             }
 #endif
-            this.PriorityContext =
-                message?.RequestContextData != null && message.RequestContextData.ContainsKey("Timestamp")
-                    ? (long) message.RequestContextData["Timestamp"] : 0;
+            this.PriorityContext = new PriorityObject(message?.RequestContextData != null && message.RequestContextData.ContainsKey("Timestamp")
+                ? (long)message.RequestContextData["Timestamp"] : 0, 
+                Environment.TickCount);
             source = message.SendingAddress;
             _message = message;
         }

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Orleans.Runtime.Scheduler.Utility
+namespace Orleans.Runtime.Scheduler.SchedulerUtility
 {
     public class FixedSizedQueue<T> : Queue<T>
     {

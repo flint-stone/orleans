@@ -13,6 +13,12 @@
     <AssemblyName>OrleansRuntime</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Scheduler\PoliciedScheduler\SchedulingStrategies\ZeroPreemptionEDFSchedulingStrategy.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Scheduler\PoliciedScheduler\SchedulingStrategies\WindowIDSchedulingStrategy.cs~RF1e9b8dbb.TMP" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\DataStructures\DataStructures\DataStructures.csproj" />
     <ProjectReference Include="..\Orleans\Orleans.2017.csproj" />
   </ItemGroup>
@@ -24,6 +30,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DefineConstants>TRACE;DEBUG;EXCLUDE_ASSEMBLYINFO;EXCLUDEFSHARP;NET461</DefineConstants>
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <Import Project="$(ProjectDir)..\Orleans.SDK.targets" />
   <!--End Orleans -->
