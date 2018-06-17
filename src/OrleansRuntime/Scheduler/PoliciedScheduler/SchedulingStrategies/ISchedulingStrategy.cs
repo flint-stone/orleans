@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
@@ -14,4 +15,28 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context);
     }
+
+    interface IWorkItemManager
+    {
+        void AddToWorkItemQueue(Task task, WorkItemGroup wig);
+
+        void OnAddWIGToRunQueue(Task task, WorkItemGroup wig);
+
+        void OnClosingWIG();
+
+        Task GetNextTaskForExecution();
+
+        void OnFinishingCurrentTurn();
+
+        void AddNewStat(Task task, PriorityContext contextObj, TimeSpan taskLength);
+
+        int CountWIGTasks();
+
+        Task GetOldestTask();
+
+        String GetWorkItemQueueStatus();
+
+        void OnReAddWIGToRunQueue(WorkItemGroup wig);
+    }
+
 }

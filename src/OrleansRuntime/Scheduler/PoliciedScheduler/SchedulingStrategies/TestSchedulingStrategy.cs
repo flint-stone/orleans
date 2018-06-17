@@ -131,7 +131,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return null;
         }
 
-        public void UpdateWIGStatistics() { }
+        public void OnFinishingCurrentTurn() { }
+        public void AddNewStat(Task task, PriorityContext contextObj, TimeSpan taskLength) {  }
 
         public int CountWIGTasks()
         {

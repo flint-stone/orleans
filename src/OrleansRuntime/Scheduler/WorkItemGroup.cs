@@ -34,7 +34,7 @@ namespace Orleans.Runtime.Scheduler
         private TimeSpan totalQueuingDelay;
         private readonly long quantumExpirations;
         private readonly int workItemGroupStatisticsNumber;
-        private Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>> execTimeCounters;
+        // private Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>> execTimeCounters;
 
         internal IWorkItemManager WorkItemManager { get; set; }
         
@@ -147,7 +147,6 @@ namespace Orleans.Runtime.Scheduler
             totalQueuingDelay = TimeSpan.Zero;
             quantumExpirations = 0;
             TaskRunner = new ActivationTaskScheduler(this);
-            execTimeCounters = new Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>>();
             log = IsSystemPriority ? LogManager.GetLogger("Scheduler." + Name + ".WorkItemGroup", LoggerType.Runtime) : appLogger;
 
             if (StatisticsCollector.CollectShedulerQueuesStats)
@@ -405,11 +404,9 @@ namespace Orleans.Runtime.Scheduler
                         var taskLength = stopwatch.Elapsed - taskStart;
 
                         
-                        if(contextObj?.SourceActivation != null) // If the task originates from another activation
+                        if(contextObj != null) 
                         {
-                            if (!execTimeCounters.ContainsKey(contextObj.SourceActivation)) execTimeCounters.Add(contextObj.SourceActivation, new Dictionary<string, FixedSizedQueue<long>>());
-                            if (!execTimeCounters[contextObj.SourceActivation].ContainsKey(task.ToString())) execTimeCounters[contextObj.SourceActivation].Add(task.ToString(), new FixedSizedQueue<long>(SchedulerConstants.STATS_COUNTER_QUEUE_SIZE));
-                            execTimeCounters[contextObj.SourceActivation][task.ToString()].Enqueue(taskLength.Ticks);
+                            WorkItemManager.AddNewStat(task, contextObj, taskLength);
                         }
                         
                         if (taskLength > masterScheduler.TurnWarningLength)
@@ -470,7 +467,7 @@ namespace Orleans.Runtime.Scheduler
                             state = WorkGroupStatus.Waiting;
                         }
                     }
-                    WorkItemManager.UpdateWIGStatistics();
+                    WorkItemManager.OnFinishingCurrentTurn();
                 }
             }
         }
@@ -535,48 +532,6 @@ namespace Orleans.Runtime.Scheduler
             log.Warn(errorCode, msg);
         }
 
-        public Dictionary<ActivationAddress, Dictionary<string, double>> CollectStats()
-        {
-            //return execTimeCounters.Select(x => x.Value.Any()?x.Value.Average():0).Any()? execTimeCounters.Select(x => x.Value.Any() ? x.Value.Average() : 0).Average():0;
-            //return execTimeCounters.ToDictionary(kv => kv.Key, kv => 10000.0);
-            // TODO: HACKING AROUND
-            /*
-            if (((SchedulingContext)SchedulingContext).Activation != null)
-            {
-                var keyLong = (long)(((SchedulingContext)SchedulingContext).Activation.Grain.Key.N1);
-                if (GetStageId(keyLong) == 9)
-                {
-                    return execTimeCounters.ToDictionary(kv => kv.Key, kv => 15000.0);
-                }
-                if (GetStageId(keyLong) == 10)
-                {
-                    return execTimeCounters.ToDictionary(kv => kv.Key, kv => 80000.0);
-                }
-            }
-            */
-            return execTimeCounters.ToDictionary(kv => kv.Key, kv => kv.Value.ToDictionary(tq => tq.Key, tq=>tq.Value.Average()));
-        }
-
-        public static short GetStageId(long grainKey)
-        {
-            return (short)(grainKey >> 32 & 0xFFFFL);
-        }
-
-        public void LogExecTimeCounters()
-        {
-            log.Info($"{this} execution time counters collected " +
-                     StatCollectionExplain(execTimeCounters));
-        }
-
-        private static string StatCollectionExplain(
-            Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>> collection)
-        {
-            return string.Join(";",
-                collection.Select(kv => kv.Key.Grain.Key.N1 + " : { " +
-                                              string.Join("|||",
-                                                  kv.Value.Select(tq => tq.Key + " -> " + string.Join(",", tq.Value))) +
-                                              " } "));
-        }
     }
 }
 

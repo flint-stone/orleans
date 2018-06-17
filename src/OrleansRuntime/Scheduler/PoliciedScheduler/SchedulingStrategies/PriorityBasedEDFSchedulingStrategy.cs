@@ -20,6 +20,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         #endregion
 
+        #region ISchedulingStrategy
         public IOrleansTaskScheduler Scheduler { get; set; }
 
         public void Initialization()
@@ -144,17 +145,21 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 addressToWIG[((SchedulingContext)context).Activation.Address] = wig;
             return wig;
         }
+        #endregion
 
-        public object FetchWorkItemMetric(WorkItemGroup workItem)
+        #region IStatefulSchedulingStrategy
+
+        public Dictionary<ActivationAddress, Dictionary<string, double>> FetchWorkItemMetric(WorkItemGroup workItem)
         {
             return TenantCostEstimate.ContainsKey(workItem) ? TenantCostEstimate[workItem] : new Dictionary<ActivationAddress, Dictionary<string, double>>();
         }
 
-        public void PutWorkItemMetric(WorkItemGroup workItemGroup, object metric)
+        public void PutWorkItemMetric(WorkItemGroup workItemGroup, Dictionary<ActivationAddress, Dictionary<string, double>> metric)
         {
-            if(TenantCostEstimate.ContainsKey(workItemGroup)) TenantCostEstimate[workItemGroup] = (Dictionary<ActivationAddress, Dictionary<string, double>>) metric;
+            if(TenantCostEstimate.ContainsKey(workItemGroup)) TenantCostEstimate[workItemGroup] = metric;
         }
 
+        #endregion
         public long PeekNextDeadline()
         {
             var workItem = ((PriorityBasedTaskScheduler)Scheduler).NextInRunQueue();
@@ -370,6 +375,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private bool dequeuedFlag;
         private int statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
         private long wid;
+        private Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>> execTimeCounters;
 
         internal List<WorkItemGroup> UpstreamGroups { get; set; } // upstream WIGs groups for backtracking
         internal List<Stack<WorkItemGroup>> DownStreamPaths { get; set; } // downstream WIG paths groups for calculation
@@ -388,6 +394,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
             workItemGroup = wig;
             dequeuedFlag = false;
+            execTimeCounters = new Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>>();
         }
 
         public void AddToWorkItemQueue(Task task, WorkItemGroup wig)
@@ -558,14 +565,23 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             */
         }
 
-        public void UpdateWIGStatistics()
+        public void OnFinishingCurrentTurn()
         {
+            // Update statistics after each turn
             if (--statCollectionCounter <= 0)
             {
                 statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
-                Strategy.PutWorkItemMetric(workItemGroup, workItemGroup.CollectStats());
-                workItemGroup.LogExecTimeCounters();
+                Strategy.PutWorkItemMetric(workItemGroup, ((PriorityBasedEDFWorkItemManager)workItemGroup.WorkItemManager).CollectStats());
+                // workItemGroup.LogExecTimeCounters();
             }  
+        }
+
+        public void AddNewStat(Task task, PriorityContext contextObj, TimeSpan taskLength)
+        {
+            if (contextObj.SourceActivation == null) return;
+            if (!execTimeCounters.ContainsKey(contextObj.SourceActivation)) execTimeCounters.Add(contextObj.SourceActivation, new Dictionary<string, FixedSizedQueue<long>>());
+            if (!execTimeCounters[contextObj.SourceActivation].ContainsKey(task.ToString())) execTimeCounters[contextObj.SourceActivation].Add(task.ToString(), new FixedSizedQueue<long>(SchedulerConstants.STATS_COUNTER_QUEUE_SIZE));
+            execTimeCounters[contextObj.SourceActivation][task.ToString()].Enqueue(taskLength.Ticks);
         }
 
         public int CountWIGTasks()
@@ -621,6 +637,49 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             return "UpStreamSet: " + string.Join(",", UpstreamGroups) + ". DownStreamPaths: " +
                    string.Join(";", DownStreamPaths.Select(x => string.Join("-",x)));
+        }
+
+        public Dictionary<ActivationAddress, Dictionary<string, double>> CollectStats()
+        {
+            //return execTimeCounters.Select(x => x.Value.Any()?x.Value.Average():0).Any()? execTimeCounters.Select(x => x.Value.Any() ? x.Value.Average() : 0).Average():0;
+            //return execTimeCounters.ToDictionary(kv => kv.Key, kv => 10000.0);
+            // TODO: HACKING AROUND
+            /*
+            if (((SchedulingContext)SchedulingContext).Activation != null)
+            {
+                var keyLong = (long)(((SchedulingContext)SchedulingContext).Activation.Grain.Key.N1);
+                if (GetStageId(keyLong) == 9)
+                {
+                    return execTimeCounters.ToDictionary(kv => kv.Key, kv => 15000.0);
+                }
+                if (GetStageId(keyLong) == 10)
+                {
+                    return execTimeCounters.ToDictionary(kv => kv.Key, kv => 80000.0);
+                }
+            }
+            */
+            return execTimeCounters.ToDictionary(kv => kv.Key, kv => kv.Value.ToDictionary(tq => tq.Key, tq => tq.Value.Average()));
+        }
+
+        public static short GetStageId(long grainKey)
+        {
+            return (short)(grainKey >> 32 & 0xFFFFL);
+        }
+
+        public void LogExecTimeCounters()
+        {
+            _logger.Info($"{this} execution time counters collected " +
+                     StatCollectionExplain(execTimeCounters));
+        }
+
+        private static string StatCollectionExplain(
+            Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>> collection)
+        {
+            return string.Join(";",
+                collection.Select(kv => kv.Key.Grain.Key.N1 + " : { " +
+                                        string.Join("|||",
+                                            kv.Value.Select(tq => tq.Key + " -> " + string.Join(",", tq.Value))) +
+                                        " } "));
         }
     }
 }
