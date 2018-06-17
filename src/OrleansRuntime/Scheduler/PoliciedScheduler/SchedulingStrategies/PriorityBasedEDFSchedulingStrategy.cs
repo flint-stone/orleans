@@ -578,7 +578,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void AddNewStat(Task task, PriorityContext contextObj, TimeSpan taskLength)
         {
-            if (contextObj.SourceActivation == null) return;
+            if (contextObj?.SourceActivation == null) return;
             if (!execTimeCounters.ContainsKey(contextObj.SourceActivation)) execTimeCounters.Add(contextObj.SourceActivation, new Dictionary<string, FixedSizedQueue<long>>());
             if (!execTimeCounters[contextObj.SourceActivation].ContainsKey(task.ToString())) execTimeCounters[contextObj.SourceActivation].Add(task.ToString(), new FixedSizedQueue<long>(SchedulerConstants.STATS_COUNTER_QUEUE_SIZE));
             execTimeCounters[contextObj.SourceActivation][task.ToString()].Enqueue(taskLength.Ticks);

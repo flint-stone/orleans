@@ -34,7 +34,6 @@ namespace Orleans.Runtime.Scheduler
         private TimeSpan totalQueuingDelay;
         private readonly long quantumExpirations;
         private readonly int workItemGroupStatisticsNumber;
-        // private Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>> execTimeCounters;
 
         internal IWorkItemManager WorkItemManager { get; set; }
         
@@ -403,11 +402,8 @@ namespace Orleans.Runtime.Scheduler
                         totalItemsProcessed++;
                         var taskLength = stopwatch.Elapsed - taskStart;
 
-                        
-                        if(contextObj != null) 
-                        {
-                            WorkItemManager.AddNewStat(task, contextObj, taskLength);
-                        }
+                        WorkItemManager.AddNewStat(task, contextObj, taskLength);
+
                         
                         if (taskLength > masterScheduler.TurnWarningLength)
                         {
