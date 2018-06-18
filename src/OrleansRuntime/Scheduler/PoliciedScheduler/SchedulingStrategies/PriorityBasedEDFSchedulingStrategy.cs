@@ -124,7 +124,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 paths.Add(newPath);
             }
             foreach(var upstream in workItemManager.UpstreamGroups) PopulateDependencyUpstream(upstream, upstreamWig, toAdd);
-            Console.WriteLine("Current upstreamWIG " + upstreamWig + ": " + workItemManager.ExplainDependencies()); 
+            // Console.WriteLine("Current upstreamWIG " + upstreamWig + ": " + workItemManager.ExplainDependencies()); 
         }
 
         public WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context)
@@ -376,6 +376,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private int statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
         private long wid;
         private Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>> execTimeCounters;
+        private Dictionary<string, FixedSizedQueue<long>> sourcelessExecTimeCounters;
 
         internal List<WorkItemGroup> UpstreamGroups { get; set; } // upstream WIGs groups for backtracking
         internal List<Stack<WorkItemGroup>> DownStreamPaths { get; set; } // downstream WIG paths groups for calculation
@@ -395,6 +396,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             workItemGroup = wig;
             dequeuedFlag = false;
             execTimeCounters = new Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>>();
+            sourcelessExecTimeCounters = new Dictionary<string, FixedSizedQueue<long>>();
         }
 
         public void AddToWorkItemQueue(Task task, WorkItemGroup wig)
@@ -568,17 +570,24 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void OnFinishingCurrentTurn()
         {
             // Update statistics after each turn
+
             if (--statCollectionCounter <= 0)
             {
                 statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
-                Strategy.PutWorkItemMetric(workItemGroup, ((PriorityBasedEDFWorkItemManager)workItemGroup.WorkItemManager).CollectStats());
-                // workItemGroup.LogExecTimeCounters();
-            }  
+                Strategy.PutWorkItemMetric(workItemGroup, CollectStats());
+                LogExecTimeCounters();
+            } 
         }
 
         public void AddNewStat(Task task, PriorityContext contextObj, TimeSpan taskLength)
         {
-            if (contextObj?.SourceActivation == null) return;
+            if (contextObj?.SourceActivation == null)
+            {
+                if(!sourcelessExecTimeCounters.ContainsKey(task.ToString())) sourcelessExecTimeCounters.Add(task.ToString(), new FixedSizedQueue<long>(SchedulerConstants.STATS_COUNTER_QUEUE_SIZE));
+                sourcelessExecTimeCounters[task.ToString()].Enqueue(taskLength.Ticks);
+                return;
+            }
+
             if (!execTimeCounters.ContainsKey(contextObj.SourceActivation)) execTimeCounters.Add(contextObj.SourceActivation, new Dictionary<string, FixedSizedQueue<long>>());
             if (!execTimeCounters[contextObj.SourceActivation].ContainsKey(task.ToString())) execTimeCounters[contextObj.SourceActivation].Add(task.ToString(), new FixedSizedQueue<long>(SchedulerConstants.STATS_COUNTER_QUEUE_SIZE));
             execTimeCounters[contextObj.SourceActivation][task.ToString()].Enqueue(taskLength.Ticks);
@@ -668,8 +677,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void LogExecTimeCounters()
         {
-            _logger.Info($"{this} execution time counters collected " +
-                     StatCollectionExplain(execTimeCounters));
+            string sourcelessStats = string.Join(";",
+                sourcelessExecTimeCounters.Select(kv => kv.Key + "->" + string.Join(",", kv.Value)));
+            _logger.Info($"<{workItemGroup.Name}> execution time counters collected: ");
+            _logger.Info($"Source-less: {sourcelessStats}");
+            _logger.Info($"Source-Ful:{StatCollectionExplain(execTimeCounters)}");
         }
 
         private static string StatCollectionExplain(
