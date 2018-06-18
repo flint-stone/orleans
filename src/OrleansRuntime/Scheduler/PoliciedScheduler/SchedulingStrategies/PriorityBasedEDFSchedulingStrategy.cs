@@ -52,7 +52,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             var schedulingContext = context as SchedulingContext;
             foreach (var k in controllerContext.windowedKey.Keys)
             {
-                windowedKeys.AddOrUpdate(k, controllerContext.windowedKey[k], (key, value) => value);
+                windowedKeys.AddOrUpdate(k, controllerContext.windowedKey[k], (key, value) => controllerContext.windowedKey[k]);
 #if PQ_DEBUG
                 _logger.Info($"Add to windowedKeys Map {k} {controllerContext.windowedKey[k]}");
 #endif
@@ -151,12 +151,21 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public Dictionary<ActivationAddress, Dictionary<string, double>> FetchWorkItemMetric(WorkItemGroup workItem)
         {
+#if PQ_DEBUG
+            _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {string.Join(",", TenantCostEstimate.Select(kv => kv.Key.Name + " -> " + PriorityBasedEDFWorkItemManager.StatCollectionExplain(kv.Value)))}");
+#endif
             return TenantCostEstimate.ContainsKey(workItem) ? TenantCostEstimate[workItem] : new Dictionary<ActivationAddress, Dictionary<string, double>>();
         }
 
         public void PutWorkItemMetric(WorkItemGroup workItemGroup, Dictionary<ActivationAddress, Dictionary<string, double>> metric)
         {
-            if(TenantCostEstimate.ContainsKey(workItemGroup)) TenantCostEstimate[workItemGroup] = metric;
+#if PQ_DEBUG
+            _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} Put WIG metrics {PriorityBasedEDFWorkItemManager.StatCollectionExplain(metric)}");
+#endif
+            TenantCostEstimate.AddOrUpdate(workItemGroup, metric, (k, v) => metric);
+#if PQ_DEBUG
+            _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {string.Join(",", TenantCostEstimate.Select(kv => kv.Key.Name + " -> " + PriorityBasedEDFWorkItemManager.StatCollectionExplain(kv.Value)))}");
+#endif
         }
 
         #endregion
@@ -422,21 +431,28 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     foreach (var elem in stack)
                     {
                         // TODO: fix later with window information
-                        var statCollection= (Dictionary<ActivationAddress, Dictionary<string, double>>)Strategy.FetchWorkItemMetric(elem);
+                        var statCollection= Strategy.FetchWorkItemMetric(elem);
                         var address = ((SchedulingContext) workItemGroup.SchedulingContext).Activation.Address;
                         var cost = 0L;
                         if (statCollection.ContainsKey(address) && statCollection[address].ContainsKey(task.ToString())) cost = Convert.ToInt64(statCollection[address][task.ToString()]);
                         pathCost += cost;
 #if PQ_DEBUG
+                        _logger.Info($"Collecting Stats for elem {elem.Name}: {StatCollectionExplain(statCollection)}");
                         _logger.Info(
-                            $"-----> {elem}: {cost} {pathCost}");
+                            $"-----> {elem.Name}: {cost} {pathCost}");
 #endif
                     }
 
-                    if (pathCost > maximumDownStreamPathCost) maximumDownStreamPathCost = pathCost;
+                    if (pathCost > maximumDownStreamPathCost)
+                    {
+                        maximumDownStreamPathCost = pathCost;
+#if PQ_DEBUG
+                        _logger.Info($"<-----> {workItemGroup.Name}: update maximumDownStreamPathCost to {pathCost}");
+#endif
+                    }
                 }
 
-                var ownerStats = (Dictionary<ActivationAddress, Dictionary<string, double>>) Strategy.FetchWorkItemMetric(workItemGroup);
+                var ownerStats = Strategy.FetchWorkItemMetric(workItemGroup);
                 if (contextObj.SourceActivation!=null && ownerStats.ContainsKey(contextObj.SourceActivation) && ownerStats[contextObj.SourceActivation].ContainsKey(task.ToString()))
                 {
                     maximumDownStreamPathCost += Convert.ToInt64(ownerStats[contextObj.SourceActivation][task.ToString()]);
@@ -446,6 +462,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 // ***
                 var priority = timestamp + DataflowSLA - maximumDownStreamPathCost;
 
+                var oldWid = wid;
                 if (WindowedGrain)
                 {              
                     priority = (timestamp / WindowSize + 1) * WindowSize + DataflowSLA - maximumDownStreamPathCost;
@@ -465,7 +482,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #endif
                 }
 #if PQ_DEBUG
-            _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}, {task}, {timestamp} : {WindowSize}: {oldWid} -> {wid} : {DataflowSLA} : {MaximumDownStreamPathCost} : {priority}");
+            _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}, {task}, {timestamp} : {WindowSize}: {oldWid} -> {wid} : {DataflowSLA} : {maximumDownStreamPathCost} : {priority}");
 #endif
                 workItems[priority].Enqueue(task);
 
@@ -681,16 +698,26 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 sourcelessExecTimeCounters.Select(kv => kv.Key + "->" + string.Join(",", kv.Value)));
             _logger.Info($"<{workItemGroup.Name}> execution time counters collected: ");
             _logger.Info($"Source-less: {sourcelessStats}");
-            _logger.Info($"Source-Ful:{StatCollectionExplain(execTimeCounters)}");
+            _logger.Info($"Source-Ful:{StatCounterExplain(execTimeCounters)}");
         }
 
-        private static string StatCollectionExplain(
+        private static string StatCounterExplain(
             Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>> collection)
         {
             return string.Join(";",
                 collection.Select(kv => kv.Key.Grain.Key.N1 + " : { " +
                                         string.Join("|||",
                                             kv.Value.Select(tq => tq.Key + " -> " + string.Join(",", tq.Value))) +
+                                        " } "));
+        }
+
+        public static string StatCollectionExplain(
+            Dictionary<ActivationAddress, Dictionary<string, double>> collection)
+        {
+            return string.Join(";",
+                collection.Select(kv => kv.Key.Grain.Key.N1 + " : { " +
+                                        string.Join("|||",
+                                            kv.Value.Select(tq => tq.Key + " -> " + tq.Value)) +
                                         " } "));
         }
     }
