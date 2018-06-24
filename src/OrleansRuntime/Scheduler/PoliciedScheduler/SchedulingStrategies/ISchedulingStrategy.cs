@@ -15,11 +15,5 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context);
 
-        object FetchWorkItemMetric(WorkItemGroup workItem);
-
-        void PutWorkItemMetric(WorkItemGroup workItemGroup, Object metric);
-
-        long PeekNextDeadline();
-
     }
 }

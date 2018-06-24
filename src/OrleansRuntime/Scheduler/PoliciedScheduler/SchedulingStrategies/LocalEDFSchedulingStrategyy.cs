@@ -37,7 +37,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             {
                 statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
 #if PQ_DEBUG
-                _logger.Info($"Printing execution times in ticks: {string.Join("********************", TenantCostEstimate.Select(x => x.Key.ToString() + " => " +string.Join("|", x.Value.Select(ad => ad.Key + ":" + string.Join(",", ad.Value.Select(kd=>kd.Key + " -> " + kd.Value))))))}");
+                _logger.Info($"Printing execution times in ticks: {string.Join("********************", DownstreamNeighbourStatsCollection.Select(x => x.Key.ToString() + " => " +string.Join("|", x.Value.Select(ad => ad.Key + ":" + string.Join(",", ad.Value.Select(kd=>kd.Key + " -> " + kd.Value))))))}");
 #endif
             }
         }
@@ -375,14 +375,14 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         internal List<WorkItemGroup> UpstreamGroups { get; set; } // upstream WIGs groups for backtracking
         internal List<Stack<WorkItemGroup>> DownStreamPaths { get; set; } // downstream WIG paths groups for calculation
-        public ISchedulingStrategy Strategy { get; set; }
+        public LocalEDFSchedulingStrategy Strategy { get; set; }
         internal long DataflowSLA { get; set; }
         public bool WindowedGrain { get; set; }
         public long WindowSize { get; set; }
 
         public LocalEDFWorkItemManager(ISchedulingStrategy strategy, WorkItemGroup wig)
         {
-            Strategy = strategy;
+            Strategy = (LocalEDFSchedulingStrategy)strategy;
             workItems = new SortedDictionary<long, Queue<Task>>();
             UpstreamGroups = new List<WorkItemGroup>();
             DownStreamPaths = new List<Stack<WorkItemGroup>>();
