@@ -23,6 +23,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             throw new NotImplementedException();
         }
 
+        public void OnReceivingDownstreamInstructions(IWorkItem workItem, ISchedulingContext context)
+        {
+            throw new NotImplementedException();
+        }
+
         public WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context)
         {
             var wig = new WorkItemGroup(ots, context);

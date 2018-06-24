@@ -179,11 +179,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 
         public void QueueControllerWorkItem(IWorkItem workItem, ISchedulingContext context)
         {
-#if DEBUG
-            if (logger.IsVerbose2) logger.Verbose2("QueueControllerWorkItem " + context);
-#endif
-
 #if PQ_DEBUG
+            if (logger.IsVerbose2) logger.Verbose2("QueueControllerWorkItem " + context);
+
             logger.Info("Controller WorkItem {0} has remaining ticks of {1}, current queue size {2}", workItem, workItem.PriorityContext, RunQueue.Length);
             if (!(workItem is InvokeWorkItem))
             {
@@ -194,6 +192,23 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             }
 #endif
             SchedulingStrategy.OnReceivingControllerInstructions(workItem, context);
+            QueueWorkItem(workItem, context);
+        }
+
+        public void QueueDownstreamContextWorkItem(IWorkItem workItem, ISchedulingContext context)
+        {
+#if PQ_DEBUG
+            if (logger.IsVerbose2) logger.Verbose2("QueueDownstreamContextWorkItem " + context);
+
+            if (!(workItem is InvokeWorkItem))
+            {
+                var error = string.Format(
+                    "WorkItem {0} on context {1} is not a Invoke WorkItem", workItem, context);
+                logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
+                throw new InvalidOperationException(error);
+            }
+#endif
+            SchedulingStrategy.OnReceivingDownstreamInstructions(workItem, context);
             QueueWorkItem(workItem, context);
         }
 

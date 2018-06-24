@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
-    internal class PriorityBasedEDFSchedulingStrategy : ISchedulingStrategy
+    internal class LocalEDFSchedulingStrategy : ISchedulingStrategy
     {
        private LoggerImpl _logger;
 
@@ -67,7 +67,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
             
             // Populate info in wig
-            var workitemManager = wig.WorkItemManager as PriorityBasedEDFWorkItemManager;
+            var workitemManager = wig.WorkItemManager as LocalEDFWorkItemManager;
             workitemManager.DataflowSLA = (long) controllerContext.Time;
 
             if (windowedKeys.ContainsKey(((SchedulingContext) wig.SchedulingContext).Activation.Grain.Key.N1))
@@ -98,19 +98,13 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         }
 
-        public void OnReceivingDownstreamInstructions(IWorkItem workItem, ISchedulingContext context)
-        {
-            var invokeWorkItem = workItem as InvokeWorkItem;
-            var downstreamContext = invokeWorkItem.DownstreamContext;
-
-            
-        }
+        public void OnReceivingDownstreamInstructions(IWorkItem workItem, ISchedulingContext context) { }
 
         private void PopulateDependencyUpstream(WorkItemGroup upstreamWig, WorkItemGroup wig, WorkItemGroup toAdd)
         {
             if (upstreamWig.Equals(toAdd)) return; //remove self-invokation
 
-            var workItemManager = upstreamWig.WorkItemManager as PriorityBasedEDFWorkItemManager;
+            var workItemManager = upstreamWig.WorkItemManager as LocalEDFWorkItemManager;
             var paths = workItemManager.DownStreamPaths;
             if (workItemManager.UpstreamGroups.Contains(wig) || workItemManager.UpstreamGroups.Contains(toAdd)) return;
             bool found = false;
@@ -137,10 +131,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context)
         {
             var wig = new WorkItemGroup(ots, context);
-            wig.WorkItemManager = new PriorityBasedEDFWorkItemManager(this, wig);
+            wig.WorkItemManager = new LocalEDFWorkItemManager(this, wig);
             if (context.ContextType.Equals(SchedulingContextType.Activation) && windowedKeys.Keys.Contains(((SchedulingContext) context).Activation.Grain.Key.N1))
             {
-                var wim = wig.WorkItemManager as PriorityBasedEDFWorkItemManager;
+                var wim = wig.WorkItemManager as LocalEDFWorkItemManager;
                 wim.WindowedGrain = true;
                 wim.WindowSize = windowedKeys[((SchedulingContext) context).Activation.Grain.Key.N1];
 #if PQ_DEBUG
@@ -178,7 +172,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
     }
     /*
-    internal class PriorityBasedEDFWorkItemManager : IWorkItemManager
+    internal class LocalEDFWorkItemManager : IWorkItemManager
     {
         private const long DEFAULT_DATAFLOW_SLA = 5000000;
         private PriorityQueue<Tuple<long, Task>> workItems;
@@ -190,7 +184,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         internal long MaximumDownStreamPathCost { get; set; }
         internal long DataflowSLA { get; set; }
 
-        public PriorityBasedEDFWorkItemManager(ISchedulingStrategy strategy, WorkItemGroup wig)
+        public LocalEDFWorkItemManager(ISchedulingStrategy strategy, WorkItemGroup wig)
         {
             Strategy = strategy;
             workItems = new PriorityQueue<Tuple<long, Task>>(15, new TaskComparer());
@@ -370,7 +364,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
     */
     
         
-    internal class PriorityBasedEDFWorkItemManager : IWorkItemManager
+    internal class LocalEDFWorkItemManager : IWorkItemManager
     {
         private SortedDictionary<long, Queue<Task>> workItems;
         private readonly LoggerImpl _logger; 
@@ -386,7 +380,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public bool WindowedGrain { get; set; }
         public long WindowSize { get; set; }
 
-        public PriorityBasedEDFWorkItemManager(ISchedulingStrategy strategy, WorkItemGroup wig)
+        public LocalEDFWorkItemManager(ISchedulingStrategy strategy, WorkItemGroup wig)
         {
             Strategy = strategy;
             workItems = new SortedDictionary<long, Queue<Task>>();

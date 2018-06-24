@@ -155,6 +155,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             QueueWorkItem(workItem, context);
         }
 
+        public void QueueDownstreamContextWorkItem(IWorkItem workItem, ISchedulingContext context)
+        {
+            QueueWorkItem(workItem, context);
+        }
+
         // Only required if you have work groups flagged by a context that is not a WorkGroupingContext
         public WorkItemGroup RegisterWorkContext(ISchedulingContext context)
         {

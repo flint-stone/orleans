@@ -6,10 +6,10 @@ namespace Orleans.Runtime.Scheduler
     [Serializable]
     public class ControllerContext
     {
-        public short AppId { get; set; }
-        public long Time { get; set; }
-        public ulong ControllerKey { get; set; }
-        public Dictionary<ulong, long> windowedKey { get; set; }
+        public short AppId { get; }
+        public long Time { get; }
+        public ulong ControllerKey { get; }
+        public Dictionary<ulong, long> windowedKey { get; }
 
         public ControllerContext(short appId, long time, ulong controllerKey)
         {

@@ -34,6 +34,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
         }
 
+        public void OnReceivingDownstreamInstructions(IWorkItem workItem, ISchedulingContext context)
+        {
+            
+        }
+
         public WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context)
         {
             var wig = new WorkItemGroup(ots, context);
