@@ -13,9 +13,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         #region Tenancies
 
-        private ConcurrentDictionary<ActivationAddress, Dictionary<string, long>> StatsUpdatesCollection { get; set; }
-        // TODO: FIX! BAD DESIGN
-        private ConcurrentDictionary<ActivationAddress, long> DownstreamCostsCollection { get; set; }        
+//        private ConcurrentDictionary<ActivationAddress, Dictionary<GrainId, Dictionary<string, long>>> StatsUpdatesCollection { get; set; }
+//        // TODO: FIX! BAD DESIGN
+//        private ConcurrentDictionary<ActivationAddress, long> DownstreamCostsCollection { get; set; }        
         // One downstream op maps to multiple WIGs in current scheduler
         public ConcurrentDictionary<ActivationAddress, HashSet<WorkItemGroup>> DownstreamOpsToWIGs { get; set; }  
 
@@ -30,8 +30,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void Initialization()
         {
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
-            StatsUpdatesCollection = new ConcurrentDictionary<ActivationAddress, Dictionary<string, long>>();
-            DownstreamCostsCollection = new ConcurrentDictionary<ActivationAddress, long>();
             DownstreamOpsToWIGs = new ConcurrentDictionary<ActivationAddress, HashSet<WorkItemGroup>>();
             addressToWIG = new Dictionary<ActivationAddress, WorkItemGroup>();
             windowedKeys = new ConcurrentDictionary<ulong, long>();
@@ -39,14 +37,14 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig)
         {
-            // Collect stat from WIGs
-            if (StatsUpdatesCollection.Any() && --statCollectionCounter <= 0) 
-            {
-                statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
-#if PQ_DEBUG
-                _logger.Info($"Printing execution times in ticks: {string.Join("********************", StatsUpdatesCollection.Select(x => x.Key.ToString() + " => " +string.Join("|", x.Value.Select(ad => ad.Key + ":" + string.Join(",", ad.Value.Select(kd=>kd.Key + " -> " + kd.Value))))))}");
-#endif
-            }
+//            // Collect stat from WIGs
+//            if (StatsUpdatesCollection.Any() && --statCollectionCounter <= 0) 
+//            {
+//                statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
+//#if PQ_DEBUG
+//                _logger.Info($"Printing execution times in ticks: {string.Join("********************", StatsUpdatesCollection.Select(x => x.Key.ToString() + " => " +string.Join("|", x.Value.Select(ad => ad.Key + ":" + string.Join(",", ad.Value.Select(kd=>kd.Key + " -> " + kd.Value))))))}");
+//#endif
+//            }
         }
         
         public void OnReceivingControllerInstructions(IWorkItem workItem, ISchedulingContext context)
@@ -113,36 +111,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
             var wim = wig.WorkItemManager as PriorityBasedEDFWorkItemManager;
             wim.GetDownstreamContext(downstreamActivation, downstreamContext);
-            //            // 1. If such source doesn't exist -- add it to downstream collection
-            //            if (!DownstreamOpsToWIGs.ContainsKey(downstreamActivation))
-            //            {
-            //                
-            //            }
-            //
-            //            // 2. Get WIG this message is targeting on 
-            //            var schedulingContext = context as SchedulingContext;
-            //            var wig = Scheduler.GetWorkItemGroup(schedulingContext);
-            //
-            //            if (wig == null)
-            //            {
-            //                var error = string.Format(
-            //                    "WorkItem {0} on context {1} does not match a work item group", workItem, context);
-            //                _logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
-            //                throw new InvalidOperationException(error);
-            //            }
-            //
-            //            // 3. If the mapping doesn't exist, create one
-            //            if (!DownstreamOpsToWIGs[downstreamActivation].Contains(wig))
-            //            {
-            //                DownstreamOpsToWIGs[downstreamActivation].Add(wig);
-            //            }
-            //
-            //
-            //            // Populate info in wig
-            //            var workitemManager = wig.WorkItemManager as PriorityBasedEDFWorkItemManager;
-            //            // 2. If previously explored, add workitem stats
-            //            PutWorkItemMetric(invokeWorkItem.SourceActivation, downstreamContext.StatsUpdate);
-
         }
 
         public WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context)
@@ -164,23 +132,26 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return wig;
         }
 
-        public DownstreamContext CheckForSchedulerHint(ActivationAddress sendingActivationAddress)
+        public DownstreamContext CheckForSchedulerHint(ActivationAddress sendingActivationAddress, GrainId upstream)
         {
-            if (StatsUpdatesCollection.ContainsKey(sendingActivationAddress))
+            if (addressToWIG.ContainsKey(sendingActivationAddress))
             {
-                // make a downstreamContext
-                return new DownstreamContext(StatsUpdatesCollection[sendingActivationAddress], DownstreamCostsCollection[sendingActivationAddress]);
+                var wim = addressToWIG[sendingActivationAddress].WorkItemManager as PriorityBasedEDFWorkItemManager;
+                return wim.CheckForStatsUpdate(upstream);
             }
             return null;
         }
 
-        public void PutWorkItemMetric(ActivationAddress sourceActivation, Dictionary<string, long> metric, long maxDownsteamCost)
+        public void PutWorkItemMetric(WorkItemGroup wig, ActivationAddress upstream, Dictionary<string, long> metric, long maxDownsteamCost)
         {
-            /*
-            if(StatsUpdatesCollection.ContainsKey(workItemGroup)) StatsUpdatesCollection[workItemGroup] = (Dictionary<ActivationAddress, Dictionary<string, double>>) metric;
-            */
-            StatsUpdatesCollection.AddOrUpdate(sourceActivation, metric, (k, v) => metric);
-            DownstreamCostsCollection.AddOrUpdate(sourceActivation, maxDownsteamCost, (k, v) => maxDownsteamCost);
+//            /*
+//            if(StatsUpdatesCollection.ContainsKey(workItemGroup)) StatsUpdatesCollection[workItemGroup] = (Dictionary<ActivationAddress, Dictionary<string, double>>) metric;
+//            */
+//            var address = ((SchedulingContext) wig.SchedulingContext).Activation.Address;
+//            if (!StatsUpdatesCollection.ContainsKey(address))
+//                StatsUpdatesCollection.TryAdd(address, new Dictionary<GrainId, Dictionary<string, long>>());
+//            StatsUpdatesCollection.AddOrUpdate(sourceActivation, metric, (k, v) => metric);
+//            DownstreamCostsCollection.AddOrUpdate(sourceActivation, maxDownsteamCost, (k, v) => maxDownsteamCost);
         }
 
         public long PeekNextDeadline()
@@ -210,8 +181,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private long wid;
 
         internal ConcurrentBag<GrainId> UpstreamOpSet { get; set; } // upstream Ops, populated during initialization
-        internal ConcurrentDictionary<ActivationAddress, long> DownstreamOpToCost { get; set; } // downstream Ops, populated while downstream message flows back
-        
+        private ConcurrentDictionary<ActivationAddress, long> DownstreamOpToCost { get; set; } // downstream Ops, populated while downstream message flows back
+
+        private ConcurrentDictionary<GrainId, Tuple<Dictionary<string, long>, long>> StatsUpdatesCollection { get; set; }
+
         public PriorityBasedEDFSchedulingStrategy Strategy { get; set; }
         internal long DataflowSLA { get; set; }
         public bool WindowedGrain { get; set; }
@@ -223,6 +196,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             workItems = new SortedDictionary<long, Queue<Task>>();
             UpstreamOpSet = new ConcurrentBag<GrainId>();
             DownstreamOpToCost = new ConcurrentDictionary<ActivationAddress, long>();
+            StatsUpdatesCollection = new ConcurrentDictionary<GrainId, Tuple<Dictionary<string, long>, long>>();
             DataflowSLA = SchedulerConstants.DEFAULT_DATAFLOW_SLA;
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
             workItemGroup = wig;
@@ -375,10 +349,16 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 var statsToReport = workItemGroup.WorkItemGroupStats;
                 foreach (var address in statsToReport.Keys)
                 {
+                    var statsUpdate = statsToReport[address];
+                    var downstreamCost = DownstreamOpToCost.Values.Any()
+                        ? DownstreamOpToCost.Values.Max()
+                        : SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
 //#if PQ_DEBUG
-                    _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup.Name} -> {address} ");
+                    _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup.Name} -> {address} {string.Join(",", statsUpdate.Select(kv => kv.Key + "->" + kv.Value))} {downstreamCost}");
 //#endif
-                    Strategy.PutWorkItemMetric(address, statsToReport[address], DownstreamOpToCost.Values.Any()?DownstreamOpToCost.Values.Max():SchedulerConstants.DEFAULT_WIG_EXECUTION_COST);
+                    var tup = new Tuple<Dictionary<string, long>, long>(statsUpdate, downstreamCost);
+                    StatsUpdatesCollection.AddOrUpdate(address.Grain, tup, (k,v) => tup);
+
                 }
                 // workItemGroup.LogExecTimeCounters();
             }  
@@ -443,6 +423,16 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             var maxDownstreamCost = downstreamContext.MaximumDownstreamCost +
                                     downstreamContext.StatsUpdate.Count>0?downstreamContext.StatsUpdate.Values.Max():SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
             DownstreamOpToCost.AddOrUpdate(downstreamActivation, maxDownstreamCost, (k, v) => maxDownstreamCost);
+        }
+
+        public DownstreamContext CheckForStatsUpdate(GrainId upstream)
+        {
+            Tuple<Dictionary<string, long>, long> tuple;
+            if (StatsUpdatesCollection.TryGetValue(upstream, out tuple))
+            {
+                return new DownstreamContext(tuple.Item1, tuple.Item2);
+            }
+            return null;
         }
     }
 }

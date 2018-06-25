@@ -46,7 +46,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return wig;
         }
 
-        public DownstreamContext CheckForSchedulerHint(ActivationAddress sendingActivationAddress)
+        public DownstreamContext CheckForSchedulerHint(ActivationAddress sendingActivationAddress, GrainId upstream)
         {
             return null;
         }
