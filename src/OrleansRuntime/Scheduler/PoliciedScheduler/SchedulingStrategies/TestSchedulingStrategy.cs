@@ -77,21 +77,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return null;
         }
 
-        public object FetchWorkItemMetric(WorkItemGroup workItem)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void PutWorkItemMetric(WorkItemGroup workItemGroup, object metric)
-        {
-            throw new NotImplementedException();
-        }
-
-        public long PeekNextDeadline()
-        {
-            throw new NotImplementedException();
-        }
-
     }
 
     internal class TestWorkItemManager : IWorkItemManager
