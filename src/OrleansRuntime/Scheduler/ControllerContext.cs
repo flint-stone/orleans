@@ -11,6 +11,8 @@ namespace Orleans.Runtime.Scheduler
         public ulong ControllerKey { get; }
         public Dictionary<ulong, long> windowedKey { get; }
 
+        internal HashSet<ActivationAddress> ActivationSeen { get; set; }
+
         public ControllerContext(short appId, long time, ulong controllerKey)
         {
             AppId = appId;
@@ -33,6 +35,8 @@ namespace Orleans.Runtime.Scheduler
             windowedKey.Add(3659213351944192, 100000000);
             windowedKey.Add(3940688328654848, 100000000);
             windowedKey.Add(4503638282076160, 100000000);
+
+            ActivationSeen = new HashSet<ActivationAddress>();
 
         }
     }

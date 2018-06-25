@@ -115,6 +115,9 @@ namespace Orleans.Runtime
 
         private void AddingSchedulerHint(Message message, InvokeMethodRequest request, GrainReference target)
         {
+            // Check to see if we need to attach statistics update
+            
+            /*
             if (message.RequestContextData == null) message.RequestContextData = new Dictionary<string, object>();
             SchedulingContext schedulingContext = RuntimeContext.Current != null ?
                 RuntimeContext.Current.ActivationContext as SchedulingContext : null;
@@ -129,7 +132,8 @@ namespace Orleans.Runtime
                 {
                     message.RequestContextData.Add("Path", schedulingContext.Activation + "  Request: " + request + " Target: " + target);
                 }
-            }         
+            } 
+            */
         }
 
         private void SendRequestMessage(
@@ -192,6 +196,18 @@ namespace Orleans.Runtime
             if (target.IsObserverReference)
             {
                 message.TargetObserverId = target.ObserverId;
+            }
+
+            // check for scheduler hint to attach, if exist
+            var downstreamContext = Scheduler.SchedulingStrategy.CheckForSchedulerHint(sendingActivation.Address);
+            if (downstreamContext != null)
+            {
+                // Attach downstream context with the message
+                if (message.RequestContextData == null) message.RequestContextData = new Dictionary<string, object>();
+                if (!message.RequestContextData.ContainsKey("DownstreamContext"))
+                {
+                    message.RequestContextData.Add("DownstreamContext", downstreamContext);
+                }
             }
 
             if (debugContext != null)

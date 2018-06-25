@@ -147,6 +147,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return wig;
         }
 
+        public DownstreamContext CheckForSchedulerHint(ActivationAddress sendingActivationAddress)
+        {
+            return null;
+        }
+
         public object FetchWorkItemMetric(WorkItemGroup workItem)
         {
             return TenantCostEstimate.ContainsKey(workItem) ? TenantCostEstimate[workItem] : new Dictionary<ActivationAddress, Dictionary<string, double>>();

@@ -35,6 +35,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return wig;
         }
 
+        public DownstreamContext CheckForSchedulerHint(ActivationAddress sendingActivationAddress)
+        {
+            return null;
+        }
+
         public object FetchWorkItemMetric(WorkItemGroup workItem)
         {
             throw new NotImplementedException();
