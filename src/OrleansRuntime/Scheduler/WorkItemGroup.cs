@@ -559,6 +559,9 @@ namespace Orleans.Runtime.Scheduler
             }
             */
             WorkItemGroupStats = execTimeCounters.ToDictionary(kv => kv.Key, kv => kv.Value.ToDictionary(tq => tq.Key, tq=>Convert.ToInt64(tq.Value.Average())));
+#if PQ_DEBUG
+            LogExecTimeCounters();
+#endif
         }
 
         public static short GetStageId(long grainKey)

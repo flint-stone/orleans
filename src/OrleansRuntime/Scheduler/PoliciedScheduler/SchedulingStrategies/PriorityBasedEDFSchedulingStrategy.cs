@@ -35,17 +35,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             windowedKeys = new ConcurrentDictionary<ulong, long>();
         }
 
-        public void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig)
-        {
-//            // Collect stat from WIGs
-//            if (StatsUpdatesCollection.Any() && --statCollectionCounter <= 0) 
-//            {
-//                statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
-//#if PQ_DEBUG
-//                _logger.Info($"Printing execution times in ticks: {string.Join("********************", StatsUpdatesCollection.Select(x => x.Key.ToString() + " => " +string.Join("|", x.Value.Select(ad => ad.Key + ":" + string.Join(",", ad.Value.Select(kd=>kd.Key + " -> " + kd.Value))))))}");
-//#endif
-//            }
-        }
+        public void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig){ }
         
         public void OnReceivingControllerInstructions(IWorkItem workItem, ISchedulingContext context)
         {
@@ -142,17 +132,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return null;
         }
 
-        public void PutWorkItemMetric(WorkItemGroup wig, ActivationAddress upstream, Dictionary<string, long> metric, long maxDownsteamCost)
-        {
-//            /*
-//            if(StatsUpdatesCollection.ContainsKey(workItemGroup)) StatsUpdatesCollection[workItemGroup] = (Dictionary<ActivationAddress, Dictionary<string, double>>) metric;
-//            */
-//            var address = ((SchedulingContext) wig.SchedulingContext).Activation.Address;
-//            if (!StatsUpdatesCollection.ContainsKey(address))
-//                StatsUpdatesCollection.TryAdd(address, new Dictionary<GrainId, Dictionary<string, long>>());
-//            StatsUpdatesCollection.AddOrUpdate(sourceActivation, metric, (k, v) => metric);
-//            DownstreamCostsCollection.AddOrUpdate(sourceActivation, maxDownsteamCost, (k, v) => maxDownsteamCost);
-        }
 
         public long PeekNextDeadline()
         {
@@ -228,7 +207,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 // Setting priority of the task
                 // ***
                 var priority = timestamp + DataflowSLA - maximumDownStreamPathCost;
-
+                var oldWid = wid;
                 if (WindowedGrain)
                 {              
                     priority = (timestamp / WindowSize + 1) * WindowSize + DataflowSLA - maximumDownStreamPathCost;
@@ -248,7 +227,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #endif
                 }
 #if PQ_DEBUG
-            _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}, {task}, {timestamp} : {WindowSize}: {oldWid} -> {wid} : {DataflowSLA} : {MaximumDownStreamPathCost} : {priority}");
+            _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}, {task}, {timestamp} : {WindowSize}: {oldWid} -> {wid} : {DataflowSLA} : {maximumDownStreamPathCost} : {priority}");
 #endif
                 workItems[priority].Enqueue(task);
 
@@ -353,9 +332,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     var downstreamCost = DownstreamOpToCost.Values.Any()
                         ? DownstreamOpToCost.Values.Max()
                         : SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
-//#if PQ_DEBUG
+#if PQ_DEBUG
                     _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup.Name} -> {address} {string.Join(",", statsUpdate.Select(kv => kv.Key + "->" + kv.Value))} {downstreamCost}");
-//#endif
+#endif
                     var tup = new Tuple<Dictionary<string, long>, long>(statsUpdate, downstreamCost);
                     StatsUpdatesCollection.AddOrUpdate(address.Grain, tup, (k,v) => tup);
 
@@ -417,9 +396,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void GetDownstreamContext(ActivationAddress downstreamActivation, DownstreamContext downstreamContext)
         {
             // TODO: FIX LATER
-//#if PQ_DEBUG
+#if PQ_DEBUG
                     _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} <- {downstreamActivation} {downstreamContext}");
-//#endif
+#endif
             var maxDownstreamCost = downstreamContext.MaximumDownstreamCost +
                                     downstreamContext.StatsUpdate.Count>0?downstreamContext.StatsUpdate.Values.Max():SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
             DownstreamOpToCost.AddOrUpdate(downstreamActivation, maxDownstreamCost, (k, v) => maxDownstreamCost);

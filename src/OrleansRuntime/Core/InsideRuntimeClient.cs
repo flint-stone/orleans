@@ -204,13 +204,17 @@ namespace Orleans.Runtime
                 var downstreamContext = Scheduler.SchedulingStrategy.CheckForSchedulerHint(sendingActivation.Address, target.GrainId);
                 if (downstreamContext != null)
                 {
-                    logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} : {sendingActivation.Address} -> {target.GrainId}");
+                    // logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} : {sendingActivation.Address} -> {target.GrainId}");
                     // Attach downstream context with the message
                     if (message.RequestContextData == null) message.RequestContextData = new Dictionary<string, object>();
                     if (!message.RequestContextData.ContainsKey("DownstreamContext"))
                     {
-                        logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} : {sendingActivation.Address} -> {target.GrainId}: {downstreamContext}");
+                        // logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} : {sendingActivation.Address} -> {target.GrainId}: {downstreamContext}");
                         message.RequestContextData.Add("DownstreamContext", downstreamContext);
+                    }
+                    else
+                    {
+                        message.RequestContextData["DownstreamContext"] = downstreamContext;
                     }
                 }
             }
