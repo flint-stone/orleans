@@ -31,6 +31,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
             StatsUpdatesCollection = new ConcurrentDictionary<ActivationAddress, Dictionary<string, long>>();
+            DownstreamCostsCollection = new ConcurrentDictionary<ActivationAddress, long>();
             DownstreamOpsToWIGs = new ConcurrentDictionary<ActivationAddress, HashSet<WorkItemGroup>>();
             addressToWIG = new Dictionary<ActivationAddress, WorkItemGroup>();
             windowedKeys = new ConcurrentDictionary<ulong, long>();
@@ -239,7 +240,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 _logger.Info(
                     $"{System.Reflection.MethodBase.GetCurrentMethod().Name} {task}: {timestamp} {wig.PriorityContext}, {contextObj.Timestamp}");
 #endif
-                long maximumDownStreamPathCost = 0L;
+                long maximumDownStreamPathCost = SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
 
                 if (DownstreamOpToCost.Any()) maximumDownStreamPathCost = DownstreamOpToCost.Values.Max();
 
@@ -374,9 +375,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 var statsToReport = workItemGroup.WorkItemGroupStats;
                 foreach (var address in statsToReport.Keys)
                 {
-                    Strategy.PutWorkItemMetric(address, statsToReport[address], DownstreamOpToCost.Values.Max());
+//#if PQ_DEBUG
+                    _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup.Name} -> {address} ");
+//#endif
+                    Strategy.PutWorkItemMetric(address, statsToReport[address], DownstreamOpToCost.Values.Any()?DownstreamOpToCost.Values.Max():SchedulerConstants.DEFAULT_WIG_EXECUTION_COST);
                 }
-                workItemGroup.LogExecTimeCounters();
+                // workItemGroup.LogExecTimeCounters();
             }  
         }
 
@@ -433,6 +437,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void GetDownstreamContext(ActivationAddress downstreamActivation, DownstreamContext downstreamContext)
         {
             // TODO: FIX LATER
+//#if PQ_DEBUG
+                    _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} <- {downstreamActivation} {downstreamContext}");
+//#endif
             var maxDownstreamCost = downstreamContext.MaximumDownstreamCost +
                                     downstreamContext.StatsUpdate.Count>0?downstreamContext.StatsUpdate.Values.Max():SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
             DownstreamOpToCost.AddOrUpdate(downstreamActivation, maxDownstreamCost, (k, v) => maxDownstreamCost);

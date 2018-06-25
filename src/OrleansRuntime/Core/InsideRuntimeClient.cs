@@ -199,16 +199,20 @@ namespace Orleans.Runtime
             }
 
             // check for scheduler hint to attach, if exist
-            var downstreamContext = Scheduler.SchedulingStrategy.CheckForSchedulerHint(sendingActivation.Address);
-            if (downstreamContext != null)
+            if (sendingActivation != null)
             {
-                // Attach downstream context with the message
-                if (message.RequestContextData == null) message.RequestContextData = new Dictionary<string, object>();
-                if (!message.RequestContextData.ContainsKey("DownstreamContext"))
+                var downstreamContext = Scheduler.SchedulingStrategy.CheckForSchedulerHint(sendingActivation.Address);
+                if (downstreamContext != null)
                 {
-                    message.RequestContextData.Add("DownstreamContext", downstreamContext);
+                    // Attach downstream context with the message
+                    if (message.RequestContextData == null) message.RequestContextData = new Dictionary<string, object>();
+                    if (!message.RequestContextData.ContainsKey("DownstreamContext"))
+                    {
+                        message.RequestContextData.Add("DownstreamContext", downstreamContext);
+                    }
                 }
             }
+            
 
             if (debugContext != null)
                 message.DebugContext = debugContext;
