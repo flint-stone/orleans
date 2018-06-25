@@ -35,10 +35,13 @@ namespace Orleans.Runtime.Scheduler
         private readonly long quantumExpirations;
         private readonly int workItemGroupStatisticsNumber;
         private Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>> execTimeCounters;
+        
 
         internal IWorkItemManager WorkItemManager { get; set; }
         
         internal ActivationTaskScheduler TaskRunner { get; private set; }
+
+        internal Dictionary<ActivationAddress, Dictionary<string, long>> WorkItemGroupStats { get; set; }
         
         public DateTime TimeQueued { get; set; }
 
@@ -147,6 +150,7 @@ namespace Orleans.Runtime.Scheduler
             totalQueuingDelay = TimeSpan.Zero;
             quantumExpirations = 0;
             TaskRunner = new ActivationTaskScheduler(this);
+            WorkItemGroupStats = new Dictionary<ActivationAddress, Dictionary<string, long>>();
             execTimeCounters = new Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>>();
             log = IsSystemPriority ? LogManager.GetLogger("Scheduler." + Name + ".WorkItemGroup", LoggerType.Runtime) : appLogger;
 
@@ -535,7 +539,7 @@ namespace Orleans.Runtime.Scheduler
             log.Warn(errorCode, msg);
         }
 
-        public Dictionary<ActivationAddress, Dictionary<string, double>> CollectStats()
+        public void CollectStats()
         {
             //return execTimeCounters.Select(x => x.Value.Any()?x.Value.Average():0).Any()? execTimeCounters.Select(x => x.Value.Any() ? x.Value.Average() : 0).Average():0;
             //return execTimeCounters.ToDictionary(kv => kv.Key, kv => 10000.0);
@@ -554,7 +558,7 @@ namespace Orleans.Runtime.Scheduler
                 }
             }
             */
-            return execTimeCounters.ToDictionary(kv => kv.Key, kv => kv.Value.ToDictionary(tq => tq.Key, tq=>tq.Value.Average()));
+            WorkItemGroupStats = execTimeCounters.ToDictionary(kv => kv.Key, kv => kv.Value.ToDictionary(tq => tq.Key, tq=>Convert.ToInt64(tq.Value.Average())));
         }
 
         public static short GetStageId(long grainKey)

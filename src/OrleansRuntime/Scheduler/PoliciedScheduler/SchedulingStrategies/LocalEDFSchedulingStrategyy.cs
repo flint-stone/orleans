@@ -565,7 +565,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             if (--statCollectionCounter <= 0)
             {
                 statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
-                Strategy.PutWorkItemMetric(workItemGroup, workItemGroup.CollectStats());
+                Strategy.PutWorkItemMetric(workItemGroup, workItemGroup.WorkItemGroupStats);
                 workItemGroup.LogExecTimeCounters();
             }  
         }
