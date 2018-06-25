@@ -108,32 +108,7 @@ namespace Orleans.Runtime
             string genericArguments = null)
         {
             var message = this.messageFactory.CreateMessage(request, options);
-            // Adding scheduler hint
-            AddingSchedulerHint(message, request, target);
             SendRequestMessage(target, message, context, callback, debugContext, options, genericArguments);
-        }
-
-        private void AddingSchedulerHint(Message message, InvokeMethodRequest request, GrainReference target)
-        {
-            // Check to see if we need to attach statistics update
-            
-            /*
-            if (message.RequestContextData == null) message.RequestContextData = new Dictionary<string, object>();
-            SchedulingContext schedulingContext = RuntimeContext.Current != null ?
-                RuntimeContext.Current.ActivationContext as SchedulingContext : null;
-            
-            if (schedulingContext!=null && schedulingContext.ContextType == SchedulingContextType.Activation)
-            {
-                if (message.RequestContextData.TryGetValue("Path", out var currentPath))
-                {
-                    message.RequestContextData["Path"] = (string)currentPath + "***" + schedulingContext.Activation + "  Request: " + request + " Target: " + target;
-                }
-                else
-                {
-                    message.RequestContextData.Add("Path", schedulingContext.Activation + "  Request: " + request + " Target: " + target);
-                }
-            } 
-            */
         }
 
         private void SendRequestMessage(
@@ -204,12 +179,16 @@ namespace Orleans.Runtime
                 var downstreamContext = Scheduler.SchedulingStrategy.CheckForSchedulerHint(sendingActivation.Address, target.GrainId);
                 if (downstreamContext != null)
                 {
-                    // logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} : {sendingActivation.Address} -> {target.GrainId}");
+#if PQ_DEBUG
+                    logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} : {sendingActivation.Address} -> {target.GrainId}");
+#endif
                     // Attach downstream context with the message
                     if (message.RequestContextData == null) message.RequestContextData = new Dictionary<string, object>();
                     if (!message.RequestContextData.ContainsKey("DownstreamContext"))
                     {
-                        // logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} : {sendingActivation.Address} -> {target.GrainId}: {downstreamContext}");
+#if PQ_DEBUG
+                        logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} : {sendingActivation.Address} -> {target.GrainId}: {downstreamContext}");
+#endif
                         message.RequestContextData.Add("DownstreamContext", downstreamContext);
                     }
                     else
@@ -640,7 +619,7 @@ namespace Orleans.Runtime
             Catalog.DeactivateActivationOnIdle(data);
         }
 
-        #endregion
+#endregion
 
         internal void Stop()
         {
