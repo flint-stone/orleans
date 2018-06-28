@@ -9,7 +9,6 @@ namespace Orleans.Runtime.Scheduler
         private readonly Action continuation;
         private readonly Func<string> nameGetter;
         private static readonly Logger logger = LogManager.GetLogger("ClosureWorkItem", LoggerType.Runtime);
-        private static ActivationAddress source;
         private readonly Message _message;
 
         public override string Name { get { return nameGetter==null ? "" : nameGetter(); } }
@@ -26,7 +25,7 @@ namespace Orleans.Runtime.Scheduler
             this.PriorityContext = new PriorityObject(message?.RequestContextData != null && message.RequestContextData.ContainsKey("Timestamp")
                 ? (long)message.RequestContextData["Timestamp"] : 0,
                 Environment.TickCount);
-            source = message.SendingAddress;
+            this.SourceActivation = message.SendingAddress;
             _message = message;
         }
 
@@ -43,7 +42,7 @@ namespace Orleans.Runtime.Scheduler
             this.PriorityContext = new PriorityObject(message?.RequestContextData != null && message.RequestContextData.ContainsKey("Timestamp")
                 ? (long)message.RequestContextData["Timestamp"] : 0, 
                 Environment.TickCount);
-            source = message.SendingAddress;
+            this.SourceActivation = message.SendingAddress;
             _message = message;
         }
 
