@@ -6,11 +6,13 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
     {
         public long Priority;
         public int Ticks;
+        public long Deadline; // field that changes with ddl but does not affect ordering
 
         public PriorityObject(long priority, int ticks)
         {
             Priority = priority;
             Ticks = ticks;
+            Deadline = SchedulerConstants.DEFAULT_PRIORITY;
         }
         public int CompareTo(object obj)
         {
