@@ -58,7 +58,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
             
             // Populate info in wig
-            var workitemManager = wig.WorkItemManager as PriorityBasedEDFWorkItemManager;
+            var workitemManager = wig.WorkItemManager as TSBasedEDFWorkItemManager;
             workitemManager.DataflowSLA = (long) controllerContext.Time;
 
             if (windowedKeys.ContainsKey(((SchedulingContext) wig.SchedulingContext).Activation.Grain.Key.N1))
@@ -95,17 +95,17 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 throw new InvalidOperationException(error);
             }
 
-            var wim = wig.WorkItemManager as PriorityBasedEDFWorkItemManager;
+            var wim = wig.WorkItemManager as TSBasedEDFWorkItemManager;
             wim.GetDownstreamContext(downstreamActivation, downstreamContext);
         }
 
         public WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context)
         {
             var wig = new WorkItemGroup(ots, context);
-            wig.WorkItemManager = new PriorityBasedEDFWorkItemManager(this, wig);
+            wig.WorkItemManager = new TSBasedEDFWorkItemManager(this, wig);
             if (context.ContextType.Equals(SchedulingContextType.Activation) && windowedKeys.Keys.Contains(((SchedulingContext) context).Activation.Grain.Key.N1))
             {
-                var wim = wig.WorkItemManager as PriorityBasedEDFWorkItemManager;
+                var wim = wig.WorkItemManager as TSBasedEDFWorkItemManager;
                 wim.WindowedGrain = true;
                 wim.WindowSize = windowedKeys[((SchedulingContext) context).Activation.Grain.Key.N1];
 #if PQ_DEBUG
@@ -122,7 +122,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             if (addressToWIG.ContainsKey(sendingActivationAddress))
             {
-                var wim = addressToWIG[sendingActivationAddress].WorkItemManager as PriorityBasedEDFWorkItemManager;
+                var wim = addressToWIG[sendingActivationAddress].WorkItemManager as TSBasedEDFWorkItemManager;
                 return wim.CheckForStatsUpdate(upstream);
             }
             return null;
@@ -137,7 +137,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #if PQ_DEBUG
                 _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItem}");
 #endif
-                var wim = ((WorkItemGroup) workItem).WorkItemManager as PriorityBasedEDFWorkItemManager;
+                var wim = ((WorkItemGroup) workItem).WorkItemManager as TSBasedEDFWorkItemManager;
                 return wim.PeekNextDeadline();
             }
             return SchedulerConstants.DEFAULT_PRIORITY;
@@ -243,9 +243,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #endif
                 workItems[priority].Enqueue(task);
             }
-//#if PQ_DEBUG
+#if PQ_DEBUG
             _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}, {GetWorkItemQueueStatus()}");
-//#endif
+#endif
         }
 
         public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
@@ -357,12 +357,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 workItems.Select(x =>
                     x.Key + ":" + string.Join(",",
                         x.Value.Select(y =>
-                        { 
+                            {
 
-                            var contextObj = y.AsyncState as PriorityContext;
-                            return "<" + y.ToString() + "-" +
-                                   (contextObj?.Timestamp.ToString() ?? "null") + ">";
-                        }
+                                var contextObj = y.AsyncState as PriorityContext;
+                                return "<" + y.ToString() + "-" +
+                                       (contextObj?.Timestamp.ToString() ?? "null") + ">";
+                            }
                         ))));
         }
 
@@ -419,8 +419,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
     internal class TSBasedEDFWorkItemManager : IWorkItemManager
     {
-        private SortedDictionary<long, Queue<Task>> workItems;
-        private SortedDictionary<long, long> timestampsToDeadlines;
+        private readonly SortedDictionary<long, Queue<Task>> workItems;
+        private readonly SortedDictionary<long, long> timestampsToDeadlines;
         private readonly LoggerImpl _logger;
         private readonly WorkItemGroup workItemGroup;
         private bool dequeuedFlag;
@@ -441,6 +441,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             Strategy = (PriorityBasedEDFSchedulingStrategy)strategy;
             workItems = new SortedDictionary<long, Queue<Task>>();
+            timestampsToDeadlines = new SortedDictionary<long, long>();
             UpstreamOpSet = new ConcurrentBag<GrainId>();
             DownstreamOpToCost = new ConcurrentDictionary<ActivationAddress, long>();
             StatsUpdatesCollection = new ConcurrentDictionary<GrainId, Tuple<Dictionary<string, long>, long>>();
@@ -461,53 +462,67 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 
                 if(!timestampsToDeadlines.ContainsKey(timestamp))
                 {
-                    long maximumDownStreamPathCost = SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
-
-                    if (DownstreamOpToCost.Any()) maximumDownStreamPathCost = DownstreamOpToCost.Values.Max();
-
-                    var ownerStats = workItemGroup.WorkItemGroupStats; 
-                    if (contextObj.SourceActivation != null && ownerStats.ContainsKey(contextObj.SourceActivation) && ownerStats[contextObj.SourceActivation].ContainsKey(task.ToString()))
+                    if (timestamp != SchedulerConstants.DEFAULT_PRIORITY)
                     {
-                        maximumDownStreamPathCost += Convert.ToInt64(ownerStats[contextObj.SourceActivation][task.ToString()]);
-                    }
+                        long maximumDownStreamPathCost = SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
 
-                    // ***
-                    // Setting priority of the task
-                    // ***
-                    var deadline = timestamp + DataflowSLA - maximumDownStreamPathCost;
-                    var oldWid = wid;
-                    if (WindowedGrain)
-                    {
-                        deadline = (timestamp / WindowSize + 1) * WindowSize + DataflowSLA - maximumDownStreamPathCost;
-                        if (timestamp / WindowSize > wid)
+                        if (DownstreamOpToCost.Any()) maximumDownStreamPathCost = DownstreamOpToCost.Values.Max();
+
+                        var ownerStats = workItemGroup.WorkItemGroupStats;
+                        if (contextObj.SourceActivation != null &&
+                            ownerStats.ContainsKey(contextObj.SourceActivation) &&
+                            ownerStats[contextObj.SourceActivation].ContainsKey(task.ToString()))
                         {
-                            if (wid != 0L)
-                                deadline = (wid + 1) * WindowSize + DataflowSLA - maximumDownStreamPathCost;
-                            wid = timestamp / WindowSize;
+                            maximumDownStreamPathCost +=
+                                Convert.ToInt64(ownerStats[contextObj.SourceActivation][task.ToString()]);
                         }
-                    }
 
-                    timestampsToDeadlines.Add(timestamp, deadline);
-                    // If timestamp is not default and earlier than the earliest non-zero deadline, update deadline accordingly
-                    if (timestamp != SchedulerConstants.DEFAULT_PRIORITY && workItems.Count > 1 && timestamp < workItems.Keys.ElementAt(1)) wig.PriorityContext.Deadline = deadline;
+                        // ***
+                        // Setting priority of the task
+                        // ***
+                        var deadline = timestamp + DataflowSLA - maximumDownStreamPathCost;
+                        var oldWid = wid;
+                        if (WindowedGrain)
+                        {
+                            deadline = (timestamp / WindowSize + 1) * WindowSize + DataflowSLA -
+                                       maximumDownStreamPathCost;
+                            if (timestamp / WindowSize > wid)
+                            {
+                                if (wid != 0L)
+                                    deadline = (wid + 1) * WindowSize + DataflowSLA - maximumDownStreamPathCost;
+                                wid = timestamp / WindowSize;
+                            }
+                        }
+
+                        timestampsToDeadlines.Add(timestamp, deadline);
+                        // If timestamp is not default and earlier than the earliest non-zero deadline, update deadline accordingly
+                        // if (timestamp != SchedulerConstants.DEFAULT_PRIORITY && workItems.Count > 1 && timestamp < workItems.Keys.ElementAt(1)) wig.PriorityContext.Deadline = deadline;
+                    }
+                    else
+                    {
+                        timestampsToDeadlines.Add(timestamp, SchedulerConstants.DEFAULT_PRIORITY);
+                    }   
 #if PQ_DEBUG
             _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}, {task}, {timestamp} : {WindowSize}: {oldWid} -> {wid} : {DataflowSLA} : {maximumDownStreamPathCost} : {deadline}");
 #endif
                 }
             }
             workItems[timestamp].Enqueue(task);
-//#if PQ_DEBUG
-            _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}, {GetWorkItemQueueStatus()}");
-//#endif
+#if PQ_DEBUG
+            _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}"+ 
+                Environment.NewLine+
+                "WorkItemQueueStatus: "+
+                Environment.NewLine+
+                $"{GetWorkItemQueueStatus()}");
+#endif
         }
 
         public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
         {
-            var priority = wig.PriorityContext.Deadline;
+            var priority = PeekNextDeadline();
 #if PQ_DEBUG
-            _logger.Info(
-                $"workitem queue: {string.Join(",", workItems.Keys)}");
-            if (wig.PriorityContext <= priority)
+            _logger.Info($"OnAddWIGToRunQueue  {wig}  {GetWorkItemQueueStatus()}");
+            if (wig.PriorityContext.Priority <= priority)
             {
                 _logger.Info(
                     $"{System.Reflection.MethodBase.GetCurrentMethod().Name} {task}: {wig.PriorityContext} <= {priority}");
@@ -545,17 +560,15 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #if PQ_DEBUG
             _logger.Info($"Dequeue priority {kv.Key}");
 #endif
+
             var nextDeadline = Strategy.PeekNextDeadline();
-            
-            if (workItems.Any() && workItems.First().Value.Any() && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || timestampsToDeadlines[workItems.First().Key] <= nextDeadline || dequeuedFlag))
+            //if (workItems.Count>0 && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || timestampsToDeadlines[workItems.First().Key] <= nextDeadline || dequeuedFlag))
+            if (workItems.Any())
             {
                 var item = workItems.First().Value.Dequeue();
-#if PQ_DEBUG
-                _logger.Info($"{workItemGroup} Dequeue priority {workItems.First().Key} {item}");
-#endif
                 dequeuedFlag = false;
-                // finish current priority, break and take wig off the queue
-                if (!workItems.First().Value.Any())
+
+                if (workItems.First().Value.Count==0)
                 {
 #if PQ_DEBUG
                     _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} Removing priority, {workItems.Keys.First()}");
@@ -565,7 +578,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 }
                 return item;
             }
-
             return null;
         }
 
@@ -607,34 +619,37 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public string GetWorkItemQueueStatus()
         {
-            return string.Join("|||",
+            return string.Join(Environment.NewLine,
                 workItems.Select(x =>
-                    x.Key + ":" + string.Join(",",
+                    "~~" + x.Key + ":" +
+                    "Deadline " + timestampsToDeadlines[x.Key] + " "+
+                     string.Join(",",
                         x.Value.Select(y =>
-                        {
+                            {
 
-                            var contextObj = y.AsyncState as PriorityContext;
-                            return "<" + y.ToString() + "-" +
-                                   (contextObj?.Timestamp.ToString() ?? "null") + ">";
-                        }
+                                var contextObj = y.AsyncState as PriorityContext;
+                                return "<" + y.ToString() + "-" +
+                                        (contextObj?.Timestamp.ToString() ?? "null") + "-"
+                                        + y.Id +
+                                        ">";
+                            }
                         ))));
         }
 
         public void OnReAddWIGToRunQueue(WorkItemGroup wig)
         {
-            var priority = workItems.Count > 0 ? workItems.Keys.First() : SchedulerConstants.DEFAULT_PRIORITY;
+            var priority = PeekNextDeadline();
 #if PQ_DEBUG
-            _logger.Info(
-                $"workitem queue: {string.Join(",", workItems.Keys)}");
-            if (wig.PriorityContext <= priority)
+            _logger.Info($"OnReAddWIGToRunQueue {wig}  {GetWorkItemQueueStatus()}");
+            if (wig.PriorityContext.Priority <= priority)
             {
                 _logger.Info(
-                    $"{System.Reflection.MethodBase.GetCurrentMethod().Name} {task}: {wig.PriorityContext} <= {priority}");
+                    $"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {wig.PriorityContext} <= {priority}");
             }
             else
             {
                 _logger.Info(
-                    $"{System.Reflection.MethodBase.GetCurrentMethod().Name} {task}: {wig.PriorityContext} > {priority}");
+                    $"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {wig.PriorityContext} > {priority}");
             }
 #endif
 
@@ -666,7 +681,13 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public long PeekNextDeadline()
         {
-            return timestampsToDeadlines.First().Key;
+            var tses = timestampsToDeadlines.Keys;
+            if (tses.Count != 0)
+            {
+                if (tses.First() != SchedulerConstants.DEFAULT_PRIORITY) return tses.First();
+                if (tses.Count > 1) return tses.ElementAt(1);
+            }
+            return SchedulerConstants.DEFAULT_PRIORITY;
         }
     }
 }
