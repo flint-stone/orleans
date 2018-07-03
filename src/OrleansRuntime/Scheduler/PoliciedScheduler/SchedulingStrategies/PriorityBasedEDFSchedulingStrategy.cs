@@ -1,7 +1,11 @@
-﻿using Orleans.Runtime.Scheduler.SchedulerUtility;
+﻿#define EDF_TRACKING
+
+
+using Orleans.Runtime.Scheduler.SchedulerUtility;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -396,7 +400,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} <- {downstreamActivation} {downstreamContext}");
 #endif
             var maxDownstreamCost = downstreamContext.MaximumDownstreamCost +
-                                    downstreamContext.StatsUpdate.Count>0?downstreamContext.StatsUpdate.Values.Max():SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
+                                    downstreamContext.ExecutionCostByTaskType.Count>0?downstreamContext.ExecutionCostByTaskType.Values.Max():SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
             DownstreamOpToCost.AddOrUpdate(downstreamActivation, maxDownstreamCost, (k, v) => maxDownstreamCost);
         }
 
@@ -427,6 +431,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private int statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
         private long wid;
 
+#if EDF_TRACKING
+        private int currentlyTracking;
+        private FixedSizedQueue<long> queuingDelays;
+        private readonly Stopwatch stopwatch;
+#endif
+
         internal ConcurrentBag<GrainId> UpstreamOpSet { get; set; } // upstream Ops, populated during initialization
         private ConcurrentDictionary<ActivationAddress, long> DownstreamOpToCost { get; set; } // downstream Ops, populated while downstream message flows back
 
@@ -449,6 +459,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
             workItemGroup = wig;
             dequeuedFlag = false;
+#if EDF_TRACKING
+            currentlyTracking = SchedulerConstants.DEFAULT_TASK_TRACKING_ID;
+            queuingDelays = new FixedSizedQueue<long>(SchedulerConstants.STATS_COUNTER_QUEUE_SIZE);
+            stopwatch = new Stopwatch();
+#endif
         }
 
         public void AddToWorkItemQueue(Task task, WorkItemGroup wig)
@@ -508,6 +523,13 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 }
             }
             workItems[timestamp].Enqueue(task);
+#if EDF_TRACKING
+            if (currentlyTracking == SchedulerConstants.DEFAULT_TASK_TRACKING_ID)
+            {
+                currentlyTracking = task.Id;
+                stopwatch.Start();
+            }     
+#endif
 #if PQ_DEBUG
             _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}"+ 
                 Environment.NewLine+
@@ -567,6 +589,16 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             {
                 var item = workItems.First().Value.Dequeue();
                 dequeuedFlag = false;
+
+#if EDF_TRACKING
+                if (item.Id == currentlyTracking)
+                {
+                    var elapsed = stopwatch.Elapsed.Ticks;
+                    queuingDelays.Enqueue(elapsed);
+                    currentlyTracking = SchedulerConstants.DEFAULT_TASK_TRACKING_ID;
+                    stopwatch.Stop();
+                }              
+#endif
 
                 if (workItems.First().Value.Count==0)
                 {
@@ -665,7 +697,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} <- {downstreamActivation} {downstreamContext}");
 #endif
             var maxDownstreamCost = downstreamContext.MaximumDownstreamCost +
-                                    downstreamContext.StatsUpdate.Count > 0 ? downstreamContext.StatsUpdate.Values.Max() : SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
+                                    downstreamContext.ExecutionCostByTaskType.Count > 0 ? downstreamContext.ExecutionCostByTaskType.Values.Max() : SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
             DownstreamOpToCost.AddOrUpdate(downstreamActivation, maxDownstreamCost, (k, v) => maxDownstreamCost);
         }
 

@@ -8,19 +8,21 @@ namespace Orleans.Runtime.Scheduler
     [Serializable]
     public class DownstreamContext
     {
-        public Dictionary<string, long> StatsUpdate { get; }
+        public Dictionary<string, long> ExecutionCostByTaskType { get; }
 
+        public long AverageQueueingDelayInTicks { get; }
         public long MaximumDownstreamCost { get; }
 
-        public DownstreamContext(Dictionary<string, long> statsCollection, long maximumDownstreamCost = SchedulerConstants.DEFAULT_WIG_EXECUTION_COST)
+        public DownstreamContext(Dictionary<string, long> statsCollection, long aqd, long maximumDownstreamCost = SchedulerConstants.DEFAULT_WIG_EXECUTION_COST)
         {
-            StatsUpdate = statsCollection;
+            ExecutionCostByTaskType = statsCollection;
+            AverageQueueingDelayInTicks = aqd;
             MaximumDownstreamCost = maximumDownstreamCost;
         }
 
         public override string ToString()
         {
-            return String.Format("[{0}, {1}]", string.Join(",", StatsUpdate.Select(kv => kv.Key + "->" + kv.Value)),
+            return String.Format("[{0}, {1}]", string.Join(",", ExecutionCostByTaskType.Select(kv => kv.Key + "->" + kv.Value)),
                 MaximumDownstreamCost);
         }
     }
