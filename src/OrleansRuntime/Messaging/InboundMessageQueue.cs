@@ -10,6 +10,7 @@ namespace Orleans.Runtime.Messaging
         private readonly BlockingCollection<Message>[] messageQueues;
         private readonly Logger log;
         private readonly QueueTrackingStatistic[] queueTracking;
+        public QueueTrackingStatistic[] QueueTracking => queueTracking;
 
         public int Count
         {
@@ -32,7 +33,7 @@ namespace Orleans.Runtime.Messaging
             foreach (var category in Enum.GetValues(typeof(Message.Categories)))
             {
                 messageQueues[i] = new BlockingCollection<Message>();
-                if (StatisticsCollector.CollectQueueStats)
+                if (StatisticsCollector.CollectQueueStats || StatisticsCollector.CollectEDFSchedulerStats)
                 {
                     var queueName = "IncomingMessageAgent." + category;
                     queueTracking[i] = new QueueTrackingStatistic(queueName);
@@ -63,6 +64,11 @@ namespace Orleans.Runtime.Messaging
                 queueTracking[(int)msg.Category].OnEnQueueRequest(1, messageQueues[(int)msg.Category].Count, msg);
             }
 #endif
+            if (StatisticsCollector.CollectEDFSchedulerStats)
+            {
+                queueTracking[(int)msg.Category].OnEnQueueRequest(1, messageQueues[(int)msg.Category].Count, msg);
+            }
+
             messageQueues[(int)msg.Category].Add(msg);
            
             if (log.IsVerbose3) log.Verbose3("Queued incoming {0} message", msg.Category.ToString());
@@ -80,6 +86,11 @@ namespace Orleans.Runtime.Messaging
                     queueTracking[(int)msg.Category].OnDeQueueRequest(msg);
                 }
 #endif
+
+                if (StatisticsCollector.CollectEDFSchedulerStats)
+                {
+                    queueTracking[(int)msg.Category].OnDeQueueRequest(msg);
+                }
                 return msg;
             }
             catch (InvalidOperationException)

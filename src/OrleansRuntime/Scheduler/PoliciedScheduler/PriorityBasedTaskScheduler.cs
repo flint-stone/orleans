@@ -22,6 +22,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
         private readonly ConcurrentDictionary<ISchedulingContext, WorkItemGroup> workgroupDirectory; // work group directory
         private bool applicationTurnsStopped;
         private static TimeSpan TurnWarningLengthThreshold { get; set; }
+        private static ICorePerformanceMetrics metrics;
         #endregion
 
         #endregion
@@ -69,6 +70,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             DelayWarningThreshold = delayWarningThreshold;
             WorkItemGroup.ActivationSchedulingQuantum = activationSchedulingQuantum;
             TurnWarningLengthThreshold = turnWarningLengthThreshold;
+            metrics = performanceMetrics;
             applicationTurnsStopped = false;
             MaxPendingItemsLimit = maxPendingItemsLimit;
             workgroupDirectory = new ConcurrentDictionary<ISchedulingContext, WorkItemGroup>();
@@ -121,6 +123,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
         // Enqueue a work item to a given context
         public void QueueWorkItem(IWorkItem workItem, ISchedulingContext context)
         {
+            logger.Info($"inbound average waiting time in ticks {metrics.InboundAverageWaitingTime} outbound average waiting time in ticks {metrics.OutboundAverageWaitingTime}");
 #if DEBUG
             if (logger.IsVerbose2) logger.Verbose2("QueueWorkItem " + context);
 #endif

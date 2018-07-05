@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Orleans.Runtime.Configuration;
@@ -25,6 +27,8 @@ namespace Orleans.Runtime.Messaging
                 return n;
             }
         }
+
+        public IEnumerable<SiloMessageSender> Senders => senders.Select(x=>x.Value);
 
         internal const string QUEUED_TIME_METADATA = "QueuedTime";
 

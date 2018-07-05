@@ -124,6 +124,16 @@ namespace Orleans.Runtime.Counters
             get { return MessagingStatisticsGroup.MessagesReceived.GetCurrentValue(); }
         }
 
+        public float InboundAverageWaitingTime
+        {
+            get { return MessageCenter.InboundAverageWaitingTime; }
+        }
+
+        public float OutboundAverageWaitingTime
+        {
+            get { return MessageCenter.OutboundAverageWaitingTime; }
+        }
+
         public long ClientCount
         {
             get { return MessagingStatisticsGroup.ConnectedClientCount.GetCurrentValue(); }

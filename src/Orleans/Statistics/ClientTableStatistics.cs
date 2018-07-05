@@ -67,6 +67,9 @@ namespace Orleans.Runtime
             get { return MessagingStatisticsGroup.MessagesReceived.GetCurrentValue(); }
         }
 
+        public float InboundAverageWaitingTime => 0;
+        public float OutboundAverageWaitingTime => 0;
+
         public long ConnectedGatewayCount
         {
             get { return connectedGatewayCount.GetCurrentValue(); }

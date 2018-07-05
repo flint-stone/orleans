@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using Orleans.Messaging;
@@ -37,7 +38,10 @@ namespace Orleans.Runtime.Messaging
         
         // This is determined by the IMA but needed by the OMS, and so is kept here in the message center itself.
         public SiloAddress MyAddress { get; private set; }
+        public float InboundAverageWaitingTime => InboundQueue.QueueTracking.Average(x=>x.AverageTimeInQueue);
 
+        public float OutboundAverageWaitingTime => OutboundQueue.Senders.Average(
+            x => x.QueueTracking.AverageTimeInQueue);
         public IMessagingConfiguration MessagingConfiguration { get; private set; }
 
         public MessageCenter(

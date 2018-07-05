@@ -11,12 +11,14 @@ namespace Orleans.Runtime
         private BlockingCollection<T> requestQueue;
         private QueueTrackingStatistic queueTracking;
 
+        internal QueueTrackingStatistic QueueTracking => queueTracking;
+
         protected AsynchQueueAgent(string nameSuffix, IMessagingConfiguration cfg)
             : base(nameSuffix)
         {
             config = cfg;
             requestQueue = new BlockingCollection<T>();
-            if (StatisticsCollector.CollectQueueStats)
+            if (StatisticsCollector.CollectQueueStats || StatisticsCollector.CollectEDFSchedulerStats)
             {
                 queueTracking = new QueueTrackingStatistic(base.Name);
             }
@@ -35,6 +37,10 @@ namespace Orleans.Runtime
                 queueTracking.OnEnQueueRequest(1, requestQueue.Count, request);
             }
 #endif
+            if (StatisticsCollector.CollectEDFSchedulerStats)
+            {
+                queueTracking.OnEnQueueRequest(1, requestQueue.Count, request);
+            }
 
             requestQueue.Add(request);
         }
@@ -50,6 +56,10 @@ namespace Orleans.Runtime
                 queueTracking.OnStartExecution();
             }
 #endif
+            if (StatisticsCollector.CollectEDFSchedulerStats)
+            {
+                queueTracking.OnStartExecution();
+            }
             try
             {
                 RunNonBatching();
@@ -63,6 +73,10 @@ namespace Orleans.Runtime
                     queueTracking.OnStopExecution();
                 }
 #endif
+                if (StatisticsCollector.CollectEDFSchedulerStats)
+                {
+                    queueTracking.OnStopExecution();
+                }
             }
         }
 
@@ -95,6 +109,10 @@ namespace Orleans.Runtime
                     threadTracking.OnStartProcessing();
                 }
 #endif
+                if(StatisticsCollector.CollectEDFSchedulerStats)
+                    queueTracking.OnDeQueueRequest(request);
+
+
                 Process(request);
 #if TRACK_DETAILED_STATS
                 if (StatisticsCollector.CollectThreadTimeTrackingStats)
@@ -135,7 +153,7 @@ namespace Orleans.Runtime
             }
         }
 
-        #region IDisposable Members
+#region IDisposable Members
 
         protected override void Dispose(bool disposing)
         {
@@ -153,6 +171,6 @@ namespace Orleans.Runtime
             requestQueue = null;
         }
 
-        #endregion
+#endregion
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -627,6 +628,7 @@ namespace Orleans.Runtime.Messaging
             {
 #if TRACK_DETAILED_STATS
                 ThreadTrackingStatistic tracker = null;
+                var trackers = new ConcurrentDictionary<int, ThreadTrackingStatistic>();
                 if (StatisticsCollector.CollectThreadTimeTrackingStats)
                 {
                     int id = System.Threading.Thread.CurrentThread.ManagedThreadId;

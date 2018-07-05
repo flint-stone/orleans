@@ -21,6 +21,10 @@ namespace Orleans.Runtime
 
         int ReceiveQueueLength { get; }
 
+        float InboundAverageWaitingTime { get; }
+
+        float OutboundAverageWaitingTime { get; }
+
         IMessagingConfiguration MessagingConfiguration { get; }
     }
 }
