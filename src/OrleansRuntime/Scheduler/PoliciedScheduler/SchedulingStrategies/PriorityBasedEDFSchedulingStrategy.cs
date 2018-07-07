@@ -528,7 +528,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             {
                 currentlyTracking = task.Id;
                 stopwatch.Start();
-            }     
+            }
+            _logger.Info($"{string.Join(",", queuingDelays)}");
 #endif
 #if PQ_DEBUG
             _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}"+ 
@@ -584,8 +585,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #endif
 
             var nextDeadline = Strategy.PeekNextDeadline();
-            //if (workItems.Count>0 && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || timestampsToDeadlines[workItems.First().Key] <= nextDeadline || dequeuedFlag))
-            if (workItems.Any())
+            if (workItems.Count>0 && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || timestampsToDeadlines[workItems.First().Key] <= nextDeadline || dequeuedFlag))
+            //if (workItems.Any())
             {
                 var item = workItems.First().Value.Dequeue();
                 dequeuedFlag = false;
@@ -713,13 +714,16 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public long PeekNextDeadline()
         {
-            var tses = timestampsToDeadlines.Keys;
-            if (tses.Count != 0)
+            lock (workItemGroup.lockable)
             {
-                if (tses.First() != SchedulerConstants.DEFAULT_PRIORITY) return tses.First();
-                if (tses.Count > 1) return tses.ElementAt(1);
+                var tses = timestampsToDeadlines.Keys;
+                if (tses.Count != 0)
+                {
+                    if (tses.First() != SchedulerConstants.DEFAULT_PRIORITY) return tses.First();
+                    if (tses.Count > 1) return tses.ElementAt(1);
+                }
+                return SchedulerConstants.DEFAULT_PRIORITY;
             }
-            return SchedulerConstants.DEFAULT_PRIORITY;
         }
     }
 }
