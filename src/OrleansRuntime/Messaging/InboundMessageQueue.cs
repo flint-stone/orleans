@@ -64,10 +64,12 @@ namespace Orleans.Runtime.Messaging
                 queueTracking[(int)msg.Category].OnEnQueueRequest(1, messageQueues[(int)msg.Category].Count, msg);
             }
 #endif
+#if EDF_TRACKING
             if (StatisticsCollector.CollectEDFSchedulerStats)
             {
                 queueTracking[(int)msg.Category].OnEnQueueRequest(1, messageQueues[(int)msg.Category].Count, msg);
             }
+#endif
 
             messageQueues[(int)msg.Category].Add(msg);
            
@@ -87,10 +89,12 @@ namespace Orleans.Runtime.Messaging
                 }
 #endif
 
+#if EDF_TRACKING
                 if (StatisticsCollector.CollectEDFSchedulerStats)
                 {
                     queueTracking[(int)msg.Category].OnDeQueueRequest(msg);
                 }
+#endif
                 return msg;
             }
             catch (InvalidOperationException)

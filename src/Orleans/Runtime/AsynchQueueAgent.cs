@@ -11,7 +11,9 @@ namespace Orleans.Runtime
         private BlockingCollection<T> requestQueue;
         private QueueTrackingStatistic queueTracking;
 
+#if EDF_TRACKING
         internal QueueTrackingStatistic QueueTracking => queueTracking;
+#endif
 
         protected AsynchQueueAgent(string nameSuffix, IMessagingConfiguration cfg)
             : base(nameSuffix)
@@ -37,11 +39,12 @@ namespace Orleans.Runtime
                 queueTracking.OnEnQueueRequest(1, requestQueue.Count, request);
             }
 #endif
+#if EDF_TRACKING
             if (StatisticsCollector.CollectEDFSchedulerStats)
             {
                 queueTracking.OnEnQueueRequest(1, requestQueue.Count, request);
             }
-
+#endif
             requestQueue.Add(request);
         }
 
@@ -56,10 +59,13 @@ namespace Orleans.Runtime
                 queueTracking.OnStartExecution();
             }
 #endif
+#if EDF_TRACKING
             if (StatisticsCollector.CollectEDFSchedulerStats)
             {
                 queueTracking.OnStartExecution();
             }
+#endif
+
             try
             {
                 RunNonBatching();
@@ -73,10 +79,13 @@ namespace Orleans.Runtime
                     queueTracking.OnStopExecution();
                 }
 #endif
+
+#if EDF_TRACKING
                 if (StatisticsCollector.CollectEDFSchedulerStats)
                 {
                     queueTracking.OnStopExecution();
                 }
+#endif
             }
         }
 
@@ -109,9 +118,10 @@ namespace Orleans.Runtime
                     threadTracking.OnStartProcessing();
                 }
 #endif
-                if(StatisticsCollector.CollectEDFSchedulerStats)
+#if EDF_TRACKING
+                if (StatisticsCollector.CollectEDFSchedulerStats)
                     queueTracking.OnDeQueueRequest(request);
-
+#endif
 
                 Process(request);
 #if TRACK_DETAILED_STATS
@@ -153,7 +163,7 @@ namespace Orleans.Runtime
             }
         }
 
-#region IDisposable Members
+        #region IDisposable Members
 
         protected override void Dispose(bool disposing)
         {
@@ -171,6 +181,6 @@ namespace Orleans.Runtime
             requestQueue = null;
         }
 
-#endregion
+        #endregion
     }
 }

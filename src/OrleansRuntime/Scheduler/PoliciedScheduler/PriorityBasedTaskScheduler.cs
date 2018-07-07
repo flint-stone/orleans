@@ -127,7 +127,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             var tripTimes = metrics.InboundAverageTripTimeBySource.Any()
                 ? string.Join(",", metrics.InboundAverageTripTimeBySource.Select(x => x.Key + "->" + x.Value))
                 : "null";
-            // logger.Info($"inbound average waiting time in ticks {metrics.InboundAverageWaitingTime} outbound average waiting time in ticks {metrics.OutboundAverageWaitingTime} inbound message trip time ticks {tripTimes}");
+            logger.Info($"inbound average waiting time in ticks {metrics.InboundAverageWaitingTime} outbound average waiting time in ticks {metrics.OutboundAverageWaitingTime} inbound message trip time ticks {tripTimes}");
 #endif
 #if DEBUG
             if (logger.IsVerbose2) logger.Verbose2("QueueWorkItem " + context);
