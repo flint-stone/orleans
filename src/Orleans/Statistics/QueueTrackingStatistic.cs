@@ -75,8 +75,7 @@ namespace Orleans.Runtime
             long ticks = itemInQueue.Elapsed.Ticks;
             averageTimeInQueue.AddValue(ticks);
             averageTimeInAllQueues.AddValue(ticks);
-            totalTimeInAllQueues.IncrementBy(ticks);
-            Console.WriteLine($"Dequeued message {itemInQueue} with elapsed time {ticks}");
+            totalTimeInAllQueues.IncrementBy(ticks); 
         }
 
         public float AverageQueueLength { get { return averageQueueSizeCounter.GetAverageValue(); } }

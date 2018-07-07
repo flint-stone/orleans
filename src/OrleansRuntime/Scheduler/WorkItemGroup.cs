@@ -26,7 +26,7 @@ namespace Orleans.Runtime.Scheduler
         private readonly Logger log;
         private readonly IOrleansTaskScheduler masterScheduler;
         private WorkGroupStatus state;
-        private readonly Object lockable;
+        internal readonly Object lockable;
 
         private long totalItemsEnQueued;    // equals total items queued, + 1
         private long totalItemsProcessed;
@@ -400,8 +400,9 @@ namespace Orleans.Runtime.Scheduler
                     {
 #if TRACK_DETAILED_STATS
                         if (StatisticsCollector.CollectTurnsStats)
-                            SchedulerStatisticsGroup.OnTurnExecutionEnd(Utils.Since(thread.CurrentStateStarted));
-                        
+                            SchedulerStatisticsGroup.OnTurnExecutionEnd(Utils.Since(thread.currentTaskStarted));
+                            //SchedulerStatisticsGroup.OnTurnExecutionEnd(Utils.Since(thread.CurrentStateStarted));
+
                         if (StatisticsCollector.CollectThreadTimeTrackingStats)
                             thread.threadTracking.IncrementNumberOfProcessed();
 #endif

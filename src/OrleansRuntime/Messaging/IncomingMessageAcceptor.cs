@@ -24,7 +24,11 @@ namespace Orleans.Runtime.Messaging
             = CounterStatistic.FindOrCreate(StatisticNames.MESSAGE_ACCEPTOR_ALLOCATED_SOCKET_EVENT_ARGS, false);
         private readonly CounterStatistic checkedOutSocketEventArgsCounter;
         private readonly CounterStatistic checkedInSocketEventArgsCounter;
+        private readonly Dictionary<string, AverageValueStatistic> incomingMessageTripTimeBySource;
         private readonly SerializationManager serializationManager;
+
+        internal Dictionary<string, AverageValueStatistic> IncomingMessageTripTimeBySource =>
+            incomingMessageTripTimeBySource;
 
         public Action<Message> SniffIncomingMessage
         {
@@ -60,6 +64,7 @@ namespace Orleans.Runtime.Messaging
 
             checkedOutSocketEventArgsCounter = CounterStatistic.FindOrCreate(StatisticNames.MESSAGE_ACCEPTOR_CHECKED_OUT_SOCKET_EVENT_ARGS, false);
             checkedInSocketEventArgsCounter = CounterStatistic.FindOrCreate(StatisticNames.MESSAGE_ACCEPTOR_CHECKED_IN_SOCKET_EVENT_ARGS, false);
+            incomingMessageTripTimeBySource = new Dictionary<string, AverageValueStatistic>();
 
             IntValueStatistic.FindOrCreate(StatisticNames.MESSAGE_ACCEPTOR_IN_USE_SOCKET_EVENT_ARGS,
                 () => checkedOutSocketEventArgsCounter.GetCurrentValue() - checkedInSocketEventArgsCounter.GetCurrentValue());
@@ -549,6 +554,27 @@ namespace Orleans.Runtime.Messaging
                 // See if it's a message for a client we're proxying.
                 if (MessageCenter.IsProxying && MessageCenter.TryDeliverToProxy(msg)) return;
 
+                /**
+                 * Record end time in RequestContext
+                 * if contains departing ticks, collect stats
+                 */
+                if (msg.RequestContextData!=null && msg.RequestContextData.ContainsKey("DepartingTicks"))
+                {
+                    // Collect this time
+                    var trip = DateTime.Now.Ticks - ((long) msg.RequestContextData["DepartingTicks"]);
+                    var source = msg.SendingAddress;
+                    var sourceName = new StatisticName(StatisticNames.MESSAGE_ACCEPTOR_INBOUND_MESSAGE_TRIPTIME_BYSOURCE, source.Grain.IdentityString);
+                    if (!incomingMessageTripTimeBySource.ContainsKey(source.ToString()))
+                    {
+                        incomingMessageTripTimeBySource.Add(source.ToString(), new SingleThreadedFixedSizedAverageValueStatistic(sourceName));
+                    }
+                    incomingMessageTripTimeBySource[source.ToString()].AddValue(trip);
+
+                    // Stop propagating
+                    msg.RequestContextData.Remove("DepartingTicks");
+                }
+                
+                 
                 // Nope, it's for us
                 MessageCenter.InboundQueue.PostMessage(msg);
                 return;

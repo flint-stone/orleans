@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Orleans.Runtime.Configuration;
 using Orleans.Runtime.Scheduler;
@@ -132,6 +133,11 @@ namespace Orleans.Runtime.Counters
         public float OutboundAverageWaitingTime
         {
             get { return MessageCenter.OutboundAverageWaitingTime; }
+        }
+
+        public Dictionary<string, float> InboundAverageTripTimeBySource
+        {
+            get { return MessageCenter.InboundAverageTripTimeBySource; }
         }
 
         public long ClientCount

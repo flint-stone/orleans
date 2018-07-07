@@ -43,6 +43,15 @@ namespace Orleans.Messaging
                 return;
             }
 
+            /**
+             * Adding timestamp right before serialization
+             */
+            if (msg.Category == Message.Categories.Application  )
+            {
+                if(msg.RequestContextData==null) msg.RequestContextData = new Dictionary<string, object>();
+                if(!msg.RequestContextData.ContainsKey("DepartingTicks")) msg.RequestContextData.Add("DepartingTicks", DateTime.Now.Ticks);
+            }
+
             List<ArraySegment<byte>> data;
             int headerLength = 0;
             try

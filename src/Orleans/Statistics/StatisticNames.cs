@@ -337,6 +337,9 @@ namespace Orleans.Runtime
         public static readonly StatisticName MESSAGE_ACCEPTOR_CHECKED_IN_SOCKET_EVENT_ARGS = new StatisticName("Messaging.Acceptor.CheckedInSocketEventArgs");
         public static readonly StatisticName MESSAGE_ACCEPTOR_CHECKED_OUT_SOCKET_EVENT_ARGS = new StatisticName("Messaging.Acceptor.CheckedOutSocketEventArgs");
         public static readonly StatisticName MESSAGE_ACCEPTOR_IN_USE_SOCKET_EVENT_ARGS = new StatisticName("Messaging.Acceptor.InUseSocketEventArgs");
+        // EDF tracking
+        public static readonly StatisticNameFormat MESSAGE_ACCEPTOR_INBOUND_MESSAGE_TRIPTIME_BYSOURCE =
+            new StatisticNameFormat("Messaging.Acceptor.Inbound.Message.Triptime.BySource.{0}");
     }
 }
  

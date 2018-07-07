@@ -56,6 +56,8 @@ namespace Orleans.Runtime
         float InboundAverageWaitingTime { get; }
 
         float OutboundAverageWaitingTime { get; }
+
+        Dictionary<string, float> InboundAverageTripTimeBySource { get; }
     }
 
     /// <summary>

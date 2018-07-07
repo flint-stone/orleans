@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -42,6 +43,9 @@ namespace Orleans.Runtime.Messaging
 
         public float OutboundAverageWaitingTime => OutboundQueue.Senders.Average(
             x => x.QueueTracking.AverageTimeInQueue);
+
+        public Dictionary<string, float> InboundAverageTripTimeBySource => ima.IncomingMessageTripTimeBySource.ToDictionary(kv => kv.Key.ToString(), kv => kv.Value.GetAverageValue());
+
         public IMessagingConfiguration MessagingConfiguration { get; private set; }
 
         public MessageCenter(

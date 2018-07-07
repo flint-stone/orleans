@@ -1,5 +1,6 @@
 ﻿#define LOG_MEMORY_PERF_COUNTERS 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 
@@ -69,6 +70,7 @@ namespace Orleans.Runtime
 
         public float InboundAverageWaitingTime => 0;
         public float OutboundAverageWaitingTime => 0;
+        public Dictionary<string, float> InboundAverageTripTimeBySource { get; }
 
         public long ConnectedGatewayCount
         {
