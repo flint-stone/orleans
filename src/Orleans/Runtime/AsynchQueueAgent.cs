@@ -11,9 +11,7 @@ namespace Orleans.Runtime
         private BlockingCollection<T> requestQueue;
         private QueueTrackingStatistic queueTracking;
 
-#if EDF_TRACKING
         internal QueueTrackingStatistic QueueTracking => queueTracking;
-#endif
 
         protected AsynchQueueAgent(string nameSuffix, IMessagingConfiguration cfg)
             : base(nameSuffix)

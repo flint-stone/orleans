@@ -12,10 +12,8 @@ namespace Orleans.Runtime
         private readonly IClientMetricsDataPublisher metricsDataPublisher;
         private TimeSpan reportFrequency;
 
-#if EDF_TRACKING
         private readonly IntValueStatistic connectedGatewayCount;
         private readonly RuntimeStatisticsGroup runtimeStats;
-#endif
 
         private AsyncTaskSafeTimer reportTimer;
         private static readonly Logger logger = LogManager.GetLogger("ClientTableStatistics", LoggerType.Runtime);
