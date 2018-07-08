@@ -13,7 +13,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         Task GetNextTaskForExecution();
 
-        void UpdateWIGStatistics();
+        void OnFinishingWIGTurn();
 
         int CountWIGTasks();
 

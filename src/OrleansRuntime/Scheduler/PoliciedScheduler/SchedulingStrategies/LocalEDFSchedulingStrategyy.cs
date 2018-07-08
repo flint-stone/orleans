@@ -565,7 +565,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             */
         }
 
-        public void UpdateWIGStatistics()
+        public void OnFinishingWIGTurn()
         {
             if (--statCollectionCounter <= 0)
             {

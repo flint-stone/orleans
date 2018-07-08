@@ -70,7 +70,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return workItems.Dequeue();
         }
 
-         public void UpdateWIGStatistics() { }
+         public void OnFinishingWIGTurn() { }
 
          public int CountWIGTasks()
         {

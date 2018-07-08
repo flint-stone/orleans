@@ -341,7 +341,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return null;
         }
 
-        public void UpdateWIGStatistics()
+        public void OnFinishingWIGTurn()
         {
             StatManager.UpdateWIGStatistics();
         }
