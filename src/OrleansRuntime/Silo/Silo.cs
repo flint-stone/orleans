@@ -260,6 +260,8 @@ namespace Orleans.Runtime
             services.AddFromExisting<ISchedulingStrategy, PriorityBasedEDFSchedulingStrategy>();
 //            services.AddSingleton<WindowIDSchedulingStrategy>();
 //            services.AddFromExisting<ISchedulingStrategy, WindowIDSchedulingStrategy>();
+//            services.AddSingleton<BoundaryBasedEDFSchedulingStrategy>();
+//            services.AddFromExisting<ISchedulingStrategy, BoundaryBasedEDFSchedulingStrategy>();
             services.AddSingleton<GrainFactory>(sp => sp.GetService<InsideRuntimeClient>().ConcreteGrainFactory);
             services.AddFromExisting<IGrainFactory, GrainFactory>();
             services.AddFromExisting<IInternalGrainFactory, GrainFactory>();

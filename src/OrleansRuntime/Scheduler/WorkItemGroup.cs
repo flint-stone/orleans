@@ -475,7 +475,7 @@ namespace Orleans.Runtime.Scheduler
                             state = WorkGroupStatus.Waiting;
                         }
                     }
-                    WorkItemManager.UpdateWIGStatistics();
+                    WorkItemManager.OnFinishingWIGTurn();
                 }
             }
         }
