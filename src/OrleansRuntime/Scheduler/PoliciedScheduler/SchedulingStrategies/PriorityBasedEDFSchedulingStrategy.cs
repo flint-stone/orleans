@@ -169,7 +169,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public PriorityBasedEDFWorkItemManager(ISchedulingStrategy strategy, WorkItemGroup wig)
         {
             Strategy = (PriorityBasedEDFSchedulingStrategy)strategy;
-            StatManager = new StatisticsManager(wig);
+            StatManager = new StatisticsManager(wig, ((PriorityBasedTaskScheduler)Strategy.Scheduler).Metrics);
             workItems = new SortedDictionary<long, Queue<Task>>();
             DataflowSLA = SchedulerConstants.DEFAULT_DATAFLOW_SLA;
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
@@ -400,7 +400,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public TSBasedEDFWorkItemManager(ISchedulingStrategy strategy, WorkItemGroup wig)
         {
             Strategy = (PriorityBasedEDFSchedulingStrategy)strategy;
-            StatManager = new StatisticsManager(wig);
+            StatManager = new StatisticsManager(wig, ((PriorityBasedTaskScheduler)Strategy.Scheduler).Metrics);
             workItems = new SortedDictionary<long, Queue<Task>>();
             timestampsToDeadlines = new SortedDictionary<long, long>();
             DataflowSLA = SchedulerConstants.DEFAULT_DATAFLOW_SLA;

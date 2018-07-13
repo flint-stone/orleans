@@ -29,7 +29,7 @@
     <OrleansReferencesBase>$(ProjectDir)..\Bootstrap\</OrleansReferencesBase>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>TRACE;DEBUG;EXCLUDE_ASSEMBLYINFO;EXCLUDEFSHARP;NET461;NET461</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;EXCLUDE_ASSEMBLYINFO;EXCLUDEFSHARP;NET461;NET461;NET461;EDF_TRACKING</DefineConstants>
     <DebugType>full</DebugType>
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>

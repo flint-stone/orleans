@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -173,7 +174,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public BoundaryBasedEDFWorkItemManager(ISchedulingStrategy strategy, WorkItemGroup wig)
         {
             Strategy = (BoundaryBasedEDFSchedulingStrategy)strategy;
-            StatManager = new StatisticsManager(wig);
+            StatManager = new StatisticsManager(wig, ((PriorityBasedTaskScheduler)Strategy.Scheduler).Metrics);
             workItems = new SortedDictionary<long, Queue<Task>>();
             timestampsToDeadlines = new SortedDictionary<long, long>();
             DataflowSLA = SchedulerConstants.DEFAULT_DATAFLOW_SLA;
@@ -211,7 +212,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     :SchedulerConstants.DEFAULT_PRIORITY;
             }
 
-            long maximumDownStreamPathCost=0L;
+            long maximumDownStreamPathCost = SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
             if (!workItems.ContainsKey(timestamp))
             {
                 if (timestamp != SchedulerConstants.DEFAULT_PRIORITY)
@@ -247,7 +248,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #endif
                 workItems.Add(timestamp, new Queue<Task>());
             }
-            _logger.Info($"{workItemGroup} Adding task {task} with timestamp {originalTS}");
+            // _logger.Info($"{workItemGroup} Adding task {task} with timestamp {originalTS}");
             workItems[timestamp].Enqueue(task);
 #if EDF_TRACKING
             if (currentlyTracking == SchedulerConstants.DEFAULT_TASK_TRACKING_ID)
@@ -255,15 +256,15 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 currentlyTracking = task.Id;
                 stopwatch.Start();
             }
-            _logger.Info($"{string.Join(",", queuingDelays)}");
+            // _logger.Info($"{string.Join(",", queuingDelays)}");
 #endif
-//#if PQ_DEBUG
+#if PQ_DEBUG
             _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}"+ 
                 Environment.NewLine+
                 "WorkItemQueueStatus: "+
                 Environment.NewLine+
                 $"{GetWorkItemQueueStatus()}");
-//#endif
+#endif
         }
 
         public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)

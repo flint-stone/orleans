@@ -11,13 +11,14 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         internal ConcurrentBag<GrainId> UpstreamOpSet { get; set; } // upstream Ops, populated during initialization
         internal ConcurrentDictionary<ActivationAddress, long> DownstreamOpToCost { get; set; } // downstream Ops, populated while downstream message flows back
-        internal ConcurrentDictionary<GrainId, Tuple<Dictionary<string, long>, long>> StatsUpdatesCollection { get; set; }
 
+        private LoggerImpl _logger;
         private int statCollectionCounter;
+        private readonly WorkItemGroup workItemGroup;
+        private readonly ICorePerformanceMetrics metrics;
+        private ConcurrentDictionary<GrainId, Tuple<Dictionary<string, long>, long>> StatsUpdatesCollection { get; set; }
 
-        private WorkItemGroup workItemGroup;
-
-        public StatisticsManager(WorkItemGroup wig)
+        public StatisticsManager(WorkItemGroup wig, ICorePerformanceMetrics perfMetrics)
         {
             UpstreamOpSet = new ConcurrentBag<GrainId>();
             DownstreamOpToCost = new ConcurrentDictionary<ActivationAddress, long>();
@@ -25,15 +26,16 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
 
             workItemGroup = wig;
+            metrics = perfMetrics;
+            _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
         }
         public void GetDownstreamContext(ActivationAddress downstreamActivation, DownstreamContext downstreamContext)
         {
             // TODO: FIX LATER
-#if PQ_DEBUG
+//#if PQ_DEBUG
                     _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} <- {downstreamActivation} {downstreamContext}");
-#endif
-            var maxDownstreamCost = downstreamContext.MaximumDownstreamCost +
-                                    downstreamContext.ExecutionCostByTaskType.Count > 0 ? downstreamContext.ExecutionCostByTaskType.Values.Max() : SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
+//#endif
+            var maxDownstreamCost = downstreamContext.DownStreamCostSum;
             DownstreamOpToCost.AddOrUpdate(downstreamActivation, maxDownstreamCost, (k, v) => maxDownstreamCost);
         }
 
@@ -42,7 +44,18 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             Tuple<Dictionary<string, long>, long> tuple;
             if (StatsUpdatesCollection.TryGetValue(upstream, out tuple))
             {
-                return new DownstreamContext(tuple.Item1, tuple.Item2);
+                return new DownstreamContext(
+                    tuple.Item2, 
+
+                    tuple.Item1.Values.Max(),
+
+                    SchedulerConstants.DEFAULT_WIG_EXECUTION_COST,
+
+                    Convert.ToInt64(metrics.InboundAverageWaitingTime),
+
+                    metrics.InboundAverageTripTimeBySource.ContainsKey(upstream.IdentityString)?
+                    Convert.ToInt64(metrics.InboundAverageTripTimeBySource[upstream.IdentityString]):
+                    SchedulerConstants.DEFAULT_WIG_EXECUTION_COST);
             }
             return null;
         }

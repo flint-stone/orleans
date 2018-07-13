@@ -24,10 +24,10 @@ namespace Orleans.Runtime.Messaging
             = CounterStatistic.FindOrCreate(StatisticNames.MESSAGE_ACCEPTOR_ALLOCATED_SOCKET_EVENT_ARGS, false);
         private readonly CounterStatistic checkedOutSocketEventArgsCounter;
         private readonly CounterStatistic checkedInSocketEventArgsCounter;
-        private readonly Dictionary<string, AverageValueStatistic> incomingMessageTripTimeBySource;
+        private readonly ConcurrentDictionary<string, AverageValueStatistic> incomingMessageTripTimeBySource;
         private readonly SerializationManager serializationManager;
 
-        internal Dictionary<string, AverageValueStatistic> IncomingMessageTripTimeBySource =>
+        internal ConcurrentDictionary<string, AverageValueStatistic> IncomingMessageTripTimeBySource =>
             incomingMessageTripTimeBySource;
 
         public Action<Message> SniffIncomingMessage
@@ -64,7 +64,7 @@ namespace Orleans.Runtime.Messaging
 
             checkedOutSocketEventArgsCounter = CounterStatistic.FindOrCreate(StatisticNames.MESSAGE_ACCEPTOR_CHECKED_OUT_SOCKET_EVENT_ARGS, false);
             checkedInSocketEventArgsCounter = CounterStatistic.FindOrCreate(StatisticNames.MESSAGE_ACCEPTOR_CHECKED_IN_SOCKET_EVENT_ARGS, false);
-            incomingMessageTripTimeBySource = new Dictionary<string, AverageValueStatistic>();
+            incomingMessageTripTimeBySource = new ConcurrentDictionary<string, AverageValueStatistic>();
 
             IntValueStatistic.FindOrCreate(StatisticNames.MESSAGE_ACCEPTOR_IN_USE_SOCKET_EVENT_ARGS,
                 () => checkedOutSocketEventArgsCounter.GetCurrentValue() - checkedInSocketEventArgsCounter.GetCurrentValue());
@@ -566,9 +566,9 @@ namespace Orleans.Runtime.Messaging
                     var sourceName = new StatisticName(StatisticNames.MESSAGE_ACCEPTOR_INBOUND_MESSAGE_TRIPTIME_BYSOURCE, source.Grain.IdentityString);
                     if (!incomingMessageTripTimeBySource.ContainsKey(source.ToString()))
                     {
-                        incomingMessageTripTimeBySource.Add(source.ToString(), new SingleThreadedFixedSizedAverageValueStatistic(sourceName));
+                        incomingMessageTripTimeBySource.TryAdd(source.Grain.IdentityString, new SingleThreadedFixedSizedAverageValueStatistic(sourceName));
                     }
-                    incomingMessageTripTimeBySource[source.ToString()].AddValue(trip);
+                    incomingMessageTripTimeBySource[source.Grain.IdentityString].AddValue(trip);
 
                     // Stop propagating
                     msg.RequestContextData.Remove("DepartingTicks");
