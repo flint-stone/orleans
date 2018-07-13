@@ -191,6 +191,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             var contextObj = task.AsyncState as PriorityContext;
             var timestamp = contextObj?.Timestamp ?? SchedulerConstants.DEFAULT_PRIORITY;
+            var originalTS = timestamp;
             var oldWid = wid;
             if (WindowedGrain && timestamp!=SchedulerConstants.DEFAULT_PRIORITY)
             {
@@ -233,19 +234,20 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     // ***
                     var deadline = timestamp + DataflowSLA - maximumDownStreamPathCost;                       
 
-                    timestampsToDeadlines.Add(timestamp, deadline);
+                    if(!timestampsToDeadlines.ContainsKey(timestamp)) timestampsToDeadlines.Add(timestamp, deadline);
                     // If timestamp is not default and earlier than the earliest non-zero deadline, update deadline accordingly
                     // if (timestamp != SchedulerConstants.DEFAULT_PRIORITY && workItems.Count > 1 && timestamp < workItems.Keys.ElementAt(1)) wig.PriorityContext.Deadline = deadline;
                 }
                 else
                 {
-                    timestampsToDeadlines.Add(timestamp, SchedulerConstants.DEFAULT_PRIORITY);
+                    if (!timestampsToDeadlines.ContainsKey(timestamp)) timestampsToDeadlines.Add(timestamp, SchedulerConstants.DEFAULT_PRIORITY);
                 }
 #if PQ_DEBUG
-                _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}, {task}, {timestamp} : {WindowSize}: {oldWid} -> {wid} : {DataflowSLA} : {maximumDownStreamPathCost} : {timestampsToDeadlines[timestamp]}");
+                _logger.Info($"{workItemGroup} Creating New Timestamp, {task}, {originalTS} {timestamp} : {WindowSize}: {oldWid} -> {wid} : {DataflowSLA} : {maximumDownStreamPathCost} : {timestampsToDeadlines[timestamp]}");
 #endif
                 workItems.Add(timestamp, new Queue<Task>());
             }
+            _logger.Info($"{workItemGroup} Adding task {task} with timestamp {originalTS}");
             workItems[timestamp].Enqueue(task);
 #if EDF_TRACKING
             if (currentlyTracking == SchedulerConstants.DEFAULT_TASK_TRACKING_ID)
@@ -255,13 +257,13 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
             _logger.Info($"{string.Join(",", queuingDelays)}");
 #endif
-#if PQ_DEBUG
+//#if PQ_DEBUG
             _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}"+ 
                 Environment.NewLine+
                 "WorkItemQueueStatus: "+
                 Environment.NewLine+
                 $"{GetWorkItemQueueStatus()}");
-#endif
+//#endif
         }
 
         public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
@@ -315,12 +317,28 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #if PQ_DEBUG
                 _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} Removing priority, {workItems.Keys.First()}");
 #endif
-                timestampsToDeadlines.Remove(workItems.Keys.First());
+                // timestampsToDeadlines.Remove(workItems.Keys.First());
+                var currentTime = workItems.First().Key;
+                if (timestampsToDeadlines.First().Key < currentTime - WindowSize)
+                {
+                    // Start cleaning process
+                    foreach (var ts in timestampsToDeadlines.Keys.ToArray())
+                    {
+                        if (ts < currentTime)
+                        {
+                            timestampsToDeadlines.Remove(ts);
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
                 workItems.Remove(workItems.Keys.First());
             }
 
-            if (workItems.Count > 0 && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || timestampsToDeadlines[workItems.First().Key] <= nextDeadline || dequeuedFlag))
-            //if (workItems.Any())
+            //if (workItems.Count > 0 && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || timestampsToDeadlines[workItems.First().Key] <= nextDeadline || dequeuedFlag))
+            if (workItems.Any())
             {
                 var item = workItems.First().Value.Dequeue();
                 dequeuedFlag = false;
