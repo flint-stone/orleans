@@ -10,25 +10,16 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
     internal class BoundaryBasedEDFSchedulingStrategy : ISchedulingStrategy
     {
-       private LoggerImpl _logger;
-
-        #region Tenancies
-
-
-        public ConcurrentDictionary<ActivationAddress, HashSet<WorkItemGroup>> DownstreamOpsToWIGs { get; set; }  
-
+        private LoggerImpl _logger;
         private Dictionary<ActivationAddress, WorkItemGroup> addressToWIG;
         private ConcurrentDictionary<ulong, long> windowedKeys;
-        private int statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
 
-        #endregion
 
         public IOrleansTaskScheduler Scheduler { get; set; }
 
         public void Initialization()
         {
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
-            DownstreamOpsToWIGs = new ConcurrentDictionary<ActivationAddress, HashSet<WorkItemGroup>>();
             addressToWIG = new Dictionary<ActivationAddress, WorkItemGroup>();
             windowedKeys = new ConcurrentDictionary<ulong, long>();
         }
@@ -149,43 +140,43 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
     internal class BoundaryBasedEDFWorkItemManager : IWorkItemManager
     {
+        private readonly BoundaryBasedEDFSchedulingStrategy strategy;
         private readonly SortedDictionary<long, Queue<Task>> workItems;
         private readonly SortedDictionary<long, long> timestampsToDeadlines;
         private readonly LoggerImpl _logger;
         private readonly WorkItemGroup workItemGroup;
         private bool dequeuedFlag;
-        private int statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
         private long wid;
 
 #if EDF_TRACKING
         private int currentlyTracking;
-        private FixedSizedQueue<long> queuingDelays;
+        private readonly FixedSizedQueue<long> queuingDelays;
         private readonly Stopwatch stopwatch;
 #endif
         internal long DataflowSLA { get; set; }
 
-        private BoundaryBasedEDFSchedulingStrategy Strategy { get; set; }
-
+        
         public StatisticsManager StatManager { get; set; }
-
         public bool WindowedGrain { get; set; }
         public long WindowSize { get; set; }
 
-        public BoundaryBasedEDFWorkItemManager(ISchedulingStrategy strategy, WorkItemGroup wig)
+        public BoundaryBasedEDFWorkItemManager(ISchedulingStrategy iSchedulingStrategy, WorkItemGroup wig)
         {
-            Strategy = (BoundaryBasedEDFSchedulingStrategy)strategy;
-            StatManager = new StatisticsManager(wig, ((PriorityBasedTaskScheduler)Strategy.Scheduler).Metrics);
+            strategy = (BoundaryBasedEDFSchedulingStrategy)iSchedulingStrategy;          
             workItems = new SortedDictionary<long, Queue<Task>>();
             timestampsToDeadlines = new SortedDictionary<long, long>();
-            DataflowSLA = SchedulerConstants.DEFAULT_DATAFLOW_SLA;
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
             workItemGroup = wig;
             dequeuedFlag = false;
+            wid = 0L;
+
 #if EDF_TRACKING
             currentlyTracking = SchedulerConstants.DEFAULT_TASK_TRACKING_ID;
             queuingDelays = new FixedSizedQueue<long>(SchedulerConstants.STATS_COUNTER_QUEUE_SIZE);
             stopwatch = new Stopwatch();
 #endif
+            DataflowSLA = SchedulerConstants.DEFAULT_DATAFLOW_SLA;
+            StatManager = new StatisticsManager(wig, ((PriorityBasedTaskScheduler)this.strategy.Scheduler).Metrics);
         }
 
         public void AddToWorkItemQueue(Task task, WorkItemGroup wig)
@@ -311,7 +302,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             _logger.Info($"Dequeue priority {kv.Key}");
 #endif
 
-            var nextDeadline = Strategy.PeekNextDeadline();
+            var nextDeadline = strategy.PeekNextDeadline();
 
             if (workItems.First().Value.Count == 0)
             {

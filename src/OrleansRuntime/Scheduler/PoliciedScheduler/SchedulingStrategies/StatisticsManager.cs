@@ -9,25 +9,26 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
     internal class StatisticsManager
     {
 
-        internal ConcurrentBag<GrainId> UpstreamOpSet { get; set; } // upstream Ops, populated during initialization
-        internal ConcurrentDictionary<ActivationAddress, long> DownstreamOpToCost { get; set; } // downstream Ops, populated while downstream message flows back
-
         private LoggerImpl _logger;
         private int statCollectionCounter;
         private readonly WorkItemGroup workItemGroup;
         private readonly ICorePerformanceMetrics metrics;
         private ConcurrentDictionary<GrainId, Tuple<Dictionary<string, long>, long>> StatsUpdatesCollection { get; set; }
 
-        public StatisticsManager(WorkItemGroup wig, ICorePerformanceMetrics perfMetrics)
-        {
-            UpstreamOpSet = new ConcurrentBag<GrainId>();
-            DownstreamOpToCost = new ConcurrentDictionary<ActivationAddress, long>();
-            StatsUpdatesCollection = new ConcurrentDictionary<GrainId, Tuple<Dictionary<string, long>, long>>();
-            statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
+        internal ConcurrentBag<GrainId> UpstreamOpSet { get; set; } // upstream Ops, populated during initialization
+        internal ConcurrentDictionary<ActivationAddress, long> DownstreamOpToCost { get; set; } // downstream Ops, populated while downstream message flows back
 
+       
+        public StatisticsManager(WorkItemGroup wig, ICorePerformanceMetrics perfMetrics)
+        {           
+            _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
+            statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
             workItemGroup = wig;
             metrics = perfMetrics;
-            _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
+            StatsUpdatesCollection = new ConcurrentDictionary<GrainId, Tuple<Dictionary<string, long>, long>>();
+
+            UpstreamOpSet = new ConcurrentBag<GrainId>();
+            DownstreamOpToCost = new ConcurrentDictionary<ActivationAddress, long>();
         }
         public void GetDownstreamContext(ActivationAddress downstreamActivation, DownstreamContext downstreamContext)
         {

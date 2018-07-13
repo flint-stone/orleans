@@ -185,13 +185,13 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private readonly WorkItemGroup workItemGroup;
         internal List<WorkItemGroup> UpstreamGroups { get; set; } // upstream WIGs groups for backtracking
         internal List<Stack<WorkItemGroup>> DownStreamPaths { get; set; } // downstream WIG paths groups for calculation
-        internal ISchedulingStrategy Strategy { get; set; }
+        internal ISchedulingStrategy strategy { get; set; }
         internal long MaximumDownStreamPathCost { get; set; }
         internal long DataflowSLA { get; set; }
 
         public LocalEDFWorkItemManager(ISchedulingStrategy strategy, WorkItemGroup wig)
         {
-            Strategy = strategy;
+            strategy = strategy;
             workItems = new PriorityQueue<Tuple<long, Task>>(15, new TaskComparer());
             UpstreamGroups = new List<WorkItemGroup>();
             DownStreamPaths = new List<Stack<WorkItemGroup>>();
@@ -221,7 +221,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             //                foreach (var elem in stack)
             //                {
             //                    // TODO: fix later with window information
-            //                    var cost = Strategy.FetchWorkItemMetric(elem);
+            //                    var cost = strategy.FetchWorkItemMetric(elem);
             //                    pathCost += cost;
             //                }
             //                if (pathCost > MaximumDownStreamPathCost) MaximumDownStreamPathCost = pathCost;
@@ -252,7 +252,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     foreach (var elem in stack)
                     {
                         // TODO: fix later with window information
-                        var cost = Strategy.FetchWorkItemMetric(elem);
+                        var cost = strategy.FetchWorkItemMetric(elem);
                         pathCost += cost;
                     }
                     if (pathCost > MaximumDownStreamPathCost) MaximumDownStreamPathCost = pathCost;
