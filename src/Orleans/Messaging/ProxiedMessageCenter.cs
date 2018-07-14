@@ -87,7 +87,7 @@ namespace Orleans.Messaging
         public SiloAddress MyAddress { get; private set; }
 
         public float InboundAverageWaitingTime => 0;
-        public float OutboundAverageWaitingTime { get; }
+        public float OutboundAverageWaitingTime => 0;
 
         public Dictionary<string, float> InboundAverageTripTimeBySource { get; }
         public IMessagingConfiguration MessagingConfiguration { get; private set; }

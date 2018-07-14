@@ -8,9 +8,6 @@ namespace Orleans.Runtime.Scheduler
     [Serializable]
     public class DownstreamContext
     {
-        // public Dictionary<string, long> ExecutionCostByTaskType { get; }
-
-        // public long AverageQueueingDelayInTicks { get; }
         public long MaximumDownstreamCost { get; }
         public long LocalExecutionCost { get; }
         public long ExpectedSchedulerQueuingDelay { get; } // Disabled for now
@@ -38,8 +35,6 @@ namespace Orleans.Runtime.Scheduler
 
         public override string ToString()
         {
-//            return String.Format("[{0}, {1}]", string.Join(",", ExecutionCostByTaskType.Select(kv => kv.Key + "->" + kv.Value)),
-//                MaximumDownstreamCost);
             return String.Format(
                 "Maximum possible downstream cost {0}. Details: [Downstream {1} LocalExecution {2} SchedulerQueue {3} InboundQueue {4} RemoteDelivery {5}]"
                 , DownStreamCostSum, MaximumDownstreamCost, LocalExecutionCost, ExpectedSchedulerQueuingDelay, InboundMessageQueueingDelay,

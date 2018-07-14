@@ -400,8 +400,7 @@ namespace Orleans.Runtime.Scheduler
                     {
 #if TRACK_DETAILED_STATS
                         if (StatisticsCollector.CollectTurnsStats)
-                            SchedulerStatisticsGroup.OnTurnExecutionEnd(Utils.Since(thread.currentTaskStarted));
-                            //SchedulerStatisticsGroup.OnTurnExecutionEnd(Utils.Since(thread.CurrentStateStarted));
+                            SchedulerStatisticsGroup.OnTurnExecutionEnd(Utils.Since(thread.CurrentStateStarted));
 
                         if (StatisticsCollector.CollectThreadTimeTrackingStats)
                             thread.threadTracking.IncrementNumberOfProcessed();

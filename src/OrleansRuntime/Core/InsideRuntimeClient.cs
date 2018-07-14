@@ -619,7 +619,7 @@ namespace Orleans.Runtime
             Catalog.DeactivateActivationOnIdle(data);
         }
 
-#endregion
+        #endregion
 
         internal void Stop()
         {

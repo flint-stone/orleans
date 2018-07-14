@@ -24,7 +24,6 @@ namespace Orleans.Runtime
 #if COLLECT_AVERAGE
             if (multiThreaded)
             {
-                // stat = new MultiThreadedAverageValueStatistic(name);
                 stat = new MultiThreadedFixedSizedAverageValueStatistic(name);
             }
             else
