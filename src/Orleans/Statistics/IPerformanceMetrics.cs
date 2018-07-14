@@ -52,6 +52,12 @@ namespace Orleans.Runtime
         /// total number of remote received messages, from other silos as well as from the clients.
         /// </summary>
         long ReceivedMessages { get; }
+
+        float InboundAverageWaitingTime { get; }
+
+        float OutboundAverageWaitingTime { get; }
+
+        Dictionary<string, float> InboundAverageTripTimeBySource { get; }
     }
 
     /// <summary>
@@ -86,7 +92,7 @@ namespace Orleans.Runtime
         /// <summary>
         /// whether this silo is currently overloaded and is in the load shedding mode.
         /// </summary>
-        bool IsOverloaded { get; } 
+        bool IsOverloaded { get; }
 
         void LatchIsOverload(bool overloaded); // For testing only
         void UnlatchIsOverloaded(); // For testing only

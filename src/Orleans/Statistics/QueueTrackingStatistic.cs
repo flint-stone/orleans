@@ -17,7 +17,7 @@ namespace Orleans.Runtime
 
         public QueueTrackingStatistic(string queueName)
         {
-            if (StatisticsCollector.CollectQueueStats)
+            if (StatisticsCollector.CollectQueueStats || StatisticsCollector.CollectEDFSchedulerStats)
             {
                 const CounterStorage storage = CounterStorage.LogAndTable;
                 averageQueueSizeCounter = AverageValueStatistic.FindOrCreate(
@@ -53,7 +53,7 @@ namespace Orleans.Runtime
                         new StatisticName(StatisticNames.QUEUES_TIME_IN_QUEUE_TOTAL_MILLIS_PER_QUEUE, "AllQueues"), false, storage);
                     totalTimeInAllQueues.AddValueConverter(Utils.TicksToMilliSeconds);
                 }
-            } 
+            }
         }
 
         public void OnEnQueueRequest(int numEnqueuedRequests, int queueLength)
@@ -75,12 +75,14 @@ namespace Orleans.Runtime
             long ticks = itemInQueue.Elapsed.Ticks;
             averageTimeInQueue.AddValue(ticks);
             averageTimeInAllQueues.AddValue(ticks);
-            totalTimeInAllQueues.IncrementBy(ticks);
+            totalTimeInAllQueues.IncrementBy(ticks); 
         }
 
         public float AverageQueueLength { get { return averageQueueSizeCounter.GetAverageValue(); } }
         public long NumEnqueuedRequests { get { return numEnqueuedRequestsCounter.GetCurrentValue(); } }
         public float ArrivalRate { get { return averageArrivalRate == null ? 0 : averageArrivalRate.GetCurrentValue(); } }
+        public float AverageTimeInQueue { get { return averageTimeInQueue == null? 0 : averageTimeInQueue.GetAverageValue();} }
+        public float AverageTimeInAllQueue { get { return averageTimeInAllQueues == null ? 0 : averageTimeInAllQueues.GetAverageValue();} }
 
         public void OnStartExecution()
         {

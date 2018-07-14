@@ -2,6 +2,8 @@
 {
     internal interface IInboundMessageQueue
     {
+        QueueTrackingStatistic[] QueueTracking { get; }
+
         int Count { get; }
 
         void Stop();

@@ -34,6 +34,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
         }
 
+        public void OnReceivingDownstreamInstructions(IWorkItem workItem, ISchedulingContext context)
+        {
+            
+        }
+
         public WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context)
         {
             var wig = new WorkItemGroup(ots, context);
@@ -41,20 +46,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return wig;
         }
 
-        public object FetchWorkItemMetric(WorkItemGroup workItem)
+        public DownstreamContext CheckForSchedulerHint(ActivationAddress sendingActivationAddress, GrainId upstream)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
-        public void PutWorkItemMetric(WorkItemGroup workItemGroup, object metric)
-        {
-            throw new NotImplementedException();
-        }
-
-        public long PeekNextDeadline()
-        {
-            throw new NotImplementedException();
-        }
     }
 
     internal class WindowIDWorkItemManager : IWorkItemManager
@@ -94,7 +90,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return workItems.Dequeue();
         }
 
-         public void UpdateWIGStatistics() { }
+         public void OnFinishingWIGTurn() { }
 
          public int CountWIGTasks()
         {

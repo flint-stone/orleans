@@ -1,4 +1,5 @@
-﻿using Orleans.Runtime;
+﻿using System.Collections.Generic;
+using Orleans.Runtime;
 
 namespace UnitTests.SqlStatisticsPublisherTests
 {
@@ -12,6 +13,9 @@ namespace UnitTests.SqlStatisticsPublisherTests
         public int ReceiveQueueLength { get { return 6; } }
         public long SentMessages { get { return 7; } }
         public long ReceivedMessages { get { return 8; } }
+        public float InboundAverageWaitingTime { get; }
+        public float OutboundAverageWaitingTime { get; }
+        public Dictionary<string, float> InboundAverageTripTimeBySource { get; }
         public long ConnectedGatewayCount { get { return 9; } }
         public long RequestQueueLength { get { return 10; } }
         public int ActivationCount { get { return 11; } }

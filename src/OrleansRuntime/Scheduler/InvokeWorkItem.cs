@@ -7,6 +7,7 @@ namespace Orleans.Runtime.Scheduler
     internal class InvokeWorkItem : WorkItemBase
     {
         public readonly ControllerContext ControllerContext;
+        public readonly DownstreamContext DownstreamContext;
         private static readonly Logger logger = LogManager.GetLogger("InvokeWorkItem", LoggerType.Runtime);
         private readonly ActivationData activation;
         private readonly Message message;
@@ -35,6 +36,11 @@ namespace Orleans.Runtime.Scheduler
             this.ControllerContext =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("ControllerContext")
                     ? (ControllerContext) message.RequestContextData["ControllerContext"]
+                    : null;
+
+            this.DownstreamContext =
+                message?.RequestContextData != null && message.RequestContextData.ContainsKey("DownstreamContext")
+                    ? (DownstreamContext)message.RequestContextData["DownstreamContext"]
                     : null;
             this.SourceActivation = message.SendingAddress;
             activation.IncrementInFlightCount();
@@ -119,4 +125,5 @@ namespace Orleans.Runtime.Scheduler
             return String.Format("{0} for activation={1} Message={2}", base.ToString(), activation, message);
         }
     }
+
 }

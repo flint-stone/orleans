@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Orleans.Runtime.Messaging
 {
@@ -23,5 +25,7 @@ namespace Orleans.Runtime.Messaging
         /// Current queue length
         /// </summary>
         int Count { get; }
+
+        IEnumerable<SiloMessageSender> Senders { get; }
     }
 }

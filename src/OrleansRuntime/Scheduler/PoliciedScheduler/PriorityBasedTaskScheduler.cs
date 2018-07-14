@@ -22,6 +22,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
         private readonly ConcurrentDictionary<ISchedulingContext, WorkItemGroup> workgroupDirectory; // work group directory
         private bool applicationTurnsStopped;
         private static TimeSpan TurnWarningLengthThreshold { get; set; }
+        private static ICorePerformanceMetrics metrics;
         #endregion
 
         #endregion
@@ -39,6 +40,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
         public int RunQueueLength => RunQueue.Length;
         public int WorkItemGroupCount => workgroupDirectory.Count;
         public override int MaximumConcurrencyLevel => Pool.MaxActiveThreads;
+        public ICorePerformanceMetrics Metrics => metrics;
 
         #endregion
 
@@ -69,6 +71,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             DelayWarningThreshold = delayWarningThreshold;
             WorkItemGroup.ActivationSchedulingQuantum = activationSchedulingQuantum;
             TurnWarningLengthThreshold = turnWarningLengthThreshold;
+            metrics = performanceMetrics;
             applicationTurnsStopped = false;
             MaxPendingItemsLimit = maxPendingItemsLimit;
             workgroupDirectory = new ConcurrentDictionary<ISchedulingContext, WorkItemGroup>();
@@ -121,6 +124,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
         // Enqueue a work item to a given context
         public void QueueWorkItem(IWorkItem workItem, ISchedulingContext context)
         {
+//#if EDF_TRACKING
+//            var tripTimes = metrics.InboundAverageTripTimeBySource.Any()
+//                ? string.Join(",", metrics.InboundAverageTripTimeBySource.Select(x => x.Key + "->" + x.Value))
+//                : "null";
+//            logger.Info($"inbound average waiting time in ticks {metrics.InboundAverageWaitingTime} outbound average waiting time in ticks {metrics.OutboundAverageWaitingTime} inbound message trip time ticks {tripTimes}");
+//#endif
 #if DEBUG
             if (logger.IsVerbose2) logger.Verbose2("QueueWorkItem " + context);
 #endif
@@ -179,11 +188,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
 
         public void QueueControllerWorkItem(IWorkItem workItem, ISchedulingContext context)
         {
-#if DEBUG
-            if (logger.IsVerbose2) logger.Verbose2("QueueControllerWorkItem " + context);
-#endif
-
 #if PQ_DEBUG
+            if (logger.IsVerbose2) logger.Verbose2("QueueControllerWorkItem " + context);
+
             logger.Info("Controller WorkItem {0} has remaining ticks of {1}, current queue size {2}", workItem, workItem.PriorityContext, RunQueue.Length);
             if (!(workItem is InvokeWorkItem))
             {
@@ -194,6 +201,23 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             }
 #endif
             SchedulingStrategy.OnReceivingControllerInstructions(workItem, context);
+            QueueWorkItem(workItem, context);
+        }
+
+        public void QueueDownstreamContextWorkItem(IWorkItem workItem, ISchedulingContext context)
+        {
+#if PQ_DEBUG
+            if (logger.IsVerbose2) logger.Verbose2("QueueDownstreamContextWorkItem " + context);
+
+            if (!(workItem is InvokeWorkItem))
+            {
+                var error = string.Format(
+                    "WorkItem {0} on context {1} is not a Invoke WorkItem", workItem, context);
+                logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
+                throw new InvalidOperationException(error);
+            }
+#endif
+            SchedulingStrategy.OnReceivingDownstreamInstructions(workItem, context);
             QueueWorkItem(workItem, context);
         }
 

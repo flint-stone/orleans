@@ -60,6 +60,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             if (!tenantStatCounters.ContainsKey(wig)) tenantStatCounters.Add(wig, new FixedSizedQueue<double>(MaximumStatCounterSize));
         }
 
+        public void OnReceivingDownstreamInstructions(IWorkItem workItem, ISchedulingContext context)
+        {
+            
+        }
+
         public WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context)
         {
             var wig = new WorkItemGroup(ots, context);
@@ -67,19 +72,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return wig;
         }
 
-        public object FetchWorkItemMetric(WorkItemGroup workItem)
+        public DownstreamContext CheckForSchedulerHint(ActivationAddress sendingActivationAddress, GrainId upstream)
         {
-            throw new NotImplementedException();
-        }
-
-        public void PutWorkItemMetric(WorkItemGroup workItemGroup, object metric)
-        {
-            throw new NotImplementedException();
-        }
-
-        public long PeekNextDeadline()
-        {
-            throw new NotImplementedException();
+            return null;
         }
 
     }
@@ -147,7 +142,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return null;
         }
 
-        public void UpdateWIGStatistics() { }
+        public void OnFinishingWIGTurn() { }
 
         public int CountWIGTasks()
         {

@@ -9,7 +9,7 @@ namespace Orleans.Runtime.Scheduler
         public ActivationAddress SourceActivation { get; set; }
         public override String ToString()
         {
-            return Context + " : " + Timestamp;
+            return Context + " : " + Timestamp + "Source: " + (SourceActivation?.ToString() ?? "null");
         }
     }
 }

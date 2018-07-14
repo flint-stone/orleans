@@ -11,12 +11,14 @@ namespace Orleans.Runtime
         private BlockingCollection<T> requestQueue;
         private QueueTrackingStatistic queueTracking;
 
+        internal QueueTrackingStatistic QueueTracking => queueTracking;
+
         protected AsynchQueueAgent(string nameSuffix, IMessagingConfiguration cfg)
             : base(nameSuffix)
         {
             config = cfg;
             requestQueue = new BlockingCollection<T>();
-            if (StatisticsCollector.CollectQueueStats)
+            if (StatisticsCollector.CollectQueueStats || StatisticsCollector.CollectEDFSchedulerStats)
             {
                 queueTracking = new QueueTrackingStatistic(base.Name);
             }
@@ -35,7 +37,12 @@ namespace Orleans.Runtime
                 queueTracking.OnEnQueueRequest(1, requestQueue.Count, request);
             }
 #endif
-
+#if EDF_TRACKING
+            if (StatisticsCollector.CollectEDFSchedulerStats)
+            {
+                queueTracking.OnEnQueueRequest(1, requestQueue.Count, request);
+            }
+#endif
             requestQueue.Add(request);
         }
 
@@ -50,6 +57,13 @@ namespace Orleans.Runtime
                 queueTracking.OnStartExecution();
             }
 #endif
+#if EDF_TRACKING
+            if (StatisticsCollector.CollectEDFSchedulerStats)
+            {
+                queueTracking.OnStartExecution();
+            }
+#endif
+
             try
             {
                 RunNonBatching();
@@ -60,6 +74,13 @@ namespace Orleans.Runtime
                 if (StatisticsCollector.CollectThreadTimeTrackingStats)
                 {
                     threadTracking.OnStopExecution();
+                    queueTracking.OnStopExecution();
+                }
+#endif
+
+#if EDF_TRACKING
+                if (StatisticsCollector.CollectEDFSchedulerStats)
+                {
                     queueTracking.OnStopExecution();
                 }
 #endif
@@ -95,6 +116,11 @@ namespace Orleans.Runtime
                     threadTracking.OnStartProcessing();
                 }
 #endif
+#if EDF_TRACKING
+                if (StatisticsCollector.CollectEDFSchedulerStats)
+                    queueTracking.OnDeQueueRequest(request);
+#endif
+
                 Process(request);
 #if TRACK_DETAILED_STATS
                 if (StatisticsCollector.CollectThreadTimeTrackingStats)

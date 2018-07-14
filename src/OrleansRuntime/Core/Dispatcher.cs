@@ -438,6 +438,10 @@ namespace Orleans.Runtime
                 {
                     scheduler.QueueControllerWorkItem(invokeWorkItem, targetActivation.SchedulingContext);
                 }
+                else if (invokeWorkItem.DownstreamContext != null)
+                {
+                    scheduler.QueueDownstreamContextWorkItem(invokeWorkItem, targetActivation.SchedulingContext);
+                }
                 else
                 {
                     scheduler.QueueWorkItem(invokeWorkItem, targetActivation.SchedulingContext);

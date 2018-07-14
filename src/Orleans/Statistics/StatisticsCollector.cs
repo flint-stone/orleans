@@ -94,6 +94,11 @@ namespace Orleans.Runtime
         {
             get { return IsVerbose; }
         }
+
+        public static bool CollectEDFSchedulerStats
+        {
+            get { return true; }
+        }
     }
 }
 

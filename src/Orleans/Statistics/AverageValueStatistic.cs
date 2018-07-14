@@ -1,5 +1,7 @@
 ﻿#define COLLECT_AVERAGE
 using System;
+using System.Linq;
+
 
 namespace Orleans.Runtime
 {
@@ -22,7 +24,7 @@ namespace Orleans.Runtime
 #if COLLECT_AVERAGE
             if (multiThreaded)
             {
-                stat = new MultiThreadedAverageValueStatistic(name);
+                stat = new MultiThreadedFixedSizedAverageValueStatistic(name);
             }
             else
             {
@@ -120,4 +122,59 @@ namespace Orleans.Runtime
             return (float)sum / (float)nItems;
         }
     }
+
+    internal class MultiThreadedFixedSizedAverageValueStatistic : AverageValueStatistic
+    {
+        private readonly FixedSizedCounterStatistic totalSum;
+        private readonly FixedSizedCounterStatistic numItems;
+        private readonly Object lockable;
+
+        internal MultiThreadedFixedSizedAverageValueStatistic(StatisticName name)
+            : base(name)
+        {
+            FixedSizedCounterStatistic.SetOrleansManagedThread();
+            totalSum = FixedSizedCounterStatistic.FindOrCreate(new StatisticName(String.Format("{0}.{1}", name.Name, "TotalSum.Hidden")), false, CounterStorage.DontStore);
+            numItems = FixedSizedCounterStatistic.FindOrCreate(new StatisticName(String.Format("{0}.{1}", name.Name, "NumItems.Hidden")), false, CounterStorage.DontStore);
+        }
+
+        public override void AddValue(long value)
+        {
+            totalSum.IncrementBy(value);
+            numItems.Increment();
+        }
+
+        public override float GetAverageValue()
+        {
+            long nItems = this.numItems.GetCurrentValue();
+            if (nItems == 0) return 0;
+
+            long sum = this.totalSum.GetCurrentValue();
+            return (float)sum / (float)nItems;
+        }
+    }
+
+    // An optimized implementation to be used in a single threaded mode (not thread safe).
+    internal class SingleThreadedFixedSizedAverageValueStatistic : AverageValueStatistic
+    {
+        private FixedSizedQueue<long> totalSumQueue;
+        private const int BUFFER_SIZE=100;
+
+        internal SingleThreadedFixedSizedAverageValueStatistic(StatisticName name)
+            : base(name)
+        {
+            totalSumQueue = new FixedSizedQueue<long>(BUFFER_SIZE);
+        }
+
+        public override void AddValue(long value)
+        {
+            totalSumQueue.Enqueue(value);
+        }
+
+        public override float GetAverageValue()
+        {
+            return totalSumQueue.Any()?(float)totalSumQueue.Sum() / (float)BUFFER_SIZE: 0;
+        }
+    }
 }
+
+
