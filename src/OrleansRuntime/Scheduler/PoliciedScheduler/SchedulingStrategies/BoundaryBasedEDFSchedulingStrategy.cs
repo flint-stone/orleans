@@ -252,7 +252,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #if PQ_DEBUG
             _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}"+ 
                 Environment.NewLine+
-                "WorkItemQueueStatus: "+
+                "WorkItemQueueStatus: "+ wig + 
                 Environment.NewLine+
                 $"{GetWorkItemQueueStatus()}");
 #endif
@@ -329,11 +329,13 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 workItems.Remove(workItems.Keys.First());
             }
 
-            //if (workItems.Count > 0 && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || timestampsToDeadlines[workItems.First().Key] <= nextDeadline || dequeuedFlag))
-            if (workItems.Any())
+            if (WindowedGrain)
             {
-                var item = workItems.First().Value.Dequeue();
-                dequeuedFlag = false;
+                if (workItems.Count > 0 && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || timestampsToDeadlines[workItems.First().Key] <= nextDeadline || dequeuedFlag))
+                    // if (workItems.Any())
+                {
+                    var item = workItems.First().Value.Dequeue();
+                    dequeuedFlag = false;
 
 #if EDF_TRACKING
                 if (item.Id == currentlyTracking)
@@ -344,9 +346,31 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     stopwatch.Stop();
                 }              
 #endif
-                //_logger.Info($"Dequeue item {item} with id {item.Id}");
-                return item;
+                    //_logger.Info($"Dequeue item {item} with id {item.Id}");
+                    return item;
+                }
             }
+            else
+            {
+                if (workItems.Any())
+                {
+                    var item = workItems.First().Value.Dequeue();
+                    dequeuedFlag = false;
+
+#if EDF_TRACKING
+                if (item.Id == currentlyTracking)
+                {
+                    var elapsed = stopwatch.Elapsed.Ticks;
+                    queuingDelays.Enqueue(elapsed);
+                    currentlyTracking = SchedulerConstants.DEFAULT_TASK_TRACKING_ID;
+                    stopwatch.Stop();
+                }              
+#endif
+                    //_logger.Info($"Dequeue item {item} with id {item.Id}");
+                    return item;
+                }
+            }
+            
             //_logger.Info("Dequeue WIG");
             return null;
         }
@@ -403,6 +427,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     $"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {wig.PriorityContext} > {priority}");
             }
 #endif
+#if PQ_DEBUG
+            _logger.Info($"OnAddWIGToRunQueue: {wig}:{wig.PriorityContext.Priority}:{wig.PriorityContext.Ticks}");
+#endif
 
             wig.PriorityContext = new PriorityObject(priority, Environment.TickCount);
             dequeuedFlag = true;
@@ -412,7 +439,14 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             lock (workItemGroup.lockable)
             {
-                return timestampsToDeadlines.Values.First();
+                // return timestampsToDeadlines.Values.First();
+                var tses = timestampsToDeadlines.Values;
+                if (tses.Count != 0)
+                {
+                    if (tses.First() != SchedulerConstants.DEFAULT_PRIORITY) return tses.First();
+                    if (tses.Count > 1) return tses.ElementAt(1);
+                }
+                return SchedulerConstants.DEFAULT_PRIORITY;
             }
         }
     }
