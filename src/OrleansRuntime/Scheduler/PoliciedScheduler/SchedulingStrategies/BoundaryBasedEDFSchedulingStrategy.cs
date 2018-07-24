@@ -304,7 +304,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
             var nextDeadline = strategy.PeekNextDeadline();
 
-            if (workItems.First().Value.Count == 0)
+            while (workItems.Any() && workItems.First().Value.Count == 0)
             {
 #if PQ_DEBUG
                 _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} Removing priority, {workItems.Keys.First()}");
