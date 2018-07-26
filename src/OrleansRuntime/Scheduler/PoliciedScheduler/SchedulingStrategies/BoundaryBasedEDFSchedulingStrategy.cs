@@ -96,15 +96,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             var wig = new WorkItemGroup(ots, context);
             wig.WorkItemManager = new BoundaryBasedEDFWorkItemManager(this, wig);
-            if (context.ContextType.Equals(SchedulingContextType.Activation) && windowedKeys.Keys.Contains(((SchedulingContext) context).Activation.Grain.Key.N1))
-            {
-                var wim = wig.WorkItemManager as BoundaryBasedEDFWorkItemManager;
-                wim.WindowedGrain = true;
-                wim.WindowSize = windowedKeys[((SchedulingContext) context).Activation.Grain.Key.N1];
-#if PQ_DEBUG
-                _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} Windowed Key {((SchedulingContext)context).Activation.Grain.Key.N1} window size {wim.WindowSize}");
-#endif
-            }
             // populate addressToWIG for fast lookup
             if (context.ContextType.Equals(SchedulingContextType.Activation) && !addressToWIG.ContainsKey(((SchedulingContext)context).Activation.Address))
                 addressToWIG[((SchedulingContext)context).Activation.Address] = wig;
