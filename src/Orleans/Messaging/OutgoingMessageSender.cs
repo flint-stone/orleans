@@ -43,15 +43,20 @@ namespace Orleans.Messaging
                 return;
             }
 
+#if EDF_TRACKING
             /**
              * Adding timestamp right before serialization
              */
-            if (msg.Category == Message.Categories.Application  )
+            if (StatisticsCollector.CollectEDFSchedulerStats)
             {
-                if(msg.RequestContextData==null) msg.RequestContextData = new Dictionary<string, object>();
-                if(!msg.RequestContextData.ContainsKey("DepartingTicks")) msg.RequestContextData.Add("DepartingTicks", DateTime.Now.Ticks);
+                if (msg.Category == Message.Categories.Application)
+                {
+                    if (msg.RequestContextData == null) msg.RequestContextData = new Dictionary<string, object>();
+                    if (!msg.RequestContextData.ContainsKey("DepartingTicks")) msg.RequestContextData.Add("DepartingTicks", DateTime.Now.Ticks);
+                }
             }
-
+            
+#endif
             List<ArraySegment<byte>> data;
             int headerLength = 0;
             try

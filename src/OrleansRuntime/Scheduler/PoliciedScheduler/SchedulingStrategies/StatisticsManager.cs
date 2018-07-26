@@ -33,9 +33,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void GetDownstreamContext(ActivationAddress downstreamActivation, DownstreamContext downstreamContext)
         {
             // TODO: FIX LATER
-//#if PQ_DEBUG
+#if PQ_DEBUG
                     _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} <- {downstreamActivation} {downstreamContext}");
-//#endif
+#endif
             var maxDownstreamCost = downstreamContext.DownStreamCostSum;
             DownstreamOpToCost.AddOrUpdate(downstreamActivation, maxDownstreamCost, (k, v) => maxDownstreamCost);
         }

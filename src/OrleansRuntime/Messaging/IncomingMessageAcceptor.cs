@@ -551,28 +551,32 @@ namespace Orleans.Runtime.Messaging
             {
                 // See if it's a message for a client we're proxying.
                 if (MessageCenter.IsProxying && MessageCenter.TryDeliverToProxy(msg)) return;
-
+#if EDF_TRACKING
                 /**
                  * Record end time in RequestContext
                  * if contains departing ticks, collect stats
                  */
-                if (msg.RequestContextData!=null && msg.RequestContextData.ContainsKey("DepartingTicks"))
+                if (StatisticsCollector.CollectEDFSchedulerStats)
                 {
-                    // Collect this time
-                    var trip = DateTime.Now.Ticks - ((long) msg.RequestContextData["DepartingTicks"]);
-                    var source = msg.SendingAddress;
-                    var sourceName = new StatisticName(StatisticNames.MESSAGE_ACCEPTOR_INBOUND_MESSAGE_TRIPTIME_BYSOURCE, source.Grain.IdentityString);
-                    if (!IncomingMessageTripTimeBySource.ContainsKey(source.ToString()))
+                    if (msg.RequestContextData != null && msg.RequestContextData.ContainsKey("DepartingTicks"))
                     {
-                        IncomingMessageTripTimeBySource.TryAdd(source.Grain.IdentityString, new SingleThreadedFixedSizedAverageValueStatistic(sourceName));
-                    }
-                    IncomingMessageTripTimeBySource[source.Grain.IdentityString].AddValue(trip);
+                        // Collect this time
+                        var trip = DateTime.Now.Ticks - ((long)msg.RequestContextData["DepartingTicks"]);
+                        var source = msg.SendingAddress;
+                        var sourceName = new StatisticName(StatisticNames.MESSAGE_ACCEPTOR_INBOUND_MESSAGE_TRIPTIME_BYSOURCE, source.Grain.IdentityString);
+                        if (!IncomingMessageTripTimeBySource.ContainsKey(source.ToString()))
+                        {
+                            IncomingMessageTripTimeBySource.TryAdd(source.Grain.IdentityString, new SingleThreadedFixedSizedAverageValueStatistic(sourceName));
+                        }
+                        IncomingMessageTripTimeBySource[source.Grain.IdentityString].AddValue(trip);
 
-                    // Stop propagating
-                    msg.RequestContextData.Remove("DepartingTicks");
+                        // Stop propagating
+                        msg.RequestContextData.Remove("DepartingTicks");
+                    }
                 }
                 
-                 
+
+#endif                  
                 // Nope, it's for us
                 MessageCenter.InboundQueue.PostMessage(msg);
                 return;

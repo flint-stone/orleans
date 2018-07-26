@@ -503,7 +503,7 @@ namespace Orleans.Runtime
             {
                 Console.WriteLine($"{string.Join(", ", x.Values)}");
             }
-            //            return val + Interlocked.Read(ref nonOrleansThreadsCounter);
+
             lock (lockable)
             {
                 return val + Convert.ToInt64(nonOrleansThreadsCounter.Any()?nonOrleansThreadsCounter.Average():0);
