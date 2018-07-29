@@ -33,6 +33,9 @@ namespace Orleans.Runtime.Scheduler
                     : 0,
                 Environment.TickCount);
 
+            if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
+                PriorityContext.FromApp = (long) message.RequestContextData["Priority"];
+
             this.ControllerContext =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("ControllerContext")
                     ? (ControllerContext) message.RequestContextData["ControllerContext"]

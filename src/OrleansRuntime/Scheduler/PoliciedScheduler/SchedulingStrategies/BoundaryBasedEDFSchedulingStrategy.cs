@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -36,9 +35,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             foreach (var k in controllerContext.windowedKey.Keys)
             {
                 windowedKeys.AddOrUpdate(k, controllerContext.windowedKey[k], (key, value) => value);
-#if PQ_DEBUG
+//#if PQ_DEBUG
                 _logger.Info($"Add to windowedKeys Map {k} {controllerContext.windowedKey[k]}");
-#endif
+//#endif
             }
             var wig = Scheduler.GetWorkItemGroup(schedulingContext);
 
@@ -176,6 +175,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             var timestamp = contextObj?.Timestamp ?? SchedulerConstants.DEFAULT_PRIORITY;
             var originalTS = timestamp;
             var oldWid = wid;
+            var fromApp = contextObj?.FromApp ?? SchedulerConstants.DEFAULT_PRIORITY;
+            // timestamp = fromApp;
             if (WindowedGrain && timestamp!=SchedulerConstants.DEFAULT_PRIORITY)
             {
                 timestamp = (timestamp / WindowSize + 1) * WindowSize;
@@ -189,11 +190,17 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
             if (timestamp == SchedulerConstants.DEFAULT_PRIORITY)
             {
-                timestamp = workItems.Any()?
-                    (workItems.Count==1 || (workItems.Keys.First()!=SchedulerConstants.DEFAULT_PRIORITY)?workItems.Keys.First():workItems.Keys.ElementAt(1))
-                    :SchedulerConstants.DEFAULT_PRIORITY;
+                timestamp = workItems.Any()
+                    ? (workItems.Count == 1 || (workItems.Keys.First() != SchedulerConstants.DEFAULT_PRIORITY)
+                        ? workItems.Keys.First()
+                        : workItems.Keys.ElementAt(1))
+                    : SchedulerConstants.DEFAULT_PRIORITY;
             }
-
+            else
+            {
+               // _logger.Info($"{workItemGroup} Creating New Timestamp, {task}, {originalTS} {timestamp} {fromApp}: {WindowSize}: {oldWid} -> {wid} : {DataflowSLA} ");
+            }
+            timestamp = fromApp;
             long maximumDownStreamPathCost = SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
             if (!workItems.ContainsKey(timestamp))
             {
@@ -230,7 +237,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #endif
                 workItems.Add(timestamp, new Queue<Task>());
             }
-            // _logger.Info($"{workItemGroup} Adding task {task} with timestamp {originalTS}");
+            //_logger.Info($"{workItemGroup} Adding task {task} with timestamp {originalTS}");
             workItems[timestamp].Enqueue(task);
 #if EDF_TRACKING
             if (currentlyTracking == SchedulerConstants.DEFAULT_TASK_TRACKING_ID)
