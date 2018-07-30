@@ -35,9 +35,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             foreach (var k in controllerContext.windowedKey.Keys)
             {
                 windowedKeys.AddOrUpdate(k, controllerContext.windowedKey[k], (key, value) => value);
-//#if PQ_DEBUG
+#if PQ_DEBUG
                 _logger.Info($"Add to windowedKeys Map {k} {controllerContext.windowedKey[k]}");
-//#endif
+#endif
             }
             var wig = Scheduler.GetWorkItemGroup(schedulingContext);
 
@@ -176,17 +176,17 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             var originalTS = timestamp;
             var oldWid = wid;
             var fromApp = contextObj?.FromApp ?? SchedulerConstants.DEFAULT_PRIORITY;
-            // timestamp = fromApp;
-            if (WindowedGrain && timestamp!=SchedulerConstants.DEFAULT_PRIORITY)
-            {
-                timestamp = (timestamp / WindowSize + 1) * WindowSize;
-                if (timestamp / WindowSize > wid)
-                {
-                    if (wid != 0L)
-                        timestamp = (wid + 1) * WindowSize;
-                    wid = timestamp / WindowSize;
-                }
-            }
+            timestamp = fromApp;
+//            if (WindowedGrain && timestamp!=SchedulerConstants.DEFAULT_PRIORITY)
+//            {
+//                timestamp = (timestamp / WindowSize + 1) * WindowSize;
+//                if (timestamp / WindowSize > wid)
+//                {
+//                    if (wid != 0L)
+//                        timestamp = (wid + 1) * WindowSize;
+//                    wid = timestamp / WindowSize;
+//                }
+//            }
 
             if (timestamp == SchedulerConstants.DEFAULT_PRIORITY)
             {
@@ -200,7 +200,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             {
                // _logger.Info($"{workItemGroup} Creating New Timestamp, {task}, {originalTS} {timestamp} {fromApp}: {WindowSize}: {oldWid} -> {wid} : {DataflowSLA} ");
             }
-            timestamp = fromApp;
+
             long maximumDownStreamPathCost = SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
             if (!workItems.ContainsKey(timestamp))
             {
@@ -233,11 +233,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     if (!timestampsToDeadlines.ContainsKey(timestamp)) timestampsToDeadlines.Add(timestamp, SchedulerConstants.DEFAULT_PRIORITY);
                 }
 #if PQ_DEBUG
-                _logger.Info($"{workItemGroup} Creating New Timestamp, {task}, {originalTS} {timestamp} : {WindowSize}: {oldWid} -> {wid} : {DataflowSLA} : {maximumDownStreamPathCost} : {timestampsToDeadlines[timestamp]}");
+                _logger.Info($"{workItemGroup} Creating New Timestamp, {task}, {originalTS} {timestamp} {fromApp}: {WindowSize}: {oldWid} -> {wid} : {DataflowSLA} : {maximumDownStreamPathCost} : {timestampsToDeadlines[timestamp]}");
 #endif
                 workItems.Add(timestamp, new Queue<Task>());
             }
-            //_logger.Info($"{workItemGroup} Adding task {task} with timestamp {originalTS}");
+            _logger.Info($"{workItemGroup} Adding task {task} with timestamp {originalTS}");
             workItems[timestamp].Enqueue(task);
 #if EDF_TRACKING
             if (currentlyTracking == SchedulerConstants.DEFAULT_TASK_TRACKING_ID)
@@ -259,19 +259,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
         {
             var priority = PeekNextDeadline();
-#if PQ_DEBUG
-            _logger.Info($"OnAddWIGToRunQueue  {wig}  {GetWorkItemQueueStatus()}");
-            if (wig.PriorityContext.Priority <= priority)
-            {
-                _logger.Info(
-                    $"{System.Reflection.MethodBase.GetCurrentMethod().Name} {task}: {wig.PriorityContext} <= {priority}");
-            }
-            else
-            {
-                _logger.Info(
-                    $"{System.Reflection.MethodBase.GetCurrentMethod().Name} {task}: {wig.PriorityContext} > {priority}");
-            }
-#endif
 
             wig.PriorityContext = new PriorityObject(priority, Environment.TickCount);
 #if PQ_DEBUG
@@ -344,7 +331,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     stopwatch.Stop();
                 }              
 #endif
-                    //_logger.Info($"Dequeue item {item} with id {item.Id}");
                     return item;
                 }
             }
@@ -364,12 +350,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     stopwatch.Stop();
                 }              
 #endif
-                    //_logger.Info($"Dequeue item {item} with id {item.Id}");
                     return item;
                 }
             }
             
-            //_logger.Info("Dequeue WIG");
             return null;
         }
 
@@ -412,24 +396,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void OnReAddWIGToRunQueue(WorkItemGroup wig)
         {
             var priority = PeekNextDeadline();
-#if PQ_DEBUG
-            _logger.Info($"OnReAddWIGToRunQueue {wig}  {GetWorkItemQueueStatus()}");
-            if (wig.PriorityContext.Priority <= priority)
-            {
-                _logger.Info(
-                    $"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {wig.PriorityContext} <= {priority}");
-            }
-            else
-            {
-                _logger.Info(
-                    $"{System.Reflection.MethodBase.GetCurrentMethod().Name}: {wig.PriorityContext} > {priority}");
-            }
-#endif
+
+            wig.PriorityContext = new PriorityObject(priority, Environment.TickCount);
 #if PQ_DEBUG
             _logger.Info($"OnAddWIGToRunQueue: {wig}:{wig.PriorityContext.Priority}:{wig.PriorityContext.Ticks}");
 #endif
-
-            wig.PriorityContext = new PriorityObject(priority, Environment.TickCount);
             dequeuedFlag = true;
         }
 
@@ -437,13 +408,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             lock (workItemGroup.lockable)
             {
-                // return timestampsToDeadlines.Values.First();
-                var tses = timestampsToDeadlines.Values;
-                if (tses.Count != 0)
-                {
-                    if (tses.First() != SchedulerConstants.DEFAULT_PRIORITY) return tses.First();
-                    if (tses.Count > 1) return tses.ElementAt(1);
-                }
+                var tses = workItems.Keys.Except(new[] { SchedulerConstants.DEFAULT_PRIORITY });
+                if (tses.Any()) return timestampsToDeadlines[tses.Min()];
+
                 return SchedulerConstants.DEFAULT_PRIORITY;
             }
         }

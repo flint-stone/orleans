@@ -235,7 +235,7 @@ namespace Orleans.Runtime.Scheduler
 #if PQ_DEBUG
                 StringBuilder sb = new StringBuilder();
                 masterScheduler.RunQueue.DumpStatus(sb);
-                log.Info("-- RunQueue Contents: {0}", sb.ToString());
+                log.Info("-- RunQueue Contents {0}: {1}", this, sb.ToString());
 #endif
             }
         }
@@ -462,10 +462,10 @@ namespace Orleans.Runtime.Scheduler
                             WorkItemManager.OnReAddWIGToRunQueue(this);
                             masterScheduler.RunQueue.Add(this);
 #if PQ_DEBUG
-                            log.Info("Changing WIG {0} priority to : {1} with context {2}", this, PriorityContext, contextObj);
+                            //log.Info("Changing WIG {0} priority to : {1} with context {2}", this, PriorityContext, contextObj);
                             StringBuilder sb = new StringBuilder();
                             masterScheduler.RunQueue.DumpStatus(sb);
-                            log.Info("RunQueue Contents: {0}", sb.ToString());
+                            log.Info("RunQueue Contents {0}: {1}", this, sb.ToString());
                             
 #endif
                         }
