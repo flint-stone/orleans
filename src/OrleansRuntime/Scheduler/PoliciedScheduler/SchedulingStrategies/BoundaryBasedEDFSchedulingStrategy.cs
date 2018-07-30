@@ -303,15 +303,22 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #endif
 
             var nextDeadline = strategy.PeekNextDeadline();
-
-            if (workItems.First().Value.Count == 0)
+#if PQ_DEBUG
+            _logger.Info($"BEFORE {workItemGroup}" +
+                         Environment.NewLine +
+                         "WorkItemQueueStatus: " + workItemGroup +
+                         Environment.NewLine +
+                         $"{GetWorkItemQueueStatus()}");
+#endif
+            while (workItems.Any() && workItems.First().Value.Count == 0)
             {
 #if PQ_DEBUG
                 _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} Removing priority, {workItems.Keys.First()}");
 #endif
+
                 // timestampsToDeadlines.Remove(workItems.Keys.First());
                 var currentTime = workItems.First().Key;
-                if (timestampsToDeadlines.First().Key < currentTime - WindowSize)
+                if (timestampsToDeadlines.First().Key < currentTime)
                 {
                     // Start cleaning process
                     foreach (var ts in timestampsToDeadlines.Keys.ToArray())
@@ -327,7 +334,17 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     }
                 }
                 workItems.Remove(workItems.Keys.First());
+#if PQ_DEBUG
+                _logger.Info($"AFTER {workItemGroup}" +
+                             Environment.NewLine +
+                             "WorkItemQueueStatus: " + workItemGroup +
+                             Environment.NewLine +
+                             $"{GetWorkItemQueueStatus()}");
+
+                if(workItems.First().Value.Count == 0) _logger.Info($"{workItemGroup} workitem queue with empty first entry {workItems.First().Key}");
+#endif
             }
+
 
             if (WindowedGrain)
             {
