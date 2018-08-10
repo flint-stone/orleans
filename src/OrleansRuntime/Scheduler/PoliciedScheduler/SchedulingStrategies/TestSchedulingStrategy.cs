@@ -95,7 +95,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             if (contextObj != null)
             {
                 // TODO: FIX LATER
-                priority = contextObj.Timestamp == SchedulerConstants.DEFAULT_PRIORITY ? wig.PriorityContext.Priority : contextObj.Timestamp;
+                priority = contextObj.Priority == SchedulerConstants.DEFAULT_PRIORITY ? wig.PriorityContext.Priority : contextObj.Priority;
             }
             if (!workItems.ContainsKey(priority))
             {
@@ -107,7 +107,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
         {
             var contextObj = task.AsyncState as PriorityContext;
-            var priority = contextObj?.Timestamp ?? SchedulerConstants.DEFAULT_PRIORITY;
+            var priority = contextObj?.Priority ?? SchedulerConstants.DEFAULT_PRIORITY;
             if (wig.PriorityContext.Priority < priority)
             {
                 wig.PriorityContext.Priority = priority;
@@ -165,7 +165,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                             {
                                 var contextObj = y.AsyncState as PriorityContext;
                                 return "<" + y.ToString() + "-" +
-                                       (contextObj?.Timestamp.ToString() ?? "null") + ">";
+                                       (contextObj?.Priority.ToString() ?? "null") + ">";
                             }
                         ))));
         }

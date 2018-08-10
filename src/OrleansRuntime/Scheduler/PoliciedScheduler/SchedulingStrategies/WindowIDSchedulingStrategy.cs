@@ -70,7 +70,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
         {
             var contextObj = task.AsyncState as PriorityContext;
-            var priority = contextObj?.Timestamp ?? SchedulerConstants.DEFAULT_PRIORITY;
+            var priority = contextObj?.Priority ?? SchedulerConstants.DEFAULT_PRIORITY;
             if (wig.PriorityContext.Priority < priority)
             {
                 wig.PriorityContext.Priority = priority;

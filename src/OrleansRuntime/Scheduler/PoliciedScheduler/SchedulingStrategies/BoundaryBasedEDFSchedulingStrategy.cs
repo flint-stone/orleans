@@ -172,21 +172,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void AddToWorkItemQueue(Task task, WorkItemGroup wig)
         {
             var contextObj = task.AsyncState as PriorityContext;
-            var timestamp = contextObj?.Timestamp ?? SchedulerConstants.DEFAULT_PRIORITY;
-            var originalTS = timestamp;
-            var oldWid = wid;
-            var fromApp = contextObj?.FromApp ?? SchedulerConstants.DEFAULT_PRIORITY;
-            timestamp = fromApp;
-//            if (WindowedGrain && timestamp!=SchedulerConstants.DEFAULT_PRIORITY)
-//            {
-//                timestamp = (timestamp / WindowSize + 1) * WindowSize;
-//                if (timestamp / WindowSize > wid)
-//                {
-//                    if (wid != 0L)
-//                        timestamp = (wid + 1) * WindowSize;
-//                    wid = timestamp / WindowSize;
-//                }
-//            }
+            var timestamp = contextObj?.Priority ?? SchedulerConstants.DEFAULT_PRIORITY;
 
             if (timestamp == SchedulerConstants.DEFAULT_PRIORITY)
             {
@@ -196,18 +182,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                         : workItems.Keys.ElementAt(1))
                     : SchedulerConstants.DEFAULT_PRIORITY;
             }
-            else
-            {
-               // _logger.Info($"{workItemGroup} Creating New Timestamp, {task}, {originalTS} {timestamp} {fromApp}: {WindowSize}: {oldWid} -> {wid} : {DataflowSLA} ");
-            }
 
-            long maximumDownStreamPathCost = SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
             if (!workItems.ContainsKey(timestamp))
             {
+                var maximumDownStreamPathCost = SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
                 if (timestamp != SchedulerConstants.DEFAULT_PRIORITY)
-                {
-                    maximumDownStreamPathCost = SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
-
+                {              
                     if (StatManager.DownstreamOpToCost.Any()) maximumDownStreamPathCost = StatManager.DownstreamOpToCost.Values.Max();
 
                     var ownerStats = workItemGroup.WorkItemGroupStats;
@@ -233,11 +213,13 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     if (!timestampsToDeadlines.ContainsKey(timestamp)) timestampsToDeadlines.Add(timestamp, SchedulerConstants.DEFAULT_PRIORITY);
                 }
 #if PQ_DEBUG
-                _logger.Info($"{workItemGroup} Creating New Timestamp, {task}, {originalTS} {timestamp} {fromApp}: {WindowSize}: {oldWid} -> {wid} : {DataflowSLA} : {maximumDownStreamPathCost} : {timestampsToDeadlines[timestamp]}");
+                _logger.Info($"{workItemGroup} Creating New Timestamp, Task: {task},  Priority: {timestamp}, Window Size: {WindowSize}, SLA: {DataflowSLA} DownstreamPathCost: {maximumDownStreamPathCost} mappedPriority: {timestampsToDeadlines[timestamp]}");
 #endif
                 workItems.Add(timestamp, new Queue<Task>());
             }
-            _logger.Info($"{workItemGroup} Adding task {task} with timestamp {originalTS}");
+#if PQ_DEBUG
+            // _logger.Info($"{workItemGroup} Adding task {task} with timestamp {originalTS}");
+#endif
             workItems[timestamp].Enqueue(task);
 #if EDF_TRACKING
             if (currentlyTracking == SchedulerConstants.DEFAULT_TASK_TRACKING_ID)
@@ -294,7 +276,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #if PQ_DEBUG
                 _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} Removing priority, {workItems.Keys.First()}");
 #endif
-                // timestampsToDeadlines.Remove(workItems.Keys.First());
                 var currentTime = workItems.First().Key;
                 if (timestampsToDeadlines.First().Key < currentTime - WindowSize)
                 {
@@ -386,7 +367,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
                                 var contextObj = y.AsyncState as PriorityContext;
                                 return "<" + y.ToString() + "-" +
-                                       (contextObj?.Timestamp.ToString() ?? "null") + "-"
+                                       (contextObj?.Priority.ToString() ?? "null") + "-"
                                        + y.Id +
                                        ">";
                             }

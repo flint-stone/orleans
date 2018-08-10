@@ -7,7 +7,6 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
         public long Priority;
         public int Ticks;
 
-        public long FromApp { get; set; } = default(long);
         public PriorityObject(long priority, int ticks)
         {
             Priority = priority;

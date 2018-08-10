@@ -162,8 +162,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             {
                 var priorityContext = new PriorityContext
                 {
-                    Timestamp = default(long),
-                    FromApp = default(long),
+                    Priority = default(long),
                     Context = context,
                     SourceActivation = workItem.SourceActivation
                 };
@@ -175,8 +174,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             {
                 var priorityContext = new PriorityContext
                 {
-                    Timestamp = workItem.PriorityContext.Priority,
-                    FromApp = workItem.PriorityContext.FromApp,
+                    Priority = workItem.PriorityContext.Priority,
                     Context = context,
                     SourceActivation = workItem.SourceActivation
                 };
