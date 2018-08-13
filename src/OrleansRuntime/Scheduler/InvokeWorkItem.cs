@@ -27,14 +27,9 @@ namespace Orleans.Runtime.Scheduler
             this.dispatcher = dispatcher;
             SchedulingContext = activation.SchedulingContext;
             // Interpreting Scheduling Context From Application
-//            this.PriorityContext = new PriorityObject(
-//                message?.RequestContextData != null && message.RequestContextData.ContainsKey("Timestamp")
-//                    ? (long) message.RequestContextData["Timestamp"]
-//                    : 0,
-//                Environment.TickCount);
-
             if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
-                PriorityContext.Priority = (long) message.RequestContextData["Priority"];
+                PriorityContext = new PriorityObject(((TimestampContext) message.RequestContextData["Priority"]).ConvertedPhysicalTime, 
+                    0, ((TimestampContext)message.RequestContextData["Priority"]).ConvertedLogicalTime);
 
             ControllerContext =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("ControllerContext")

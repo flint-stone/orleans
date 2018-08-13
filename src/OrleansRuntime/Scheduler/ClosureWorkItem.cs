@@ -22,13 +22,11 @@ namespace Orleans.Runtime.Scheduler
                 SchedulerStatisticsGroup.OnClosureWorkItemsCreated();
             }
 #endif
-//            this.PriorityContext = new PriorityObject(message?.RequestContextData != null && message.RequestContextData.ContainsKey("Timestamp")
-//                ? (long)message.RequestContextData["Timestamp"] : 0,
-//                Environment.TickCount);
             if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
-                PriorityContext.Priority = (long)message.RequestContextData["Priority"];
+                PriorityContext = new PriorityObject(((TimestampContext)message.RequestContextData["Priority"]).ConvertedPhysicalTime,
+                    0, ((TimestampContext)message.RequestContextData["Priority"]).ConvertedLogicalTime);
 
-            this.SourceActivation = message.SendingAddress;
+            SourceActivation = message.SendingAddress;
             _message = message;
         }
 
@@ -42,12 +40,10 @@ namespace Orleans.Runtime.Scheduler
                 SchedulerStatisticsGroup.OnClosureWorkItemsCreated();
             }
 #endif
-//            this.PriorityContext = new PriorityObject(message?.RequestContextData != null && message.RequestContextData.ContainsKey("Timestamp")
-//                ? (long)message.RequestContextData["Timestamp"] : 0, 
-//                Environment.TickCount);
             if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
-                PriorityContext.Priority = (long)message.RequestContextData["Priority"];
-            this.SourceActivation = message.SendingAddress;
+                PriorityContext = new PriorityObject(((TimestampContext)message.RequestContextData["Priority"]).ConvertedPhysicalTime,
+                    0, ((TimestampContext)message.RequestContextData["Priority"]).ConvertedLogicalTime);
+            SourceActivation = message.SendingAddress;
             _message = message;
         }
 
