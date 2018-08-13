@@ -56,7 +56,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             workItems.Enqueue(task);
         }
 
-         public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig) { }
+         public bool OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
+         {
+             return false;
+         }
 
         public void OnClosingWIG()
         {

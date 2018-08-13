@@ -7,30 +7,37 @@ using System.Text;
 using System.Threading;
 using DataStructures;
 using Orleans.Runtime.Scheduler;
+using Orleans.Runtime.Scheduler.SchedulerUtility;
 
 namespace Orleans.Runtime.Scheduler
 {
+
+
     /// <summary>
     /// Timestamp Based Work Queue
     /// </summary>
     internal class PBWorkQueue : IWorkQueue
     {
-        private BlockingCollection<IWorkItem> mainQueue;
-        private BlockingCollection<IWorkItem> systemQueue;
-        private BlockingCollection<IWorkItem>[] queueArray;
+        private BlockingCollection<CPQItem> mainQueue;
+        private BlockingCollection<CPQItem> systemQueue;
+        private BlockingCollection<CPQItem>[] queueArray;
         private readonly QueueTrackingStatistic mainQueueTracking;
         private readonly QueueTrackingStatistic systemQueueTracking;
         private readonly QueueTrackingStatistic tasksQueueTracking;
-        private ConcurrentPriorityQueue<IWorkItem> cpq;
+        private ConcurrentPriorityWorkQueue cpq;
 
         public int Length { get { return mainQueue.Count + systemQueue.Count; } }
 
         internal PBWorkQueue()
         {
-            cpq = new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer());
-            mainQueue = new BlockingCollection<IWorkItem>(cpq);
-            systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer()));
-            queueArray = new BlockingCollection<IWorkItem>[] { systemQueue, mainQueue };
+            //cpq = new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer());
+            cpq = new ConcurrentPriorityWorkQueue(new CPQItemComparer());
+            mainQueue = new BlockingCollection<CPQItem>(cpq);
+            systemQueue = new BlockingCollection<CPQItem>(new ConcurrentQueue<CPQItem>());
+            //systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer()));
+            //systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(new PriorityObjectComparer()));
+            //queueArray = new BlockingCollection<IWorkItem>[] { systemQueue, mainQueue };
+            queueArray = new BlockingCollection<CPQItem>[] { systemQueue, mainQueue };
 
             if (!StatisticsCollector.CollectShedulerQueuesStats) return;
 
@@ -55,7 +62,7 @@ namespace Orleans.Runtime.Scheduler
                     if (StatisticsCollector.CollectShedulerQueuesStats)
                         systemQueueTracking.OnEnQueueRequest(1, systemQueue.Count);
     #endif
-                    systemQueue.Add(workItem);
+                    systemQueue.Add((CPQItem)workItem);
                 }
                 else
                 {
@@ -63,7 +70,7 @@ namespace Orleans.Runtime.Scheduler
                     if (StatisticsCollector.CollectShedulerQueuesStats)
                         mainQueueTracking.OnEnQueueRequest(1, mainQueue.Count);
     #endif
-                    mainQueue.Add(workItem);      
+                    mainQueue.Add((CPQItem)workItem);      
                 }
 #else
     #if TRACK_DETAILED_STATS
@@ -87,7 +94,8 @@ namespace Orleans.Runtime.Scheduler
         {
             try
             {
-                IWorkItem todo;
+                //IWorkItem todo;
+                CPQItem todo;
 #if PRIORITIZE_SYSTEM_TASKS
                 // TryTakeFromAny is a static method with no state held from one call to another, so each request is independent, 
                 // and it doesn’t attempt to randomize where it next takes from, and does not provide any level of fairness across collections.
@@ -95,7 +103,7 @@ namespace Orleans.Runtime.Scheduler
                 // and if it finds one, it takes from that collection without considering the others, so it will bias towards the earlier collections.  
                 // If none of the collections has data, then it will fall through to the “slow path” of waiting on a collection of wait handles, 
                 // one for each collection, at which point it’s subject to the fairness provided by the OS with regards to waiting on events. 
-                if (BlockingCollection<IWorkItem>.TryTakeFromAny(queueArray, out todo, timeout) >= 0)
+                if (BlockingCollection<CPQItem>.TryTakeFromAny(queueArray, out todo, timeout) >= 0)
 #else
                 if (mainQueue.TryTake(out todo, timeout))
 #endif
@@ -121,7 +129,8 @@ namespace Orleans.Runtime.Scheduler
         {
             try
             {
-                IWorkItem todo;
+                //IWorkItem todo;
+                CPQItem todo;
 #if PRIORITIZE_SYSTEM_TASKS
                 if (systemQueue.TryTake(out todo, timeout))
 #else

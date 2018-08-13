@@ -488,7 +488,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #endif
         }
 
-        public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
+        public bool OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
         {
             var priority = workItems.Count > 0 ? workItems.Keys.First() : 0L;
 #if PQ_DEBUG
@@ -511,6 +511,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             _logger.Info($"OnAddWIGToRunQueue: {wig}:{wig.PriorityContext.Priority}:{wig.PriorityContext.Ticks}");
 #endif
             dequeuedFlag = true;
+            return false;
         }
 
         public void OnClosingWIG()

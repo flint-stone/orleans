@@ -7,7 +7,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
     {
         void AddToWorkItemQueue(Task task, WorkItemGroup wig);
 
-        void OnAddWIGToRunQueue(Task task, WorkItemGroup wig);
+        bool OnAddWIGToRunQueue(Task task, WorkItemGroup wig);
 
         void OnClosingWIG();
 

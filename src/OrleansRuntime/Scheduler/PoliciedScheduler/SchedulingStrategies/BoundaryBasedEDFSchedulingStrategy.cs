@@ -137,6 +137,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private readonly WorkItemGroup workItemGroup;
         private bool dequeuedFlag;
         private long wid;
+        private long pace = Int64.MinValue;
 
 #if EDF_TRACKING
         private int currentlyTracking;
@@ -261,16 +262,36 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #endif
         }
 
-        public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
+        public bool OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
         {
             dequeuedFlag = true;
             var priority = PeekNextDeadline();
+            var oldPriority = wig.PriorityContext.Priority;
             
 #if PQ_DEBUG
             _logger.Info($"OnAddWIGToRunQueue: {wig}:{wig.PriorityContext.Priority}:{wig.PriorityContext.Ticks}");
 #endif
             wig.PriorityContext = new PriorityObject(priority, Environment.TickCount);
-           
+            //            if (oldPriority == priority) return false;
+            //            return true;
+            if (oldPriority == priority) return false;
+            if (pace == Int64.MinValue)
+            {
+                pace = oldPriority;
+                return true;
+            }
+            else
+            {
+                var scale = Math.Abs((priority - oldPriority) / (double) (oldPriority - pace) )-1;
+                // _logger.Info($"Scale: {wig}:{scale} {priority} {oldPriority} {pace}");
+                if (Math.Abs(scale) < 0.05)
+                {
+                    pace = oldPriority;
+                    return false;
+                }
+                pace = oldPriority;
+                return true;
+            }
         }
 
         public void OnClosingWIG()

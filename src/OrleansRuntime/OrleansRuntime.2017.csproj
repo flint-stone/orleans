@@ -20,6 +20,9 @@
     <None Remove="Scheduler\PoliciedScheduler\SchedulingStrategies\WindowIDSchedulingStrategy.cs~RF1e9b8dbb.TMP" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="C5" Version="2.5.3" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\DataStructures\DataStructures\DataStructures.csproj" />
     <ProjectReference Include="..\Orleans\Orleans.2017.csproj" />
   </ItemGroup>

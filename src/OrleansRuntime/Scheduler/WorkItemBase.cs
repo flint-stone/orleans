@@ -3,7 +3,7 @@ using Orleans.Runtime.Scheduler.SchedulerUtility;
 
 namespace Orleans.Runtime.Scheduler
 {
-    internal abstract class WorkItemBase : IWorkItem
+    internal abstract class WorkItemBase : CPQItem//IWorkItem
     {
 
         internal protected WorkItemBase()
@@ -16,18 +16,18 @@ namespace Orleans.Runtime.Scheduler
             get { return Utils.Since(TimeQueued); } 
         }
 
-        public abstract string Name { get; }
+        public abstract override string Name { get; }
 
-        public abstract WorkItemType ItemType { get; }
+        public abstract override WorkItemType ItemType { get; }
 
         public DateTime TimeQueued { get; set; }
   
-        public PriorityObject PriorityContext { get; set; }= new PriorityObject(SchedulerConstants.DEFAULT_PRIORITY, Environment.TickCount);
+        public override PriorityObject PriorityContext { get; set; }= new PriorityObject(SchedulerConstants.DEFAULT_PRIORITY, Environment.TickCount);
   
         public ActivationAddress SourceActivation { get; set; }
 
-        public abstract void Execute();
-        public abstract void Execute(PriorityContext context);
+        public abstract override void Execute();
+        public abstract override void Execute(PriorityContext context);
 
         public bool IsSystemPriority
         {

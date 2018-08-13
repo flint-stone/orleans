@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using C5;
 using Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies;
 using Orleans.Runtime.Scheduler.SchedulerUtility;
 
@@ -12,7 +13,7 @@ using Orleans.Runtime.Scheduler.SchedulerUtility;
 namespace Orleans.Runtime.Scheduler
 {
     [DebuggerDisplay("WorkItemGroup Name={Name} State={state}")]
-    internal class WorkItemGroup : IWorkItem
+    internal class WorkItemGroup : CPQItem// IWorkItem
     {
         private enum WorkGroupStatus
         {
@@ -62,10 +63,10 @@ namespace Orleans.Runtime.Scheduler
             get { return SchedulingUtils.IsSystemContext(SchedulingContext); }
         }
 
-        public PriorityObject PriorityContext { get; set; } = new PriorityObject(SchedulerConstants.DEFAULT_PRIORITY, Environment.TickCount);
+        public override PriorityObject PriorityContext { get; set; } = new PriorityObject(SchedulerConstants.DEFAULT_PRIORITY, Environment.TickCount);
         public ActivationAddress SourceActivation { get; set; }
 
-        public string Name { get { return SchedulingContext == null ? "unknown" : SchedulingContext.Name; } }
+        public override string Name { get { return SchedulingContext == null ? "unknown" : SchedulingContext.Name; } }
 
         internal int ExternalWorkItemCount
         {
@@ -226,17 +227,18 @@ namespace Orleans.Runtime.Scheduler
                         count, Name, maxPendingItemsLimit));
                 }
 
-                
-                if (state != WorkGroupStatus.Waiting) return;
-                WorkItemManager.OnAddWIGToRunQueue(task, this);
+                var changedPriority = WorkItemManager.OnAddWIGToRunQueue(task, this);
 
+                if (state!= WorkGroupStatus.Waiting &&  !(state==WorkGroupStatus.Runnable  && changedPriority)) return;
+                //if (state != WorkGroupStatus.Waiting) return;
+                log.Info("{0}: changed priority {1}", this, changedPriority);
                 state = WorkGroupStatus.Runnable;
                 masterScheduler.RunQueue.Add(this);
-#if PQ_DEBUG
+//#if PQ_DEBUG
                 StringBuilder sb = new StringBuilder();
                 masterScheduler.RunQueue.DumpStatus(sb);
                 log.Info("-- RunQueue Contents {0}: {1}", this, sb.ToString());
-#endif
+//#endif
             }
         }
 
@@ -278,7 +280,7 @@ namespace Orleans.Runtime.Scheduler
         }
         #region IWorkItem Members
 
-        public WorkItemType ItemType
+        public override WorkItemType ItemType
         {
             get { return WorkItemType.WorkItemGroup; }
         }
@@ -286,7 +288,7 @@ namespace Orleans.Runtime.Scheduler
         // Execute one or more turns for this activation. 
         // This method is always called in a single-threaded environment -- that is, no more than one
         // thread will be in this method at once -- but other asynch threads may still be queueing tasks, etc.
-        public void Execute()
+        public override void Execute()
         {
             lock (lockable)
             {
@@ -432,9 +434,9 @@ namespace Orleans.Runtime.Scheduler
 
                 stopwatch.Stop();
 
-#if PQ_EBUG
-                log.Info("Dumping Queue Status From Execute {0}", DumpStatus());
-                log.Info("Dumping Execution time counters From Execute: {0}", string.Join(" | ", execTimeCounters.Select(x => x.Key.Grain==null?x.Key.ToString():x.Key.Grain.Key.N1 + " : " + x.Value.ToString())));
+#if PQ_DEBUG
+                //log.Info("Dumping Queue Status From Execute {0}", DumpStatus());
+                //log.Info("Dumping Execution time counters From Execute: {0}", string.Join(" | ", execTimeCounters.Select(x => x.Key.Grain==null?x.Key.ToString():x.Key.Grain.Key.N1 + " : " + x.Value.ToString())));
                 log.Info("Dumping Status From Execute after executing {0} tasks {1}:{2} with {3} millis", count, SchedulingContext, PriorityContext, stopwatch.Elapsed);
 #endif
             }
@@ -459,15 +461,16 @@ namespace Orleans.Runtime.Scheduler
 //                            Task next = workItems.Peek();
 //                            var contextObj = next.AsyncState as PriorityContext;
 //                            PriorityContext = contextObj?.Timestamp ?? 0.0;
+                            
                             WorkItemManager.OnReAddWIGToRunQueue(this);
                             masterScheduler.RunQueue.Add(this);
-#if PQ_DEBUG
+//#if PQ_DEBUG
                             //log.Info("Changing WIG {0} priority to : {1} with context {2}", this, PriorityContext, contextObj);
                             StringBuilder sb = new StringBuilder();
                             masterScheduler.RunQueue.DumpStatus(sb);
-                            log.Info("RunQueue Contents {0}: {1}", this, sb.ToString());
+                            log.Info("WorkItem Queue Status {0}, RunQueue Contents {1}: {2}", ((BoundaryBasedEDFWorkItemManager)WorkItemManager).GetWorkItemQueueStatus(), this, sb.ToString());
                             
-#endif
+//#endif
                         }
                         else
                         {
@@ -479,7 +482,7 @@ namespace Orleans.Runtime.Scheduler
             }
         }
 
-        public void Execute(PriorityContext context)
+        public override void Execute(PriorityContext context)
         {
             Execute();
         }
@@ -488,7 +491,7 @@ namespace Orleans.Runtime.Scheduler
 
         public override string ToString()
         {
-            return String.Format("{0}WorkItemGroup:Name={1},WorkGroupStatus={2},Priority={3}",
+            return String.Format("{0}WorkItemGroup:Name={1},WorkGroupStatus={2},Priority={3}.",
                 IsSystemGroup ? "System*" : "",
                 Name,
                 state,
@@ -584,6 +587,8 @@ namespace Orleans.Runtime.Scheduler
                                                   kv.Value.Select(tq => tq.Key + " -> " + string.Join(",", tq.Value))) +
                                               " } "));
         }
+
+
     }
 }
 
