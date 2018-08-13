@@ -25,24 +25,22 @@ namespace Orleans.Runtime.Scheduler
             this.activation = activation;
             this.message = message;
             this.dispatcher = dispatcher;
-            this.SchedulingContext = activation.SchedulingContext;
+            SchedulingContext = activation.SchedulingContext;
             // Interpreting Scheduling Context From Application
-            this.PriorityContext = new PriorityObject(
-                message?.RequestContextData != null && message.RequestContextData.ContainsKey("Timestamp")
-                    ? (long) message.RequestContextData["Timestamp"]
-                    : 0,
-                Environment.TickCount);
+            if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
+                PriorityContext = new PriorityObject(((TimestampContext) message.RequestContextData["Priority"]).ConvertedPhysicalTime, 
+                    0, ((TimestampContext)message.RequestContextData["Priority"]).ConvertedLogicalTime);
 
-            this.ControllerContext =
+            ControllerContext =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("ControllerContext")
                     ? (ControllerContext) message.RequestContextData["ControllerContext"]
                     : null;
 
-            this.DownstreamContext =
+            DownstreamContext =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("DownstreamContext")
                     ? (DownstreamContext)message.RequestContextData["DownstreamContext"]
                     : null;
-            this.SourceActivation = message.SendingAddress;
+            SourceActivation = message.SendingAddress;
             activation.IncrementInFlightCount();
         }
 

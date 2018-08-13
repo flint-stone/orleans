@@ -4,12 +4,20 @@ namespace Orleans.Runtime.Scheduler
 {
     internal class PriorityContext
     {
-        public long Timestamp;
+        public long Priority { get; set; }
+        public long WindowID { get; set; }
         public ISchedulingContext Context { get; set; }
         public ActivationAddress SourceActivation { get; set; }
         public override String ToString()
         {
-            return Context + " : " + Timestamp + "Source: " + (SourceActivation?.ToString() ?? "null");
+            return $"{Context}, Priority : {Priority}, WindowID: {WindowID}, Source: {SourceActivation?.ToString() ?? "null"}" ;
         }
+    }
+
+    [Serializable]
+    public struct TimestampContext
+    {
+        public long ConvertedPhysicalTime;
+        public long ConvertedLogicalTime;
     }
 }
