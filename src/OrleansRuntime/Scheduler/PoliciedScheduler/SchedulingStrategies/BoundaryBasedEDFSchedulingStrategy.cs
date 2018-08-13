@@ -238,9 +238,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     timestampsToDeadlines[windowId] = SchedulerConstants.DEFAULT_PRIORITY;
                 }
             }
-//#if PQ_DEBUG
+#if PQ_DEBUG
             _logger.Info($"{workItemGroup} Creating New Timestamp, Task: {task},  Priority: {priority}, WindowID: {windowId}, Window Size: {WindowSize}, SLA: {DataflowSLA} DownstreamPathCost: {maximumDownStreamPathCost} mappedPriority: {timestampsToDeadlines[windowId]}");
-//#endif
+#endif
 
 
 #if EDF_TRACKING
@@ -251,13 +251,13 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
             // _logger.Info($"{string.Join(",", queuingDelays)}");
 #endif
-//#if PQ_DEBUG
+#if PQ_DEBUG
             _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}"+ 
                 Environment.NewLine+
                 "WorkItemQueueStatus: "+ wig + 
                 Environment.NewLine+
                 $"{GetWorkItemQueueStatus()}");
-//#endif
+#endif
         }
 
         public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
