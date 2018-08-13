@@ -1,17 +1,21 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Orleans.Runtime.Scheduler.SchedulerUtility
 {
     public class PriorityObject : IComparable
     {
         public long Priority;
+        public long WindowID;
         public int Ticks;
 
-        public PriorityObject(long priority, int ticks)
+        public PriorityObject(long priority, int ticks, long windowId = SchedulerConstants.DEFAULT_WINDOW_ID)
         {
             Priority = priority;
             Ticks = ticks;
+            WindowID = windowId;
         }
+
         public int CompareTo(object obj)
         {
             if (obj == null) return 1;
