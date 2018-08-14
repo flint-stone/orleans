@@ -43,7 +43,8 @@ namespace DataStructures
             _lock.EnterWriteLock();
             try
             {
-                base.Add(item);
+                //base.Add(item);
+                base.AddOrUpdate(item);
             }
             finally
             {

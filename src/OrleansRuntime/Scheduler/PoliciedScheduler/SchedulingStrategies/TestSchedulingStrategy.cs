@@ -104,7 +104,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             workItems[priority].Enqueue(task);
         }
 
-        public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
+        public bool OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
         {
             var contextObj = task.AsyncState as PriorityContext;
             var priority = contextObj?.Priority ?? SchedulerConstants.DEFAULT_PRIORITY;
@@ -113,6 +113,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 wig.PriorityContext.Priority = priority;
                 wig.PriorityContext.Ticks = Environment.TickCount;
             }
+
+            return false;
         }
 
         public void OnClosingWIG()

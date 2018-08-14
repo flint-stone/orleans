@@ -1,3 +1,5 @@
+// #define RUNQUEUE_DEBUG
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -214,7 +216,8 @@ namespace Orleans.Runtime.Scheduler
 #endif
                 WorkItemManager.AddToWorkItemQueue(task, this);
 #if PQ_DEBUG
-                if (log.IsVerbose3) log.Verbose3("Add to RunQueue {0}, #{1}, onto {2}", task, thisSequenceNumber, SchedulingContext);
+                if (log.IsVerbose3) log.Verbose3("Add to RunQueue {0}, #{1}, onto {2} status {3}", task, thisSequenceNumber, SchedulingContext, state);
+                log.Info("Add to RunQueue {0}, #{1}, onto {2} status {3}", task, thisSequenceNumber, SchedulingContext, state);
 #endif
 #if PQ_DEBUG
                 log.Info("Dumping Status From EnqueueTask: {0}", DumpStatus());
@@ -226,17 +229,20 @@ namespace Orleans.Runtime.Scheduler
                         count, Name, maxPendingItemsLimit));
                 }
 
-                
-                if (state != WorkGroupStatus.Waiting) return;
-                WorkItemManager.OnAddWIGToRunQueue(task, this);
-
+                var priorityChanged = WorkItemManager.OnAddWIGToRunQueue(task, this);
+                if (state != WorkGroupStatus.Waiting && !(state==WorkGroupStatus.Runnable && priorityChanged)) return;
+                // if (state != WorkGroupStatus.Waiting && !(state == WorkGroupStatus.Runnable)) return;
+                //if (state != WorkGroupStatus.Waiting) return;
+                //log.Info("Add to work queue,  {0}, status {1}", SchedulingContext, state);
                 state = WorkGroupStatus.Runnable;
                 masterScheduler.RunQueue.Add(this);
-#if PQ_DEBUG
+#if RUNQUEUE_DEBUG
+
                 StringBuilder sb = new StringBuilder();
                 masterScheduler.RunQueue.DumpStatus(sb);
-                log.Info("-- RunQueue Contents {0}: {1}", this, sb.ToString());
+                log.Info("Add: -- RunQueue Contents {0}: {1}", this, sb.ToString());
 #endif
+                
             }
         }
 
@@ -432,9 +438,9 @@ namespace Orleans.Runtime.Scheduler
 
                 stopwatch.Stop();
 
-#if PQ_EBUG
-                log.Info("Dumping Queue Status From Execute {0}", DumpStatus());
-                log.Info("Dumping Execution time counters From Execute: {0}", string.Join(" | ", execTimeCounters.Select(x => x.Key.Grain==null?x.Key.ToString():x.Key.Grain.Key.N1 + " : " + x.Value.ToString())));
+#if PQ_DEBUG
+                //log.Info("Dumping Queue Status From Execute {0}", DumpStatus());
+                //log.Info("Dumping Execution time counters From Execute: {0}", string.Join(" | ", execTimeCounters.Select(x => x.Key.Grain==null?x.Key.ToString():x.Key.Grain.Key.N1 + " : " + x.Value.ToString())));
                 log.Info("Dumping Status From Execute after executing {0} tasks {1}:{2} with {3} millis", count, SchedulingContext, PriorityContext, stopwatch.Elapsed);
 #endif
             }
@@ -461,11 +467,11 @@ namespace Orleans.Runtime.Scheduler
 //                            PriorityContext = contextObj?.Timestamp ?? 0.0;
                             WorkItemManager.OnReAddWIGToRunQueue(this);
                             masterScheduler.RunQueue.Add(this);
-#if PQ_DEBUG
+#if RUNQUEUE_DEBUG
                             //log.Info("Changing WIG {0} priority to : {1} with context {2}", this, PriorityContext, contextObj);
                             StringBuilder sb = new StringBuilder();
                             masterScheduler.RunQueue.DumpStatus(sb);
-                            log.Info("RunQueue Contents {0}: {1}", this, sb.ToString());
+                            log.Info("ReAdd: RunQueue Contents {0}: {1}", this, sb.ToString());
                             
 #endif
                         }

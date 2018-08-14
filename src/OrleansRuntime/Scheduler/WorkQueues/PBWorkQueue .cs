@@ -29,7 +29,8 @@ namespace Orleans.Runtime.Scheduler
         {
             cpq = new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer());
             mainQueue = new BlockingCollection<IWorkItem>(cpq);
-            systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer()));
+            // systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer()));
+            systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentQueue<IWorkItem>());
             queueArray = new BlockingCollection<IWorkItem>[] { systemQueue, mainQueue };
 
             if (!StatisticsCollector.CollectShedulerQueuesStats) return;
@@ -211,6 +212,19 @@ internal class WorkItemComparer : IComparer<IWorkItem>
 {
     public int Compare(IWorkItem x, IWorkItem y)
     {
-        return y.PriorityContext.CompareTo(x.PriorityContext); 
+//        if (x == null || y == null)
+//        {
+//            var str = string.Format("Null Work Item {0} , {1}", x == null ? "" : x.Name, y == null ? "" : y.Name);
+//            throw new Exception($"{str}");
+//        }
+
+        if (x == null && y == null)
+            return 0;
+        if (x == null) return -1;
+        if (y == null) return 1;
+        if (x.Name.Equals(y.Name)) return 0;
+        var objComp = y.PriorityContext.CompareTo(x.PriorityContext);
+        if (objComp == 0) return x.Name.CompareTo(y.Name);
+        return objComp;
     }
 }

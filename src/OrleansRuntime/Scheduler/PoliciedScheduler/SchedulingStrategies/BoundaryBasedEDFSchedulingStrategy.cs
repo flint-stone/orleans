@@ -173,7 +173,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             var contextObj = task.AsyncState as PriorityContext;
             var windowId = contextObj?.WindowID ?? SchedulerConstants.DEFAULT_WINDOW_ID;
-            var priority = contextObj?.Priority ?? SchedulerConstants.DEFAULT_PRIORITY;
+            //var priority = contextObj?.Priority ?? SchedulerConstants.DEFAULT_PRIORITY;
+            var priority = windowId;
 
             // Remap un-tagged task
             if (windowId == SchedulerConstants.DEFAULT_WINDOW_ID)
@@ -247,7 +248,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #if EDF_TRACKING
             if (currentlyTracking == SchedulerConstants.DEFAULT_TASK_TRACKING_ID)
             {
-                currentlyTracking = task.Id;
+                currentlNyTracking = task.Id;
                 stopwatch.Start();
             }
             // _logger.Info($"{string.Join(",", queuingDelays)}");
@@ -261,16 +262,17 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #endif
         }
 
-        public void OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
+        public bool OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
         {
             dequeuedFlag = true;
             var priority = PeekNextDeadline();
-            
+            var oldPriority = wig.PriorityContext.Priority;
 #if PQ_DEBUG
             _logger.Info($"OnAddWIGToRunQueue: {wig}:{wig.PriorityContext.Priority}:{wig.PriorityContext.Ticks}");
 #endif
             wig.PriorityContext = new PriorityObject(priority, Environment.TickCount);
-           
+            if (oldPriority == priority) return false;
+            return true;
         }
 
         public void OnClosingWIG()
@@ -319,8 +321,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 workItems.Remove(workItems.Keys.First());
             }
 
-//            if (WindowedGrain)
-//            {
+            if (WindowedGrain)
+            {
                 if (workItems.Count > 0 && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || timestampsToDeadlines[workItems.First().Key] <= nextDeadline || dequeuedFlag))
                     // if (workItems.Any())
                 {
@@ -338,26 +340,26 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #endif
                     return item;
                 }
-//            }
-//            else
-//            {
-//                if (workItems.Any())
-//                {
-//                    var item = workItems.First().Value.Dequeue();
-//                    dequeuedFlag = false;
-//
-//#if EDF_TRACKING
-//                if (item.Id == currentlyTracking)
-//                {
-//                    var elapsed = stopwatch.Elapsed.Ticks;
-//                    queuingDelays.Enqueue(elapsed);
-//                    currentlyTracking = SchedulerConstants.DEFAULT_TASK_TRACKING_ID;
-//                    stopwatch.Stop();
-//                }              
-//#endif
-//                    return item;
-//                }
-//            }
+            }
+            else
+            {
+                if (workItems.Any())
+                {
+                    var item = workItems.First().Value.Dequeue();
+                    dequeuedFlag = false;
+
+#if EDF_TRACKING
+                if (item.Id == currentlyTracking)
+                {
+                    var elapsed = stopwatch.Elapsed.Ticks;
+                    queuingDelays.Enqueue(elapsed);
+                    currentlyTracking = SchedulerConstants.DEFAULT_TASK_TRACKING_ID;
+                    stopwatch.Stop();
+                }              
+#endif
+                    return item;
+                }
+            }
             
             return null;
         }

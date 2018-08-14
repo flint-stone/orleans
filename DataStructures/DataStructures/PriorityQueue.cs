@@ -80,12 +80,39 @@ namespace DataStructures
             _heap.Sift(Count, _comparer, shift: -1);      // move item "up" until heap principles are not met
         }
 
+        public void AddOrUpdate(T item)
+        {
+            var index = GetItemIndex(item);
+            switch (index)
+            {
+                case -1:
+                    break;
+                case 0:
+                    TakeFromCollection();
+                    break;
+                default:
+                    // provide a 1-based index of the item
+                    RemoveAt(index + 1, shift: -1);
+                    break;
+            }
+            if (Count == Capacity) GrowCapacity();
+
+            _heap[Count++] = item;
+            // provide the index of the last item as for 1-based heap, but also set shift to -1
+            _heap.Sift(Count, _comparer, shift: -1);      // move item "up" until heap principles are not met
+        }
+
         /// <summary>
         /// Removes and returns a max element from the priority queue.
         /// </summary>
         /// <returns>Max element in the collection</returns>
         /// <exception cref="InvalidOperationException">Throws <see cref="InvalidOperationException"/> when queue is empty.</exception>
         public virtual T Take()
+        {
+            return TakeFromCollection();
+        }
+
+        protected internal T TakeFromCollection()
         {
             if (Count == 0) throw EmptyCollectionException;
 

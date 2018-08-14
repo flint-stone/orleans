@@ -249,7 +249,7 @@ namespace Orleans.Runtime
 //            services.AddSingleton<DefaultSchedulingStrategy>();
 //            services.AddFromExisting<ISchedulingStrategy, DefaultSchedulingStrategy>();
 
-            // PB
+//            // PB
             services.AddSingleton<PriorityBasedTaskScheduler>();
             services.AddFromExisting<IOrleansTaskScheduler, PriorityBasedTaskScheduler>();
 //            services.AddSingleton<DefaultSchedulingStrategy>();
