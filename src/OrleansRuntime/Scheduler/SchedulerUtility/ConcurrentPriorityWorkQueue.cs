@@ -113,11 +113,11 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
                 {
                     //add
                     item.InQueue = true;
-                    var str = string.Format("<Before Add {0}: {1}>", item.Name, item.Handle == null ? "null" : item.Handle.ToString());
-                    Console.WriteLine(str);
+//                    var str = string.Format("<Before Add {0}: {1}>", item.Name, item.Handle == null ? "null" : item.Handle.ToString());
+//                    Console.WriteLine(str);
                     _priorityQueue.Add(ref item.Handle, item);
-                    str = string.Format("<Add {0}: {1}>", item.Name, item.Handle == null ? "null" : item.Handle.ToString());
-                    Console.WriteLine(str);
+//                    str = string.Format("<Add {0}: {1}>", item.Name, item.Handle == null ? "null" : item.Handle.ToString());
+//                    Console.WriteLine(str);
                     return true;
                 }
             }
@@ -140,8 +140,8 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
                 }
                 item = _priorityQueue.FindMin();
                 _priorityQueue.Delete(item.Handle);
-                var str = string.Format("<Delete {0}: {1}>", item.Name, item.Handle == null ? "null" : item.Handle.ToString());
-                Console.WriteLine(str);
+//                var str = string.Format("<Delete {0}: {1}>", item.Name, item.Handle == null ? "null" : item.Handle.ToString());
+//                Console.WriteLine(str);
                 // item.Handle = null;
                 item.InQueue = false;
                 return true;

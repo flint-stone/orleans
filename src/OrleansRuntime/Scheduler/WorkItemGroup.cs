@@ -231,14 +231,14 @@ namespace Orleans.Runtime.Scheduler
 
                 if (state!= WorkGroupStatus.Waiting &&  !(state==WorkGroupStatus.Runnable  && changedPriority)) return;
                 //if (state != WorkGroupStatus.Waiting) return;
-                log.Info("{0}: changed priority {1}", this, changedPriority);
+                
                 state = WorkGroupStatus.Runnable;
                 masterScheduler.RunQueue.Add(this);
-//#if PQ_DEBUG
+#if PQ_DEBUG
                 StringBuilder sb = new StringBuilder();
                 masterScheduler.RunQueue.DumpStatus(sb);
                 log.Info("-- RunQueue Contents {0}: {1}", this, sb.ToString());
-//#endif
+#endif
             }
         }
 
@@ -464,13 +464,13 @@ namespace Orleans.Runtime.Scheduler
                             
                             WorkItemManager.OnReAddWIGToRunQueue(this);
                             masterScheduler.RunQueue.Add(this);
-//#if PQ_DEBUG
+#if PQ_DEBUG
                             //log.Info("Changing WIG {0} priority to : {1} with context {2}", this, PriorityContext, contextObj);
                             StringBuilder sb = new StringBuilder();
                             masterScheduler.RunQueue.DumpStatus(sb);
                             log.Info("WorkItem Queue Status {0}, RunQueue Contents {1}: {2}", ((BoundaryBasedEDFWorkItemManager)WorkItemManager).GetWorkItemQueueStatus(), this, sb.ToString());
                             
-//#endif
+#endif
                         }
                         else
                         {
