@@ -182,6 +182,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 if (tses.Any())
                 {
                     windowId = tses.Min();
+                    priority = timestampsToDeadlines[windowId];
                 }
             }
             
