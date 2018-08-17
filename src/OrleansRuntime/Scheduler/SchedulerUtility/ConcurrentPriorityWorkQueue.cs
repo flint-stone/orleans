@@ -208,7 +208,7 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
         public abstract string Name { get; }
         public abstract WorkItemType ItemType { get; }
         public ISchedulingContext SchedulingContext { get; set; }
-        public TimeSpan TimeSinceQueued { get; }
+        public abstract TimeSpan TimeSinceQueued { get; }
         public DateTime TimeQueued { get; set; }
         public bool IsSystemPriority { get; }
         public abstract void Execute();

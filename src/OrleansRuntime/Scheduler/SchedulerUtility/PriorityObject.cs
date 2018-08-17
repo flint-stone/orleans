@@ -26,7 +26,7 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
 
         public override String ToString()
         {
-            return Priority + ":" + Ticks;
+            return Priority + ":" +WindowID + ":" + Ticks;
         }
     }
 }

@@ -41,6 +41,7 @@ namespace Orleans.Runtime.Scheduler
                     ? (DownstreamContext)message.RequestContextData["DownstreamContext"]
                     : null;
             SourceActivation = message.SendingAddress;
+            message.Start(); //TimeQueued
             activation.IncrementInFlightCount();
         }
 
@@ -60,7 +61,21 @@ namespace Orleans.Runtime.Scheduler
         {
             try
             {
-                var grain = activation.GrainInstance;
+                //Queue End
+                message.Stop();
+                if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
+                {
+                    var tsContext = (TimestampContext) message.RequestContextData["Priority"];
+                    message.RequestContextData["Priority"] = new TimestampContext
+                    {
+                        ConvertedLogicalTime = tsContext.ConvertedLogicalTime,
+                        ConvertedPhysicalTime = tsContext.ConvertedPhysicalTime,
+                        TimeInQueue = message.Elapsed.Ticks
+                    };
+                }
+                    
+
+                    var grain = activation.GrainInstance;
                 var runtimeClient = (ISiloRuntimeClient)grain.GrainReference.RuntimeClient;
 #if PQ_DEBUG
                 logger.Info($"Invoke: {message}");
@@ -87,6 +102,20 @@ namespace Orleans.Runtime.Scheduler
         {
             try
             {
+                //Queue End
+                message.Stop();
+
+                if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
+                {
+                    var tsContext = (TimestampContext)message.RequestContextData["Priority"];
+                    message.RequestContextData["Priority"] = new TimestampContext
+                    {
+                        ConvertedLogicalTime = tsContext.ConvertedLogicalTime,
+                        ConvertedPhysicalTime = tsContext.ConvertedPhysicalTime,
+                        TimeInQueue = message.Elapsed.Ticks
+                    };
+                }
+
                 var grain = activation.GrainInstance;
                 var runtimeClient = (ISiloRuntimeClient)grain.GrainReference.RuntimeClient;
 #if PQ_DEBUG

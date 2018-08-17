@@ -160,6 +160,7 @@ namespace Orleans.Runtime.Scheduler
                             }
 #if DEBUG
                             if (Log.IsVerbose3) Log.Verbose3("Queue wait time for {0} work item is {1}", todo.ItemType, waitTime);
+                            Log.Info("Queue wait time for {0} work item is {1} ticks", todo.ItemType, waitTime);
 #endif
                             // Do the work
                             try

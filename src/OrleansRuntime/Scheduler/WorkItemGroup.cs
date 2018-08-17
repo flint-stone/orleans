@@ -13,7 +13,7 @@ using Orleans.Runtime.Scheduler.SchedulerUtility;
 namespace Orleans.Runtime.Scheduler
 {
     [DebuggerDisplay("WorkItemGroup Name={Name} State={state}")]
-    internal class WorkItemGroup : CPQItem// IWorkItem
+    internal class WorkItemGroup : CPQItem, ITimeInterval// IWorkItem
     {
         private enum WorkGroupStatus
         {
@@ -36,7 +36,10 @@ namespace Orleans.Runtime.Scheduler
         private readonly long quantumExpirations;
         private readonly int workItemGroupStatisticsNumber;
         private Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>> execTimeCounters;
-        
+
+        // ITimeInterval
+        private readonly Stopwatch stopwatch;
+
 
         internal IWorkItemManager WorkItemManager { get; set; }
         
@@ -46,7 +49,7 @@ namespace Orleans.Runtime.Scheduler
         
         public DateTime TimeQueued { get; set; }
 
-        public TimeSpan TimeSinceQueued
+        public override TimeSpan TimeSinceQueued
         {
             get { return Utils.Since(TimeQueued); } 
         }
@@ -233,6 +236,7 @@ namespace Orleans.Runtime.Scheduler
                 //if (state != WorkGroupStatus.Waiting) return;
                 
                 state = WorkGroupStatus.Runnable;
+                TimeQueued = DateTime.UtcNow;
                 masterScheduler.RunQueue.Add(this);
 #if PQ_DEBUG
                 StringBuilder sb = new StringBuilder();
@@ -241,6 +245,23 @@ namespace Orleans.Runtime.Scheduler
 #endif
             }
         }
+
+        public void Start()
+        {
+            throw new NotImplementedException();
+        }
+
+        void ITimeInterval.Stop()
+        {
+            Stop();
+        }
+
+        public void Restart()
+        {
+            throw new NotImplementedException();
+        }
+
+        public TimeSpan Elapsed { get; }
 
         /// <summary>
         /// Shuts down this work item group so that it will not process any additional work items, even if they
@@ -463,6 +484,7 @@ namespace Orleans.Runtime.Scheduler
 //                            PriorityContext = contextObj?.Timestamp ?? 0.0;
                             
                             WorkItemManager.OnReAddWIGToRunQueue(this);
+                            TimeQueued = DateTime.UtcNow;
                             masterScheduler.RunQueue.Add(this);
 #if PQ_DEBUG
                             //log.Info("Changing WIG {0} priority to : {1} with context {2}", this, PriorityContext, contextObj);

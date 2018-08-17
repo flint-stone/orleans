@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Orleans.CodeGeneration;
 using Orleans.Runtime.Configuration;
@@ -572,7 +573,7 @@ namespace Orleans.Runtime
             AppendIfExists(HeadersContainer.Headers.NEW_GRAIN_TYPE, sb, (m) => m.NewGrainType);
             AppendIfExists(HeadersContainer.Headers.REJECTION_INFO, sb, (m) => m.RejectionInfo);
             AppendIfExists(HeadersContainer.Headers.REJECTION_TYPE, sb, (m) => m.RejectionType);
-            AppendIfExists(HeadersContainer.Headers.REQUEST_CONTEXT, sb, (m) => m.RequestContextData);
+            AppendIfExists(HeadersContainer.Headers.REQUEST_CONTEXT, sb, (m) => string.Join(",", m.RequestContextData.Select(kv=>kv.Key + ":" + kv.Value)));
             AppendIfExists(HeadersContainer.Headers.RESEND_COUNT, sb, (m) => m.ResendCount);
             AppendIfExists(HeadersContainer.Headers.RESULT, sb, (m) => m.Result);
             AppendIfExists(HeadersContainer.Headers.SENDING_ACTIVATION, sb, (m) => m.SendingActivation);

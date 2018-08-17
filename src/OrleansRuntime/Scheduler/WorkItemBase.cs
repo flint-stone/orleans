@@ -11,7 +11,7 @@ namespace Orleans.Runtime.Scheduler
         }
 
         public ISchedulingContext SchedulingContext { get; set; }
-        public TimeSpan TimeSinceQueued 
+        public override TimeSpan TimeSinceQueued 
         {
             get { return Utils.Since(TimeQueued); } 
         }

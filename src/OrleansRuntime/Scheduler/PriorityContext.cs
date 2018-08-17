@@ -19,5 +19,11 @@ namespace Orleans.Runtime.Scheduler
     {
         public long ConvertedPhysicalTime;
         public long ConvertedLogicalTime;
+        public long TimeInQueue;
+
+        public override string ToString()
+        {
+            return $"CPT {ConvertedPhysicalTime}, CLT {ConvertedLogicalTime}, TimeInQueue {TimeInQueue}";
+        }
     }
 }

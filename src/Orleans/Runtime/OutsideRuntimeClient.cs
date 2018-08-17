@@ -675,6 +675,8 @@ namespace Orleans
         {
             if (logger.IsVerbose2) logger.Verbose2("Received {0}", response);
 
+            logger.Info("Received {0}", response.ToLongString());
+
             // ignore duplicate requests
             if (response.Result == Message.ResponseTypes.Rejection && response.RejectionType == Message.RejectionTypes.DuplicateRequest)
                 return;
