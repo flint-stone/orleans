@@ -1,3 +1,5 @@
+// #define RUNQUEUE_DEBUG
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -238,7 +240,7 @@ namespace Orleans.Runtime.Scheduler
                 state = WorkGroupStatus.Runnable;
                 TimeQueued = DateTime.UtcNow;
                 masterScheduler.RunQueue.Add(this);
-#if PQ_DEBUG
+#if RUNQUEUE_DEBUG
                 StringBuilder sb = new StringBuilder();
                 masterScheduler.RunQueue.DumpStatus(sb);
                 log.Info("-- RunQueue Contents {0}: {1}", this, sb.ToString());
@@ -486,7 +488,7 @@ namespace Orleans.Runtime.Scheduler
                             WorkItemManager.OnReAddWIGToRunQueue(this);
                             TimeQueued = DateTime.UtcNow;
                             masterScheduler.RunQueue.Add(this);
-#if PQ_DEBUG
+#if RUNQUEUE_DEBUG
                             //log.Info("Changing WIG {0} priority to : {1} with context {2}", this, PriorityContext, contextObj);
                             StringBuilder sb = new StringBuilder();
                             masterScheduler.RunQueue.DumpStatus(sb);
@@ -513,11 +515,12 @@ namespace Orleans.Runtime.Scheduler
 
         public override string ToString()
         {
-            return String.Format("{0}WorkItemGroup:Name={1},WorkGroupStatus={2},Priority={3}.",
+            return String.Format("{0}WorkItemGroup:Name={1},WorkGroupStatus={2},Priority={3},Handle={4}.",
                 IsSystemGroup ? "System*" : "",
                 Name,
                 state,
-                this.PriorityContext);
+                this.PriorityContext,
+                this.Handle);
         }
 
         public string DumpStatus()

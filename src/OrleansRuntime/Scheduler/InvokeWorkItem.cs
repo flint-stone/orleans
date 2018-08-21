@@ -41,11 +41,14 @@ namespace Orleans.Runtime.Scheduler
                     ? (DownstreamContext)message.RequestContextData["DownstreamContext"]
                     : null;
             SourceActivation = message.SendingAddress;
+#if REPLY_CONTEXT
             message.Start(); //TimeQueued
+            logger.Info($"Enqueue message {message.Id} at {Environment.TickCount}");
+#endif
             activation.IncrementInFlightCount();
         }
 
-        #region Implementation of IWorkItem
+#region Implementation of IWorkItem
 
         public override WorkItemType ItemType
         {
@@ -61,8 +64,11 @@ namespace Orleans.Runtime.Scheduler
         {
             try
             {
+#if REPLY_CONTEXT
                 //Queue End
                 message.Stop();
+                logger.Info($"Dequeue message {message.Id} at {Environment.TickCount}");
+#endif
                 if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
                 {
                     var tsContext = (TimestampContext) message.RequestContextData["Priority"];
@@ -70,12 +76,12 @@ namespace Orleans.Runtime.Scheduler
                     {
                         ConvertedLogicalTime = tsContext.ConvertedLogicalTime,
                         ConvertedPhysicalTime = tsContext.ConvertedPhysicalTime,
-                        TimeInQueue = message.Elapsed.Ticks
+                        TimeInQueue = default(long)
                     };
                 }
                     
 
-                    var grain = activation.GrainInstance;
+               var grain = activation.GrainInstance;
                 var runtimeClient = (ISiloRuntimeClient)grain.GrainReference.RuntimeClient;
 #if PQ_DEBUG
                 logger.Info($"Invoke: {message}");
@@ -103,8 +109,10 @@ namespace Orleans.Runtime.Scheduler
             try
             {
                 //Queue End
+#if REPLY_CONTEXT
                 message.Stop();
-
+                logger.Info($"Dequeue message {message.Id} at {Environment.TickCount}");
+#endif
                 if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
                 {
                     var tsContext = (TimestampContext)message.RequestContextData["Priority"];
@@ -112,7 +120,7 @@ namespace Orleans.Runtime.Scheduler
                     {
                         ConvertedLogicalTime = tsContext.ConvertedLogicalTime,
                         ConvertedPhysicalTime = tsContext.ConvertedPhysicalTime,
-                        TimeInQueue = message.Elapsed.Ticks
+                        TimeInQueue = default(long)
                     };
                 }
 

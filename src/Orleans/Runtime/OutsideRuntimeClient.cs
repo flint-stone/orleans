@@ -675,11 +675,13 @@ namespace Orleans
         {
             if (logger.IsVerbose2) logger.Verbose2("Received {0}", response);
 
-            logger.Info("Received {0}", response.ToLongString());
+#if REPLY_CONTEXT
+            logger.Info("{0}: Received {1}",DateTime.Now.ToString("yyyy-dd-M--HH-mm-ss"), response.ToLongString());
 
             // ignore duplicate requests
             if (response.Result == Message.ResponseTypes.Rejection && response.RejectionType == Message.RejectionTypes.DuplicateRequest)
                 return;
+#endif
 
             CallbackData callbackData;
             var found = callbacks.TryGetValue(response.Id, out callbackData);
@@ -831,7 +833,7 @@ namespace Orleans
                 throw new ArgumentException("Reference is not associated with a local object.", "reference");
         }
 
-        #endregion Implementation of IRuntimeClient
+#endregion Implementation of IRuntimeClient
 
         private void CurrentDomain_DomainUnload(object sender, EventArgs e)
         {
