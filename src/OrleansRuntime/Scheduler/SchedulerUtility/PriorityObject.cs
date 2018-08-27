@@ -28,5 +28,11 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
         {
             return Priority + ":" +WindowID + ":" + Ticks;
         }
+
+        public PriorityObject Update()
+        {
+            Ticks++;
+            return this;
+        }
     }
 }
