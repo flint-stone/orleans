@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,13 +24,38 @@ namespace PQTestsClient
         public int Id;
 
 
-        public GrainTestExecutor(int id, int numGrains)
+        public GrainTestExecutor(int id, int numGrains, string configFile=null)
         {
             Id = id;
             Running = true;
             _numGrains = numGrains;
-            var clientConfig = ClientConfiguration.LocalhostSilo();
-            _client = new ClientBuilder().UseConfiguration(clientConfig).Build();
+            // var clientConfig = ClientConfiguration.LocalhostSilo();
+            
+
+            if (GrainClient.IsInitialized) return;
+
+            // Setup Orleans
+            ClientConfiguration config;
+            if (configFile == null)
+            {
+                config = ClientConfiguration.LocalhostSilo();
+            }
+            else
+            {
+                config = ClientConfiguration.LoadFromFile(configFile);
+            }
+
+            // Use high-precesion ticks to generate log file name to avoid conflicts
+            var hostname = Dns.GetHostName();
+            config.TraceFileName = $"Client-{hostname}-Time-{DateTime.Now.Ticks}.log";
+
+            // Network stack settings
+            // config.ResponseTimeout = TimeSpan.FromMinutes(5);
+            // config.BufferPoolBufferSize = RuntimeConstants.OrleansBufferPoolBufferSize;
+
+
+            //GrainClient.Initialize(config);
+            _client = new ClientBuilder().UseConfiguration(config).Build();
             _client.Connect().Wait();
             Console.WriteLine($"Client {id} connected.");
 
@@ -38,7 +64,7 @@ namespace PQTestsClient
 
         public int Ingest(int seed)
         {
-            _timer = new Timer(new TimerCallback(ClosingCallback), null, 20000, 0);
+            _timer = new Timer(new TimerCallback(ClosingCallback), null, 60000, 0);
             int count = 0;
             while (Running)
             {
@@ -60,7 +86,7 @@ namespace PQTestsClient
                 }
                 //Task.Delay(1);
             }
-            Console.WriteLine("\n\n{0} {1} \n\n", Id, count);
+            // Console.WriteLine("\n\n{0} {1} \n\n", Id, count);
             _client.Close();
             return count;
         }
