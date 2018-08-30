@@ -73,8 +73,14 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             var priority = contextObj?.Priority ?? SchedulerConstants.DEFAULT_PRIORITY;
             if (wig.PriorityContext.Priority < priority)
             {
-                wig.PriorityContext.Priority = priority;
-                wig.PriorityContext.Ticks = Environment.TickCount;
+                //                wig.PriorityContext.Priority = priority;
+                //                wig.PriorityContext.Ticks = Environment.TickCount;
+                wig.PriorityContext = new PriorityObject
+                {
+                    Priority = priority,
+                    Ticks = Environment.TickCount,
+                    WindowID = wig.PriorityContext.WindowID
+                };
             }
             return false;
         }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Orleans.Runtime.Scheduler.SchedulerUtility
 {
-    public class PriorityObject : IComparable
+    public struct PriorityObject : IComparable
     {
         public long Priority;
         public long WindowID;
@@ -19,7 +19,7 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
         public int CompareTo(object obj)
         {
             if (obj == null) return 1;
-            var compareTo = obj as PriorityObject;
+            var compareTo = (PriorityObject)obj;
             if (Priority != compareTo.Priority) return Priority.CompareTo(compareTo.Priority);
             return Ticks.CompareTo(compareTo.Ticks);
         }
@@ -29,9 +29,16 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
             return Priority + ":" +WindowID + ":" + Ticks;
         }
 
-        public PriorityObject Update()
+        public void Update()
         {
             Ticks++;
+        }
+
+        public PriorityObject Default()
+        {
+            Priority = SchedulerConstants.DEFAULT_PRIORITY;
+            WindowID = SchedulerConstants.DEFAULT_WINDOW_ID;
+            Ticks = Environment.TickCount;
             return this;
         }
     }

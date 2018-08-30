@@ -9,18 +9,19 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
     internal class ConcurrentPriorityWorkQueueAlternative : IProducerConsumerCollection<CPQItem>
     {
         private Object _lockObj;
-        private SortedDictionary<PriorityObject,CPQItem> _priorityQueue;
+        private SortedDictionary<PriorityObject, CPQItem> _priorityQueue;
 
         public ConcurrentPriorityWorkQueueAlternative()
         {
             _lockObj = new Object();
             _priorityQueue = new SortedDictionary<PriorityObject, CPQItem>();
         }
+
         public IEnumerator<CPQItem> GetEnumerator()
         {
             lock (_lockObj)
             {
-                return (IEnumerator < CPQItem > )_priorityQueue.Values.ToArray().GetEnumerator();
+                return (IEnumerator<CPQItem>) _priorityQueue.Values.ToList().GetEnumerator();
             }
         }
 
@@ -43,6 +44,7 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
             {
                 lock (_lockObj)
                 {
+                    // Console.WriteLine($"{_priorityQueue.Count} {string.Join(",", _priorityQueue.Values.ToList())} ");
                     return _priorityQueue.Count;
                 }
             }
@@ -50,6 +52,7 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
 
         public object SyncRoot => _lockObj;
         public bool IsSynchronized => true;
+
         public void CopyTo(CPQItem[] array, int index)
         {
             lock (_lockObj)
@@ -62,18 +65,31 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
         {
             lock (_lockObj)
             {
+                if (item.InQueue == true)
+                {
+                    _priorityQueue.Remove(item.InQueuePriorityContext);
+                }
                 if (_priorityQueue.ContainsKey(item.PriorityContext))
                 {
-                    while (_priorityQueue.ContainsKey(item.PriorityContext.Update()))
+                    while (_priorityQueue.ContainsKey(item.PriorityContext))
                     {
-                        _priorityQueue.Add(item.PriorityContext, item);
-                        return true;
-                    }
-                    throw new Exception("Valid priority object not found!");
+                        item.PriorityContext = new PriorityObject
+                        {
+                            Priority = item.PriorityContext.Priority,
+                            WindowID = item.PriorityContext.WindowID,
+                            Ticks = item.PriorityContext.Ticks+1
+                        };
+                    }     
+                    item.InQueue = true;
+                    item.InQueuePriorityContext = item.PriorityContext;
+                    _priorityQueue.Add(item.InQueuePriorityContext, item);
+                    return true;
                 }
                 else
                 {
-                    _priorityQueue.Add(item.PriorityContext, item);
+                    item.InQueue = true;
+                    item.InQueuePriorityContext = item.PriorityContext;
+                    _priorityQueue.Add(item.InQueuePriorityContext, item);
                     return true;
                 }
             }
@@ -88,6 +104,8 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
                 var kv = _priorityQueue.First();
                 _priorityQueue.Remove(kv.Key);
                 item = kv.Value;
+                item.InQueue = false;
+                // item.InQueuePriorityContext = null;
                 return true;
             }
         }
@@ -97,6 +115,15 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
             lock (_lockObj)
             {
                 return _priorityQueue.Values.ToArray();
+            }
+        }
+
+        public CPQItem Peek()
+        {
+            lock (_lockObj)
+            {
+                if (!_priorityQueue.Any()) return null;
+                return _priorityQueue.First().Value;
             }
         }
     }
