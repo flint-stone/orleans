@@ -250,8 +250,8 @@ namespace Orleans.Runtime
 //            services.AddFromExisting<ISchedulingStrategy, DefaultSchedulingStrategy>();
 
             // PB
-            services.AddSingleton<PriorityBasedTaskScheduler>();
-            services.AddFromExisting<IOrleansTaskScheduler, PriorityBasedTaskScheduler>();
+//            services.AddSingleton<PriorityBasedTaskScheduler>();
+//            services.AddFromExisting<IOrleansTaskScheduler, PriorityBasedTaskScheduler>();
 //            services.AddSingleton<DefaultSchedulingStrategy>();
 //            services.AddFromExisting<ISchedulingStrategy, DefaultSchedulingStrategy>();
 //            services.AddSingleton<LocalEDFSchedulingStrategy>();
@@ -260,8 +260,31 @@ namespace Orleans.Runtime
 //            services.AddFromExisting<ISchedulingStrategy, PriorityBasedEDFSchedulingStrategy>();
 //            services.AddSingleton<WindowIDSchedulingStrategy>();
 //            services.AddFromExisting<ISchedulingStrategy, WindowIDSchedulingStrategy>();
-            services.AddSingleton<BoundaryBasedEDFSchedulingStrategy>();
-            services.AddFromExisting<ISchedulingStrategy, BoundaryBasedEDFSchedulingStrategy>();
+//            services.AddSingleton<BoundaryBasedEDFSchedulingStrategy>();
+//            services.AddFromExisting<ISchedulingStrategy, BoundaryBasedEDFSchedulingStrategy>();
+
+            switch (OrleansConfig.SchedulerType)
+            {
+                case SchedulerType.Vanilla:
+                    services.AddSingleton<OrleansTaskScheduler>();
+                    services.AddFromExisting<IOrleansTaskScheduler, OrleansTaskScheduler>();
+                    services.AddSingleton<DefaultSchedulingStrategy>();
+                    services.AddFromExisting<ISchedulingStrategy, DefaultSchedulingStrategy>();
+                    break;
+                case SchedulerType.Fifo:
+                    services.AddSingleton<FIFOTaskScheduler>();
+                    services.AddFromExisting<IOrleansTaskScheduler, FIFOTaskScheduler>();
+                    services.AddSingleton<DefaultSchedulingStrategy>();
+                    services.AddFromExisting<ISchedulingStrategy, DefaultSchedulingStrategy>();
+                     break;  
+                default:
+                    services.AddSingleton<PriorityBasedTaskScheduler>();
+                    services.AddFromExisting<IOrleansTaskScheduler, PriorityBasedTaskScheduler>();
+                    services.AddSingleton<BoundaryBasedEDFSchedulingStrategy>();
+                    services.AddFromExisting<ISchedulingStrategy, BoundaryBasedEDFSchedulingStrategy>();
+                    break;                    
+            }
+
             services.AddSingleton<GrainFactory>(sp => sp.GetService<InsideRuntimeClient>().ConcreteGrainFactory);
             services.AddFromExisting<IGrainFactory, GrainFactory>();
             services.AddFromExisting<IInternalGrainFactory, GrainFactory>();

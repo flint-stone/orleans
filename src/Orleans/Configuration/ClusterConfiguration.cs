@@ -34,6 +34,11 @@ namespace Orleans.Runtime.Configuration
         /// </summary>
         public string SourceFile { get; private set; }
 
+        /// <summary>
+        /// Scheduler type
+        /// </summary>
+        public SchedulerType SchedulerType { get; set; }
+
         private IPEndPoint primaryNode;
         /// <summary>
         /// The Primary Node IP and port (in dev setting).
@@ -73,6 +78,7 @@ namespace Orleans.Runtime.Configuration
             overrideXml = new Dictionary<string, string>();
             SourceFile = "";
             IsRunningAsUnitTest = false;
+            SchedulerType = SchedulerType.Modified;
         }
 
         /// <summary>
@@ -111,6 +117,7 @@ namespace Orleans.Runtime.Configuration
                     case "Defaults":
                         Defaults.Load(child);
                         Defaults.Subnet = Globals.Subnet;
+                        SchedulerType = Defaults.SchedulerType;
                         break;
                     case "Override":
                         overrideXml[child.GetAttribute("Node")] = WriteXml(child);

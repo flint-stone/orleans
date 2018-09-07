@@ -626,5 +626,15 @@ namespace Orleans.Runtime.Configuration
                 .AppendLine();
             return sb.ToString();
         }
+
+        internal static SchedulerType ParseSchedulerType(string input, string errorMessage)
+        {
+            SchedulerType s;
+            if (!Enum.TryParse<SchedulerType>(input, out s))
+            {
+                throw new FormatException(errorMessage + ". Tried to parse" + input);
+            }
+            return s;
+        }
     }
 }

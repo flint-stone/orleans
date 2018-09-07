@@ -217,12 +217,14 @@ namespace Orleans.Runtime.Configuration
 
         public string SiloShutdownEventName { get; set; }
 
+        public SchedulerType SchedulerType { get; set; }
+
         internal const string DEFAULT_NODE_NAME = "default";
         private static readonly TimeSpan DEFAULT_STATS_METRICS_TABLE_WRITE_PERIOD = TimeSpan.FromSeconds(30);
         private static readonly TimeSpan DEFAULT_STATS_PERF_COUNTERS_WRITE_PERIOD = TimeSpan.FromSeconds(30);
         private static readonly TimeSpan DEFAULT_STATS_LOG_WRITE_PERIOD = TimeSpan.FromMinutes(5);
         internal static readonly StatisticsLevel DEFAULT_STATS_COLLECTION_LEVEL = StatisticsLevel.Info;
-        private static readonly int DEFAULT_MAX_ACTIVE_THREADS = Math.Max(4, System.Environment.ProcessorCount);
+        private static readonly int DEFAULT_MAX_ACTIVE_THREADS = 1;//Math.Max(4, System.Environment.ProcessorCount);
         private const int DEFAULT_MIN_DOT_NET_THREAD_POOL_SIZE = 200;
         private static readonly int DEFAULT_MIN_DOT_NET_CONNECTION_LIMIT = DEFAULT_MIN_DOT_NET_THREAD_POOL_SIZE;
         private static readonly TimeSpan DEFAULT_ACTIVATION_SCHEDULING_QUANTUM = TimeSpan.FromMilliseconds(100);
@@ -450,6 +452,11 @@ namespace Orleans.Runtime.Configuration
                             UseNagleAlgorithm = ConfigUtilities.ParseBool(child.GetAttribute("UseNagleAlgorithm "),
                                 "Invalid ParseBool UseNagleAlgorithm value on Scheduler element for " + SiloName);
                         }
+                        if (child.HasAttribute("SchedulerType"))
+                        {
+                            SchedulerType = ConfigUtilities.ParseSchedulerType(child.GetAttribute("SchedulerType"),
+                                "Invalid ParseSchedulerType SchedulerType value on Scheduler element for " + SiloName);
+                        }
                         break;
                     case "LoadShedding":
                         if (child.HasAttribute("Enabled"))
@@ -495,5 +502,13 @@ namespace Orleans.Runtime.Configuration
                 }
             }
         }
+    }
+
+    [Serializable]
+    public enum SchedulerType
+    {
+        Vanilla,
+        Modified,
+        Fifo
     }
 }
