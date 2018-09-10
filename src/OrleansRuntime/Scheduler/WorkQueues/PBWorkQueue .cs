@@ -3,6 +3,8 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using DataStructures;
@@ -24,14 +26,18 @@ namespace Orleans.Runtime.Scheduler
         private readonly QueueTrackingStatistic mainQueueTracking;
         private readonly QueueTrackingStatistic systemQueueTracking;
         private readonly QueueTrackingStatistic tasksQueueTracking;
-        private ConcurrentPriorityWorkQueue cpq;
+        private ConcurrentPriorityWorkQueueAlternative cpq;
 
         public int Length { get { return mainQueue.Count + systemQueue.Count; } }
+        public int QueueLength { get { return cpq.Count + systemQueue.Count; } }
+
+
 
         internal PBWorkQueue()
         {
-            //cpq = new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer());
-            cpq = new ConcurrentPriorityWorkQueue(new CPQItemComparer());
+            //cpq = new ConcurrentPriorityQueue<CPQItem>(15, new WorkItemComparer());
+            //cpq = new ConcurrentPriorityWorkQueue(new CPQItemComparer());
+            cpq = new ConcurrentPriorityWorkQueueAlternative();
             mainQueue = new BlockingCollection<CPQItem>(cpq);
             systemQueue = new BlockingCollection<CPQItem>(new ConcurrentQueue<CPQItem>());
             //systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer()));
@@ -46,7 +52,7 @@ namespace Orleans.Runtime.Scheduler
             tasksQueueTracking = new QueueTrackingStatistic("Scheduler.LevelOne.TasksQueue");
             mainQueueTracking.OnStartExecution();
             systemQueueTracking.OnStartExecution();
-            tasksQueueTracking.OnStartExecution();
+            tasksQueueTracking.OnStartExecution();          
         }
 
         public void Add(IWorkItem workItem)
@@ -116,7 +122,6 @@ namespace Orleans.Runtime.Scheduler
 #endif
                     return todo;
                 }
-                
                 return null;
             }
             catch (InvalidOperationException)

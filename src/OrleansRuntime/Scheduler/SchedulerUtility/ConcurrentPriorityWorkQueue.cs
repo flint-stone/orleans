@@ -49,7 +49,7 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
             }
         }
 
-        int ICollection.Count => _priorityQueue.Count;
+        public int Count => _priorityQueue.Count;
 
 
         public object SyncRoot => _lock;

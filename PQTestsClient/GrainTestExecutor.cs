@@ -64,7 +64,7 @@ namespace PQTestsClient
 
         public int Ingest(int seed)
         {
-            _timer = new Timer(new TimerCallback(ClosingCallback), null, 60000, 0);
+            _timer = new Timer(new TimerCallback(ClosingCallback), null, 240000, 0);
             int count = 0;
             while (Running)
             {
@@ -86,7 +86,7 @@ namespace PQTestsClient
                 }
                 //Task.Delay(1);
             }
-            // Console.WriteLine("\n\n{0} {1} \n\n", Id, count);
+            Console.WriteLine("\n\n id {0} count {1} \n\n", Id, count);
             _client.Close();
             return count;
         }

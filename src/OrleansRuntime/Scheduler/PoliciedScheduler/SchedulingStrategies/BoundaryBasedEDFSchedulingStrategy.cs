@@ -210,7 +210,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     && ownerStats[contextObj.SourceActivation].ContainsKey(task.ToString()))
                 {
                     maximumDownStreamPathCost +=
-                        Convert.ToInt64(ownerStats[contextObj.SourceActivation][task.ToString()]);
+                        Convert.ToInt64(ownerStats[contextObj.SourceActivation][task.ToString()])*workItems[windowId].Count;
                 }
 
                 // ***
@@ -240,9 +240,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     timestampsToDeadlines[windowId] = new[] { SchedulerConstants.DEFAULT_PRIORITY, SchedulerConstants.DEFAULT_PRIORITY };
                 }
             }
-//#if PQ_DEBUG
+#if PQ_DEBUG
             _logger.Info($"{workItemGroup} Creating New Timestamp, Task: {task},  Priority: {physicalTime}, WindowID: {windowId}, Window Size: {WindowSize}, SLA: {DataflowSLA} DownstreamPathCost: {maximumDownStreamPathCost} mappedPriority: {timestampsToDeadlines[windowId][0]}, {timestampsToDeadlines[windowId][1]}");
-//#endif
+#endif
 
 
 #if EDF_TRACKING
@@ -253,46 +253,30 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
             // _logger.Info($"{string.Join(",", queuingDelays)}");
 #endif
-//#if PQ_DEBUG
+#if PQ_DEBUG
             _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}"+ 
                 Environment.NewLine+
                 "WorkItemQueueStatus: "+ wig + 
                 Environment.NewLine+
                 $"{GetWorkItemQueueStatus()}");
-//#endif
+#endif
         }
 
         public bool OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
         {
             dequeuedFlag = true;
             var priority = PeekNextDeadline();
+            priority = priority / SchedulerConstants.PRIORITY_GRANULARITY_TICKS * SchedulerConstants.PRIORITY_GRANULARITY_TICKS;
             var oldPriority = wig.PriorityContext.Priority;
             
 #if PQ_DEBUG
             _logger.Info($"OnAddWIGToRunQueue: {wig}:{wig.PriorityContext.Priority}:{wig.PriorityContext.Ticks}");
 #endif
             wig.PriorityContext = new PriorityObject(priority, Environment.TickCount);
-            //            if (oldPriority == priority) return false;
-            //            return true;
             if (oldPriority == priority) return false;
-            if (pace == Int64.MinValue)
-            {
-                pace = oldPriority;
-                return true;
-            }
-            else
-            {
-                var scale = Math.Abs((priority - oldPriority) / (double) (oldPriority - pace) )-1;
-                // _logger.Info($"Scale: {wig}:{scale} {priority} {oldPriority} {pace}");
-                if (Math.Abs(scale) < 0.05)
-                {
-                    pace = oldPriority;
-                    return false;
-                }
-                pace = oldPriority;
-                return true;
-            }
+            return true;
         }
+       
 
         public void OnClosingWIG()
         {
@@ -343,7 +327,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 //            if (WindowedGrain)
 //            {
                 if (workItems.Count > 0 && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || timestampsToDeadlines[workItems.First().Key][1] <= nextDeadline || dequeuedFlag))
-                    // if (workItems.Any())
+                //if (workItems.Any())
                 {
                     var item = workItems.First().Value.Dequeue();
                     dequeuedFlag = false;
@@ -422,6 +406,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void OnReAddWIGToRunQueue(WorkItemGroup wig)
         {
             var priority = PeekNextDeadline();
+            priority = priority / SchedulerConstants.PRIORITY_GRANULARITY_TICKS * SchedulerConstants.PRIORITY_GRANULARITY_TICKS;
 
             wig.PriorityContext = new PriorityObject(priority, Environment.TickCount);
 #if PQ_DEBUG

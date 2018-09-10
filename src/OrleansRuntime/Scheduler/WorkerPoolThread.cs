@@ -1,3 +1,5 @@
+//#define TIMED_EXECUTION
+
 using System;
 using System.Diagnostics;
 using System.Text;
@@ -30,6 +32,9 @@ namespace Orleans.Runtime.Scheduler
         private Task currentTask;
         private DateTime currentWorkItemStarted;
         private DateTime currentTaskStarted;
+
+        private Stopwatch dequeueStopwatch;
+        private long dequeueCount;
 
         internal IWorkItem CurrentWorkItem
         {
@@ -136,9 +141,37 @@ namespace Orleans.Runtime.Scheduler
                         // Get some work to do
                         IWorkItem todo;
 
-                        todo = IsSystem ? scheduler.RunQueue.GetSystem(Cts.Token, maxWorkQueueWait) : 
-                            scheduler.RunQueue.Get(Cts.Token, maxWorkQueueWait);
+                        if (IsSystem)
+                        {
+                            todo = scheduler.RunQueue.GetSystem(Cts.Token, maxWorkQueueWait);
+                        }
+                        else
+                        {
+#if TIMED_EXECUTION
+                            dequeueCount++;
+                            if (dequeueCount % 100 == 0)
+                            {
+                                dequeueStopwatch = Stopwatch.StartNew();
+                                todo = scheduler.RunQueue.Get(Cts.Token, maxWorkQueueWait);
+                                if (todo != null)
+                                {
+                                    Console.WriteLine(
+                                        $"Dequeue: dequeueCount {dequeueCount}  workitem {todo} ticks {dequeueStopwatch.ElapsedTicks} ");
+                                    Console.WriteLine($"Dequeue: masterScheduler RunQueue Size {scheduler.RunQueue.Length}");// {((PBWorkQueue)scheduler.RunQueue).QueueLength}");
 
+                                }
+                                
+                                dequeueStopwatch.Stop();
+                            }
+                            else
+                            {
+                                todo = scheduler.RunQueue.Get(Cts.Token, maxWorkQueueWait);
+                            }                        
+                        
+#else
+                            todo = scheduler.RunQueue.Get(Cts.Token, maxWorkQueueWait);
+#endif
+                        }
 #if TRACK_DETAILED_STATS
                         if (StatisticsCollector.CollectThreadTimeTrackingStats)
                         {
@@ -160,7 +193,7 @@ namespace Orleans.Runtime.Scheduler
                             }
 #if DEBUG
                             if (Log.IsVerbose3) Log.Verbose3("Queue wait time for {0} work item is {1}", todo.ItemType, waitTime);
-                            Log.Info("Queue wait time for {0} work item is {1} ticks", todo.ItemType, waitTime);
+                            // Log.Info("Queue wait time for {0} work item is {1} ticks", todo.ItemType, waitTime);
 #endif
                             // Do the work
                             try

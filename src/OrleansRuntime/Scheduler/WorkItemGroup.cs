@@ -1,5 +1,5 @@
-// #define RUNQUEUE_DEBUG
-
+#define RUNQUEUE_DEBUG
+//#define TIMED_EXECUTION
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -145,6 +145,10 @@ namespace Orleans.Runtime.Scheduler
         // will result in a TooManyWaitersException being thrown.
         //private static readonly int MaxWaitingThreads = 500;
 
+
+        private long lastRecord;
+        private Stopwatch enqueueStopwatch;
+
         internal WorkItemGroup(IOrleansTaskScheduler sched, ISchedulingContext schedulingContext)
         {
             masterScheduler = sched;
@@ -239,7 +243,26 @@ namespace Orleans.Runtime.Scheduler
                 
                 state = WorkGroupStatus.Runnable;
                 TimeQueued = DateTime.UtcNow;
+#if TIMED_EXECUTION
+                if (totalItemsProcessed / 200 > lastRecord)
+                {
+                    lastRecord = totalItemsProcessed / 200;
+                    enqueueStopwatch = Stopwatch.StartNew();
+                    masterScheduler.RunQueue.Add(this);
+                    Console.WriteLine(
+                        $"Enqueue: numItemsProcessed {totalItemsProcessed}  workitem {this} ticks {enqueueStopwatch.ElapsedTicks} ");
+                    log.Info($"Enqueue: masterScheduler RunQueue Size {masterScheduler.RunQueue.Length}");
+                    Console.WriteLine($"Enqueue: masterScheduler RunQueue Size {masterScheduler.RunQueue.Length}");// {((PBWorkQueue)masterScheduler.RunQueue).QueueLength}");
+                    enqueueStopwatch.Stop();
+                }
+                else
+                {
+                    masterScheduler.RunQueue.Add(this);
+                }
+#else
                 masterScheduler.RunQueue.Add(this);
+#endif
+
 #if RUNQUEUE_DEBUG
                 StringBuilder sb = new StringBuilder();
                 masterScheduler.RunQueue.DumpStatus(sb);
@@ -301,7 +324,7 @@ namespace Orleans.Runtime.Scheduler
                 WorkItemManager.OnClosingWIG();
             }
         }
-        #region IWorkItem Members
+#region IWorkItem Members
 
         public override WorkItemType ItemType
         {
@@ -480,10 +503,6 @@ namespace Orleans.Runtime.Scheduler
                         if (WorkItemCount > 0)
                         {
                             state = WorkGroupStatus.Runnable;
-                            // Change priority contect to the next task (temporarily disabled)
-//                            Task next = workItems.Peek();
-//                            var contextObj = next.AsyncState as PriorityContext;
-//                            PriorityContext = contextObj?.Timestamp ?? 0.0;
                             
                             WorkItemManager.OnReAddWIGToRunQueue(this);
                             TimeQueued = DateTime.UtcNow;
@@ -493,7 +512,6 @@ namespace Orleans.Runtime.Scheduler
                             StringBuilder sb = new StringBuilder();
                             masterScheduler.RunQueue.DumpStatus(sb);
                             log.Info("WorkItem Queue Status {0}, RunQueue Contents {1}: {2}", ((BoundaryBasedEDFWorkItemManager)WorkItemManager).GetWorkItemQueueStatus(), this, sb.ToString());
-                            
 #endif
                         }
                         else
@@ -515,12 +533,13 @@ namespace Orleans.Runtime.Scheduler
 
         public override string ToString()
         {
-            return String.Format("{0}WorkItemGroup:Name={1},WorkGroupStatus={2},Priority={3},Handle={4}.",
+            return String.Format("{0}WorkItemGroup:Name={1},WorkGroupStatus={2},Priority={3},Handle={4}, InQueuePriority={5}",
                 IsSystemGroup ? "System*" : "",
                 Name,
                 state,
                 this.PriorityContext,
-                this.Handle);
+                this.Handle,
+                this.InQueuePriorityContext);
         }
 
         public string DumpStatus()

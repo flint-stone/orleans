@@ -65,6 +65,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\src\OrleansAzureUtils\OrleansAzureUtils.2017.csproj">
+      <Project>{792818ef-b3f8-4ce2-9886-4808713b15c4}</Project>
+      <Name>OrleansAzureUtils.2017</Name>
+    </ProjectReference>
     <ProjectReference Include="..\src\OrleansCodeGenerator\OrleansCodeGenerator.2017.csproj">
       <Project>{8d937706-f6da-4d33-b0a9-24a260bd3080}</Project>
       <Name>OrleansCodeGenerator.2017</Name>
