@@ -7,12 +7,15 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
     {
         public long Priority;
         public long WindowID;
+        public long RequestId;
         public int Ticks;
 
-        public PriorityObject(long priority, int ticks, long windowId = SchedulerConstants.DEFAULT_WINDOW_ID)
+
+        public PriorityObject(long priority, int ticks, long requestId = default(long), long windowId = SchedulerConstants.DEFAULT_WINDOW_ID)
         {
             Priority = priority;
             Ticks = ticks;
+            RequestId = requestId;
             WindowID = windowId;
         }
 
@@ -32,14 +35,6 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
         public void Update()
         {
             Ticks++;
-        }
-
-        public PriorityObject Default()
-        {
-            Priority = SchedulerConstants.DEFAULT_PRIORITY;
-            WindowID = SchedulerConstants.DEFAULT_WINDOW_ID;
-            Ticks = Environment.TickCount;
-            return this;
         }
     }
 }

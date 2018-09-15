@@ -1,3 +1,4 @@
+// #define PQ_DEBUG
 using System;
 using System.Threading.Tasks;
 using Orleans.Runtime.Scheduler.SchedulerUtility;
@@ -28,18 +29,23 @@ namespace Orleans.Runtime.Scheduler
             SchedulingContext = activation.SchedulingContext;
             // Interpreting Scheduling Context From Application
             if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
-                PriorityContext = new PriorityObject(((TimestampContext) message.RequestContextData["Priority"]).ConvertedPhysicalTime, 
-                    0, ((TimestampContext)message.RequestContextData["Priority"]).ConvertedLogicalTime);
-
+            {
+                var tsContext = (TimestampContext)message.RequestContextData["Priority"];
+                PriorityContext = new PriorityObject(tsContext.ConvertedPhysicalTime, default(int), tsContext.RequestId, tsContext.ConvertedLogicalTime);
+            }
+                
             ControllerContext =
                 message?.RequestContextData != null && message.RequestContextData.ContainsKey("ControllerContext")
                     ? (ControllerContext) message.RequestContextData["ControllerContext"]
                     : null;
 
-            DownstreamContext =
-                message?.RequestContextData != null && message.RequestContextData.ContainsKey("DownstreamContext")
-                    ? (DownstreamContext)message.RequestContextData["DownstreamContext"]
-                    : null;
+            DownstreamContext = null;
+            if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("DownstreamContext"))
+            {
+                DownstreamContext = (DownstreamContext) message.RequestContextData["DownstreamContext"];
+                message.RequestContextData.Remove("DownstreamContext");
+            }
+            
             SourceActivation = message.SendingAddress;
 #if REPLY_CONTEXT
             message.Start(); //TimeQueued
@@ -76,6 +82,7 @@ namespace Orleans.Runtime.Scheduler
                     {
                         ConvertedLogicalTime = tsContext.ConvertedLogicalTime,
                         ConvertedPhysicalTime = tsContext.ConvertedPhysicalTime,
+                        RequestId = tsContext.RequestId, 
                         TimeInQueue = default(long)
                     };
                 }
@@ -120,6 +127,7 @@ namespace Orleans.Runtime.Scheduler
                     {
                         ConvertedLogicalTime = tsContext.ConvertedLogicalTime,
                         ConvertedPhysicalTime = tsContext.ConvertedPhysicalTime,
+                        RequestId = tsContext.RequestId,
                         TimeInQueue = default(long)
                     };
                 }

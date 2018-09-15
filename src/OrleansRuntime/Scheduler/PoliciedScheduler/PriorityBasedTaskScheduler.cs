@@ -162,6 +162,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             {
                 var priorityContext = new PriorityContext
                 {
+                    RequestId = SchedulerConstants.DEFAULT_REQUEST_ID,
                     Priority = SchedulerConstants.DEFAULT_PRIORITY,
                     WindowID = SchedulerConstants.DEFAULT_WINDOW_ID,
                     Context = context,
@@ -175,6 +176,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             {
                 var priorityContext = new PriorityContext
                 {
+                    RequestId = workItem.PriorityContext.RequestId,
                     Priority = workItem.PriorityContext.Priority,
                     WindowID = workItem.PriorityContext.WindowID,
                     Context = context,

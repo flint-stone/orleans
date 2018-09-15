@@ -9,6 +9,7 @@ namespace Orleans.Runtime.Scheduler
         private readonly ITaskScheduler scheduler;
         private static readonly Logger logger = LogManager.GetLogger("Scheduler.TaskWorkItem", LoggerType.Runtime);
 
+        public override ActivationAddress SourceActivation { get; set; }
         public override string Name { get { return String.Format("TaskRunner for task {0}", task.Id); } }
 
         /// <summary>

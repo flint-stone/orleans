@@ -13,6 +13,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         Task GetNextTaskForExecution();
 
+        void OnCompleteTask(PriorityContext context, TimeSpan taskLength);
+
         void OnFinishingWIGTurn();
 
         int CountWIGTasks();

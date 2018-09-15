@@ -1,3 +1,5 @@
+// #define PQ_DEBUG
+
 using System;
 using System.Reflection;
 using Orleans.Runtime.Scheduler.SchedulerUtility;
@@ -23,9 +25,12 @@ namespace Orleans.Runtime.Scheduler
             }
 #endif
             if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
-                PriorityContext = new PriorityObject(((TimestampContext)message.RequestContextData["Priority"]).ConvertedPhysicalTime,
-                    0, ((TimestampContext)message.RequestContextData["Priority"]).ConvertedLogicalTime);
-
+            {
+                var tsContext = (TimestampContext) message.RequestContextData["Priority"];
+                PriorityContext = new PriorityObject(tsContext.ConvertedPhysicalTime,
+                default(int), tsContext.RequestId, tsContext.ConvertedLogicalTime);
+            }
+                
             SourceActivation = message.SendingAddress;
             _message = message;
         }
@@ -41,8 +46,11 @@ namespace Orleans.Runtime.Scheduler
             }
 #endif
             if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
-                PriorityContext = new PriorityObject(((TimestampContext)message.RequestContextData["Priority"]).ConvertedPhysicalTime,
-                    0, ((TimestampContext)message.RequestContextData["Priority"]).ConvertedLogicalTime);
+            {
+                var tsContext = (TimestampContext)message.RequestContextData["Priority"];
+                PriorityContext = new PriorityObject(tsContext.ConvertedPhysicalTime,
+                    default(int), tsContext.RequestId, tsContext.ConvertedLogicalTime);
+            }
             SourceActivation = message.SendingAddress;
             _message = message;
         }

@@ -328,7 +328,7 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
 
         public virtual PriorityObject PriorityContext { get; set; }
         public PriorityObject InQueuePriorityContext { get; set; }
-        public ActivationAddress SourceActivation { get; set; }
+        public abstract ActivationAddress SourceActivation { get; set; }
         public abstract string Name { get; }
         public abstract WorkItemType ItemType { get; }
         public ISchedulingContext SchedulingContext { get; set; }

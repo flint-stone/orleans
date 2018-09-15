@@ -1,4 +1,4 @@
-#define RUNQUEUE_DEBUG
+//#define RUNQUEUE_DEBUG
 //#define TIMED_EXECUTION
 using System;
 using System.Collections.Concurrent;
@@ -37,7 +37,7 @@ namespace Orleans.Runtime.Scheduler
         private TimeSpan totalQueuingDelay;
         private readonly long quantumExpirations;
         private readonly int workItemGroupStatisticsNumber;
-        private Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>> execTimeCounters;
+        // private Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>> execTimeCounters;
 
         // ITimeInterval
         private readonly Stopwatch stopwatch;
@@ -47,7 +47,7 @@ namespace Orleans.Runtime.Scheduler
         
         internal ActivationTaskScheduler TaskRunner { get; private set; }
 
-        internal Dictionary<ActivationAddress, Dictionary<string, long>> WorkItemGroupStats { get; set; }
+        // internal Dictionary<ActivationAddress, Dictionary<string, long>> WorkItemGroupStats { get; set; }
         
         public DateTime TimeQueued { get; set; }
 
@@ -69,7 +69,7 @@ namespace Orleans.Runtime.Scheduler
         }
 
         public override PriorityObject PriorityContext { get; set; } = new PriorityObject(SchedulerConstants.DEFAULT_PRIORITY, Environment.TickCount);
-        public ActivationAddress SourceActivation { get; set; }
+        public override ActivationAddress SourceActivation { get; set; }
 
         public override string Name { get { return SchedulingContext == null ? "unknown" : SchedulingContext.Name; } }
 
@@ -160,8 +160,8 @@ namespace Orleans.Runtime.Scheduler
             totalQueuingDelay = TimeSpan.Zero;
             quantumExpirations = 0;
             TaskRunner = new ActivationTaskScheduler(this);
-            WorkItemGroupStats = new Dictionary<ActivationAddress, Dictionary<string, long>>();
-            execTimeCounters = new Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>>();
+            // WorkItemGroupStats = new Dictionary<ActivationAddress, Dictionary<string, long>>();
+            // execTimeCounters = new Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>>();
             log = IsSystemPriority ? LogManager.GetLogger("Scheduler." + Name + ".WorkItemGroup", LoggerType.Runtime) : appLogger;
 
             if (StatisticsCollector.CollectShedulerQueuesStats)
@@ -456,13 +456,14 @@ namespace Orleans.Runtime.Scheduler
                         totalItemsProcessed++;
                         var taskLength = stopwatch.Elapsed - taskStart;
 
-                        
+                        /*
                         if(contextObj?.SourceActivation != null) // If the task originates from another activation
                         {
                             if (!execTimeCounters.ContainsKey(contextObj.SourceActivation)) execTimeCounters.Add(contextObj.SourceActivation, new Dictionary<string, FixedSizedQueue<long>>());
                             if (!execTimeCounters[contextObj.SourceActivation].ContainsKey(task.ToString())) execTimeCounters[contextObj.SourceActivation].Add(task.ToString(), new FixedSizedQueue<long>(SchedulerConstants.STATS_COUNTER_QUEUE_SIZE));
                             execTimeCounters[contextObj.SourceActivation][task.ToString()].Enqueue(taskLength.Ticks);
-                        }
+                        }*/
+                        WorkItemManager.OnCompleteTask(contextObj, taskLength);
                         
                         if (taskLength > masterScheduler.TurnWarningLength)
                         {
@@ -586,40 +587,34 @@ namespace Orleans.Runtime.Scheduler
             log.Warn(errorCode, msg);
         }
 
-        public void CollectStats()
-        {
-            //return execTimeCounters.Select(x => x.Value.Any()?x.Value.Average():0).Any()? execTimeCounters.Select(x => x.Value.Any() ? x.Value.Average() : 0).Average():0;
-            //return execTimeCounters.ToDictionary(kv => kv.Key, kv => 10000.0);
-            // TODO: HACKING AROUND
-            /*
-            if (((SchedulingContext)SchedulingContext).Activation != null)
-            {
-                var keyLong = (long)(((SchedulingContext)SchedulingContext).Activation.Grain.Key.N1);
-                if (GetStageId(keyLong) == 9)
-                {
-                    return execTimeCounters.ToDictionary(kv => kv.Key, kv => 15000.0);
-                }
-                if (GetStageId(keyLong) == 10)
-                {
-                    return execTimeCounters.ToDictionary(kv => kv.Key, kv => 80000.0);
-                }
-            }
-            */
-            WorkItemGroupStats = execTimeCounters.ToDictionary(kv => kv.Key, kv => kv.Value.ToDictionary(tq => tq.Key, tq=>Convert.ToInt64(tq.Value.Average())));
-#if PQ_DEBUG
-            LogExecTimeCounters();
-#endif
-        }
+//        public void CollectStats()
+//        {
+//            //return execTimeCounters.Select(x => x.Value.Any()?x.Value.Average():0).Any()? execTimeCounters.Select(x => x.Value.Any() ? x.Value.Average() : 0).Average():0;
+//            //return execTimeCounters.ToDictionary(kv => kv.Key, kv => 10000.0);
+//            // TODO: HACKING AROUND
+//            /*
+//            if (((SchedulingContext)SchedulingContext).Activation != null)
+//            {
+//                var keyLong = (long)(((SchedulingContext)SchedulingContext).Activation.Grain.Key.N1);
+//                if (GetStageId(keyLong) == 9)
+//                {
+//                    return execTimeCounters.ToDictionary(kv => kv.Key, kv => 15000.0);
+//                }
+//                if (GetStageId(keyLong) == 10)
+//                {
+//                    return execTimeCounters.ToDictionary(kv => kv.Key, kv => 80000.0);
+//                }
+//            }
+//            */
+//            WorkItemGroupStats = execTimeCounters.ToDictionary(kv => kv.Key, kv => kv.Value.ToDictionary(tq => tq.Key, tq=>Convert.ToInt64(tq.Value.Average())));
+//#if PQ_DEBUG
+//            LogExecTimeCounters();
+//#endif
+//        }
 
         public static short GetStageId(long grainKey)
         {
             return (short)(grainKey >> 32 & 0xFFFFL);
-        }
-
-        public void LogExecTimeCounters()
-        {
-            log.Info($"{this} execution time counters collected " +
-                     StatCollectionExplain(execTimeCounters));
         }
 
         private static string StatCollectionExplain(

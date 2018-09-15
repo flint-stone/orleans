@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -145,8 +146,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private readonly Stopwatch stopwatch;
 #endif
         internal long DataflowSLA { get; set; }
-
-        
         public StatisticsManager StatManager { get; set; }
         public bool WindowedGrain { get; set; }
         public long WindowSize { get; set; }
@@ -175,7 +174,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             var contextObj = task.AsyncState as PriorityContext;
             var windowId = contextObj?.WindowID ?? SchedulerConstants.DEFAULT_WINDOW_ID;
             var physicalTime = contextObj?.Priority ?? SchedulerConstants.DEFAULT_PRIORITY;
-
+            
             // Remap un-tagged task
             if (windowId == SchedulerConstants.DEFAULT_WINDOW_ID)
             {
@@ -202,21 +201,21 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             var maximumDownStreamPathCost = SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
             if (windowId != SchedulerConstants.DEFAULT_WINDOW_ID)
             {
+                /*
                 if (StatManager.DownstreamOpToCost.Any()) maximumDownStreamPathCost = StatManager.DownstreamOpToCost.Values.Max();
 
-                var ownerStats = workItemGroup.WorkItemGroupStats;
-                if (contextObj?.SourceActivation != null 
-                    && ownerStats.ContainsKey(contextObj.SourceActivation) 
-                    && ownerStats[contextObj.SourceActivation].ContainsKey(task.ToString()))
+                var execTimeSummaries = StatManager.ExecTimeSummaries;
+                if (contextObj?.SourceActivation != null && execTimeSummaries.ContainsKey(contextObj.SourceActivation))
                 {
-                    maximumDownStreamPathCost +=
-                        Convert.ToInt64(ownerStats[contextObj.SourceActivation][task.ToString()])*workItems[windowId].Count;
-                }
+//                    maximumDownStreamPathCost +=
+//                        Convert.ToInt64(execTimeSummaries[contextObj.SourceActivation])* RequestIdSeen.Count(id => id< requestId);
+                    maximumDownStreamPathCost += Convert.ToInt64(execTimeSummaries[contextObj.SourceActivation]);
+                }*/
 
                 // ***
                 // Setting priority of the task
                 // ***
-                var deadline = physicalTime + DataflowSLA - maximumDownStreamPathCost;
+                var deadline = physicalTime + DataflowSLA; // - maximumDownStreamPathCost;
 
                 if (!timestampsToDeadlines.ContainsKey(windowId))
                 {
@@ -365,6 +364,13 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 //            }
             
             return null;
+        }
+
+        public void OnCompleteTask(PriorityContext context, TimeSpan taskLength)
+        {
+            // TODO: expensive -- add sampling
+            if (context?.SourceActivation == null) return;
+            StatManager.Add(context, taskLength);
         }
 
         public void OnFinishingWIGTurn()

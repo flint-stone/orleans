@@ -24,7 +24,7 @@ namespace Orleans.Runtime.Scheduler
   
         public override PriorityObject PriorityContext { get; set; }= new PriorityObject(SchedulerConstants.DEFAULT_PRIORITY, Environment.TickCount);
   
-        public ActivationAddress SourceActivation { get; set; }
+        public override ActivationAddress SourceActivation { get; set; }
 
         public abstract override void Execute();
         public abstract override void Execute(PriorityContext context);

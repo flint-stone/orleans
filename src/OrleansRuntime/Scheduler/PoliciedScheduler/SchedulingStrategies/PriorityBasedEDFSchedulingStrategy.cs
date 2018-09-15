@@ -184,10 +184,17 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
                 if (StatManager.DownstreamOpToCost.Any()) maximumDownStreamPathCost = StatManager.DownstreamOpToCost.Values.Max();
 
-                var ownerStats = workItemGroup.WorkItemGroupStats; //(Dictionary<ActivationAddress, Dictionary<string, double>>)Strategy.FetchWorkItemMetric(workItemGroup);
-                if (contextObj.SourceActivation != null && ownerStats.ContainsKey(contextObj.SourceActivation) && ownerStats[contextObj.SourceActivation].ContainsKey(task.ToString()))
+                //                var ownerStats = workItemGroup.WorkItemGroupStats; //(Dictionary<ActivationAddress, Dictionary<string, double>>)Strategy.FetchWorkItemMetric(workItemGroup);
+                //                if (contextObj.SourceActivation != null && ownerStats.ContainsKey(contextObj.SourceActivation) && ownerStats[contextObj.SourceActivation].ContainsKey(task.ToString()))
+                //                {
+                //                    maximumDownStreamPathCost += Convert.ToInt64(ownerStats[contextObj.SourceActivation][task.ToString()]);
+                //                }
+                var execTimeSummaries = StatManager.ExecTimeSummaries;
+                if (contextObj?.SourceActivation != null && execTimeSummaries.ContainsKey(contextObj.SourceActivation))
                 {
-                    maximumDownStreamPathCost += Convert.ToInt64(ownerStats[contextObj.SourceActivation][task.ToString()]);
+                    //                    maximumDownStreamPathCost +=
+                    //                        Convert.ToInt64(execTimeSummaries[contextObj.SourceActivation])* RequestIdSeen.Count(id => id< requestId);
+                    maximumDownStreamPathCost += Convert.ToInt64(execTimeSummaries[contextObj.SourceActivation]);
                 }
 
                 // ***
@@ -307,6 +314,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return null;
         }
 
+        public void OnCompleteTask(PriorityContext context, TimeSpan taskLength) { }
+
         public void OnFinishingWIGTurn()
         {
             StatManager.UpdateWIGStatistics();
@@ -425,13 +434,20 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
                         if (StatManager.DownstreamOpToCost.Any()) maximumDownStreamPathCost = StatManager.DownstreamOpToCost.Values.Max();
 
-                        var ownerStats = workItemGroup.WorkItemGroupStats;
-                        if (contextObj.SourceActivation != null &&
-                            ownerStats.ContainsKey(contextObj.SourceActivation) &&
-                            ownerStats[contextObj.SourceActivation].ContainsKey(task.ToString()))
+                        //                        var ownerStats = workItemGroup.WorkItemGroupStats;
+                        //                        if (contextObj.SourceActivation != null &&
+                        //                            ownerStats.ContainsKey(contextObj.SourceActivation) &&
+                        //                            ownerStats[contextObj.SourceActivation].ContainsKey(task.ToString()))
+                        //                        {
+                        //                            maximumDownStreamPathCost +=
+                        //                                Convert.ToInt64(ownerStats[contextObj.SourceActivation][task.ToString()]);
+                        //                        }
+                        var execTimeSummaries = StatManager.ExecTimeSummaries;
+                        if (contextObj?.SourceActivation != null && execTimeSummaries.ContainsKey(contextObj.SourceActivation))
                         {
-                            maximumDownStreamPathCost +=
-                                Convert.ToInt64(ownerStats[contextObj.SourceActivation][task.ToString()]);
+                            //                    maximumDownStreamPathCost +=
+                            //                        Convert.ToInt64(execTimeSummaries[contextObj.SourceActivation])* RequestIdSeen.Count(id => id< requestId);
+                            maximumDownStreamPathCost += Convert.ToInt64(execTimeSummaries[contextObj.SourceActivation]);
                         }
 
                         // ***
@@ -556,6 +572,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
             return null;
         }
+
+        public void OnCompleteTask(PriorityContext context, TimeSpan taskLength)  { }
 
         public void OnFinishingWIGTurn()
         {

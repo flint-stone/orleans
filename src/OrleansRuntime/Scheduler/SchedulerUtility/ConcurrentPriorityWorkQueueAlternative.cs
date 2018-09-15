@@ -141,7 +141,10 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
                 return TakeItem(out item);
             }
 #else
-            return TakeItem(out item);
+            lock (_lockObj)
+            {
+                return TakeItem(out item);
+            }
 #endif 
         }
 

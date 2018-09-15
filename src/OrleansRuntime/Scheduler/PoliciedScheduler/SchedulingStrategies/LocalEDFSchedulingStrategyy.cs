@@ -566,15 +566,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             */
         }
 
-        public void OnFinishingWIGTurn()
-        {
-            if (--statCollectionCounter <= 0)
-            {
-                statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
-                Strategy.PutWorkItemMetric(workItemGroup, workItemGroup.WorkItemGroupStats);
-                workItemGroup.LogExecTimeCounters();
-            }  
-        }
+        public void OnCompleteTask(PriorityContext context, TimeSpan taskLength) { }
+
+        public void OnFinishingWIGTurn() {  }
 
         public int CountWIGTasks()
         {
