@@ -190,11 +190,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 //                    maximumDownStreamPathCost += Convert.ToInt64(ownerStats[contextObj.SourceActivation][task.ToString()]);
                 //                }
                 var execTimeSummaries = StatManager.ExecTimeSummaries;
-                if (contextObj?.SourceActivation != null && execTimeSummaries.ContainsKey(contextObj.SourceActivation))
+                if (contextObj?.SourceActivation != null && execTimeSummaries.ContainsKey(contextObj.SourceActivation.Grain))
                 {
                     //                    maximumDownStreamPathCost +=
                     //                        Convert.ToInt64(execTimeSummaries[contextObj.SourceActivation])* RequestIdSeen.Count(id => id< requestId);
-                    maximumDownStreamPathCost += Convert.ToInt64(execTimeSummaries[contextObj.SourceActivation]);
+                    maximumDownStreamPathCost += Convert.ToInt64(execTimeSummaries[contextObj.SourceActivation.Grain]);
                 }
 
                 // ***
@@ -443,11 +443,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                         //                                Convert.ToInt64(ownerStats[contextObj.SourceActivation][task.ToString()]);
                         //                        }
                         var execTimeSummaries = StatManager.ExecTimeSummaries;
-                        if (contextObj?.SourceActivation != null && execTimeSummaries.ContainsKey(contextObj.SourceActivation))
+                        if (contextObj?.SourceActivation != null && execTimeSummaries.ContainsKey(contextObj.SourceActivation.Grain))
                         {
                             //                    maximumDownStreamPathCost +=
                             //                        Convert.ToInt64(execTimeSummaries[contextObj.SourceActivation])* RequestIdSeen.Count(id => id< requestId);
-                            maximumDownStreamPathCost += Convert.ToInt64(execTimeSummaries[contextObj.SourceActivation]);
+                            maximumDownStreamPathCost += Convert.ToInt64(execTimeSummaries[contextObj.SourceActivation.Grain]);
                         }
 
                         // ***

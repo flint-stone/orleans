@@ -16,14 +16,14 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private int statCollectionCounter;
         private readonly WorkItemGroup workItemGroup;
         private readonly ICorePerformanceMetrics metrics;
-        private ConcurrentDictionary<ActivationAddress, ExecTimeCounter> _execTimeCounters;
+        private ConcurrentDictionary<GrainId, ExecTimeCounter> _execTimeCounters;
         private ConcurrentDictionary<GrainId, Tuple<double, long>> StatsUpdatesCollection { get; set; }
 
         internal ConcurrentBag<GrainId> UpstreamOpSet { get; set; } // upstream Ops, populated during initialization
         internal ConcurrentDictionary<GrainId, long> DownstreamOpToCost { get; set; } // downstream Ops, populated while downstream message flows back
 
         // Cached results
-        internal ConcurrentDictionary<ActivationAddress, double> ExecTimeSummaries { get; set; }
+        internal ConcurrentDictionary<GrainId, double> ExecTimeSummaries { get; set; }
 
         public StatisticsManager(WorkItemGroup wig, ICorePerformanceMetrics perfMetrics)
         {           
@@ -35,8 +35,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
             UpstreamOpSet = new ConcurrentBag<GrainId>();
             DownstreamOpToCost = new ConcurrentDictionary<GrainId, long>();
-            _execTimeCounters = new ConcurrentDictionary<ActivationAddress, ExecTimeCounter>();
-            ExecTimeSummaries = new ConcurrentDictionary<ActivationAddress, double>();
+            _execTimeCounters = new ConcurrentDictionary<GrainId, ExecTimeCounter>();
+            ExecTimeSummaries = new ConcurrentDictionary<GrainId, double>();
         }
         public void GetDownstreamContext(ActivationAddress downstreamActivation, DownstreamContext downstreamContext)
         {
@@ -54,20 +54,30 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             Tuple<double, long> tuple;
 #if PQ_DEBUG
-            ReportDetailedStats();
-            _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} StatsUpdate collection {string.Join(",", StatsUpdatesCollection.Select(kv => kv.Key + "-><" + kv.Value.Item1 + "," + kv.Value.Item2 + '>'))}");
+            //ReportDetailedStats();
+            _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} Upstream: {upstream} " +
+                         $"StatsUpdate collection: {string.Join(",", StatsUpdatesCollection.Select(kv => kv.Key + "-><" + kv.Value.Item1 + "," + kv.Value.Item2 + '>'))}");
 #endif
-            if ((UpstreamOpSet.Contains(upstream) || !DownstreamOpToCost.Keys.Contains(upstream)) && StatsUpdatesCollection.TryGetValue(upstream, out tuple))
+            if (!upstream.IsClient)
             {
-                return new DownstreamContext(
-                    tuple.Item2, 
-                    (long)tuple.Item1,
-                    SchedulerConstants.DEFAULT_WIG_EXECUTION_COST,
-                    Convert.ToInt64(metrics.InboundAverageWaitingTime),
-                    metrics.InboundAverageTripTimeBySource.ContainsKey(upstream.IdentityString)?
-                    Convert.ToInt64(metrics.InboundAverageTripTimeBySource[upstream.IdentityString]):
-                    SchedulerConstants.DEFAULT_WIG_EXECUTION_COST);
+                if ((UpstreamOpSet.Contains(upstream) || !DownstreamOpToCost.Keys.Contains(upstream)) &&
+                    StatsUpdatesCollection.TryGetValue(upstream, out tuple))
+                {
+                    return new DownstreamContext(
+                        tuple.Item2,
+                        (long) tuple.Item1,
+                        SchedulerConstants.DEFAULT_WIG_EXECUTION_COST,
+                        Convert.ToInt64(metrics.InboundAverageWaitingTime),
+                        metrics.InboundAverageTripTimeBySource.ContainsKey(upstream.IdentityString)
+                            ? Convert.ToInt64(metrics.InboundAverageTripTimeBySource[upstream.IdentityString])
+                            : SchedulerConstants.DEFAULT_WIG_EXECUTION_COST);
+                }
             }
+            else
+            {
+                
+            }
+            
             return null;
         }
 
@@ -95,7 +105,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup.Name} -> {address} local cost from target address: {statsUpdate} down stream: {downstreamCost}");
 #endif
                     var tup = new Tuple<double, long>(statsUpdate, downstreamCost);
-                    StatsUpdatesCollection.AddOrUpdate(address.Grain, tup, (k, v) => tup);
+                    StatsUpdatesCollection.AddOrUpdate(address, tup, (k, v) => tup);
                 }
 #if PQ_DEBUG
                 _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} StatsUpdate collection {string.Join(",", StatsUpdatesCollection.Select(kv => kv.Key + "-><" + kv.Value.Item1 + "," + kv.Value.Item2 + '>'))}");
@@ -106,11 +116,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void Add(PriorityContext context, TimeSpan span)
         {
-            if (!_execTimeCounters.ContainsKey(context.SourceActivation))
+            if (!_execTimeCounters.ContainsKey(context.SourceActivation.Grain))
             {
-                _execTimeCounters.TryAdd(context.SourceActivation, new ExecTimeCounter(context.SourceActivation));
+                _execTimeCounters.TryAdd(context.SourceActivation.Grain, new ExecTimeCounter(context.SourceActivation.Grain));
             }
-            _execTimeCounters[context.SourceActivation].Increment(context.WindowID, context.RequestId, span.Ticks);
+            _execTimeCounters[context.SourceActivation.Grain].Increment(context.WindowID, context.RequestId, span.Ticks);
         }
 
         public void ReportStats()
@@ -143,9 +153,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private long _currentTicksSum;
         //internal Queue<double> Counters;
         internal SortedDictionary<long, double> Counters;
-        private ActivationAddress _source;
+        //private ActivationAddress _source;
+        private GrainId _source;
         
-        public ExecTimeCounter(ActivationAddress source)
+        public ExecTimeCounter(GrainId source)
         {
             _source = source;
             Counters = new SortedDictionary<long, double>();
@@ -180,7 +191,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         
         public string ToLongString()
         {
-            return $"Execution counter source {_source}:{_source.Grain.Key.N1}; " +
+            //            return $"Execution counter source {_source}:{_source.Grain.Key.N1}; " +
+            //                   $"Counters: {string.Join(",", Counters.Select(kv => kv.Key + "->" + kv.Value))}; ";
+            return $"Execution counter source {_source}:{_source.Key.N1}; " +
                    $"Counters: {string.Join(",", Counters.Select(kv => kv.Key + "->" + kv.Value))}; ";
         }
 
