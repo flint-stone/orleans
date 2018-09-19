@@ -21,11 +21,12 @@ namespace Orleans.Runtime.Scheduler
         public long RequestId;
         public long ConvertedPhysicalTime;
         public long ConvertedLogicalTime;
-        public long TimeInQueue;
+        public long SLA;
+        public long Priority;
 
         public override string ToString()
         {
-            return $"ID: {RequestId} CPT {ConvertedPhysicalTime}, CLT {ConvertedLogicalTime}, TimeInQueue {TimeInQueue}";
+            return $"ID: {RequestId} CPT {ConvertedPhysicalTime}, CLT {ConvertedLogicalTime}, SLA {SLA}, Priority {Priority}";
         }
     }
 }

@@ -31,7 +31,7 @@ namespace Orleans.Runtime.Scheduler
             if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
             {
                 var tsContext = (TimestampContext)message.RequestContextData["Priority"];
-                PriorityContext = new PriorityObject(tsContext.ConvertedPhysicalTime, default(int), tsContext.RequestId, tsContext.ConvertedLogicalTime);
+                PriorityContext = new PriorityObject(tsContext.Priority, default(int), tsContext.RequestId, tsContext.ConvertedLogicalTime);
             }
                 
             ControllerContext =
@@ -43,7 +43,7 @@ namespace Orleans.Runtime.Scheduler
             if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("DownstreamContext"))
             {
                 DownstreamContext = (DownstreamContext) message.RequestContextData["DownstreamContext"];
-                message.RequestContextData.Remove("DownstreamContext");
+                // message.RequestContextData.Remove("DownstreamContext");
             }
             
             SourceActivation = message.SendingAddress;
@@ -78,17 +78,17 @@ namespace Orleans.Runtime.Scheduler
                 if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
                 {
                     var tsContext = (TimestampContext) message.RequestContextData["Priority"];
-                    message.RequestContextData["Priority"] = new TimestampContext
-                    {
-                        ConvertedLogicalTime = tsContext.ConvertedLogicalTime,
-                        ConvertedPhysicalTime = tsContext.ConvertedPhysicalTime,
-                        RequestId = tsContext.RequestId, 
-                        TimeInQueue = default(long)
-                    };
+                    message.RequestContextData["Priority"] = tsContext;
+//                        new TimestampContext
+//                    {
+//                        ConvertedLogicalTime = tsContext.ConvertedLogicalTime,
+//                        ConvertedPhysicalTime = tsContext.ConvertedPhysicalTime,
+//                        RequestId = tsContext.RequestId, 
+//                    };
                 }
                     
 
-               var grain = activation.GrainInstance;
+                var grain = activation.GrainInstance;
                 var runtimeClient = (ISiloRuntimeClient)grain.GrainReference.RuntimeClient;
 #if PQ_DEBUG
                 logger.Info($"Invoke: {message}");
@@ -123,13 +123,13 @@ namespace Orleans.Runtime.Scheduler
                 if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
                 {
                     var tsContext = (TimestampContext)message.RequestContextData["Priority"];
-                    message.RequestContextData["Priority"] = new TimestampContext
-                    {
-                        ConvertedLogicalTime = tsContext.ConvertedLogicalTime,
-                        ConvertedPhysicalTime = tsContext.ConvertedPhysicalTime,
-                        RequestId = tsContext.RequestId,
-                        TimeInQueue = default(long)
-                    };
+                    message.RequestContextData["Priority"] = tsContext;
+//                        new TimestampContext
+//                    {
+//                        ConvertedLogicalTime = tsContext.ConvertedLogicalTime,
+//                        ConvertedPhysicalTime = tsContext.ConvertedPhysicalTime,
+//                        RequestId = tsContext.RequestId,
+//                    };
                 }
 
                 var grain = activation.GrainInstance;

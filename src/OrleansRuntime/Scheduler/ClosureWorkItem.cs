@@ -27,7 +27,7 @@ namespace Orleans.Runtime.Scheduler
             if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
             {
                 var tsContext = (TimestampContext) message.RequestContextData["Priority"];
-                PriorityContext = new PriorityObject(tsContext.ConvertedPhysicalTime,
+                PriorityContext = new PriorityObject(tsContext.Priority,
                 default(int), tsContext.RequestId, tsContext.ConvertedLogicalTime);
             }
                 
@@ -48,7 +48,7 @@ namespace Orleans.Runtime.Scheduler
             if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
             {
                 var tsContext = (TimestampContext)message.RequestContextData["Priority"];
-                PriorityContext = new PriorityObject(tsContext.ConvertedPhysicalTime,
+                PriorityContext = new PriorityObject(tsContext.Priority,
                     default(int), tsContext.RequestId, tsContext.ConvertedLogicalTime);
             }
             SourceActivation = message.SendingAddress;

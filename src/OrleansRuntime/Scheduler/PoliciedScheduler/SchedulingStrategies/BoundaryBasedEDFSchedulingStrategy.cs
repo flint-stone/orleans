@@ -173,7 +173,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             var contextObj = task.AsyncState as PriorityContext;
             var windowId = contextObj?.WindowID ?? SchedulerConstants.DEFAULT_WINDOW_ID;
-            var physicalTime = contextObj?.Priority ?? SchedulerConstants.DEFAULT_PRIORITY;
+            var priority = contextObj?.Priority ?? SchedulerConstants.DEFAULT_PRIORITY;
             
             // Remap un-tagged task
             if (windowId == SchedulerConstants.DEFAULT_WINDOW_ID)
@@ -182,7 +182,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 if (tses.Any())
                 {
                     windowId = tses.Min();
-                    physicalTime = timestampsToDeadlines[windowId][0];
+                    priority = timestampsToDeadlines[windowId][0];
                 }
             }
             
@@ -215,15 +215,15 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 // ***
                 // Setting priority of the task
                 // ***
-                var deadline = physicalTime + DataflowSLA; // - maximumDownStreamPathCost;
+                var deadline = priority; // + DataflowSLA; // - maximumDownStreamPathCost;
 
                 if (!timestampsToDeadlines.ContainsKey(windowId))
                 {
-                    timestampsToDeadlines.Add(windowId, new []{physicalTime, deadline});
+                    timestampsToDeadlines.Add(windowId, new []{priority, deadline});
                 }
                 else
                 {
-                    timestampsToDeadlines[windowId] = new[] { physicalTime, deadline };
+                    timestampsToDeadlines[windowId] = new[] { priority, deadline };
                 }
                 // If timestamp is not default and earlier than the earliest non-zero deadline, update deadline accordingly
                 // if (timestamp != SchedulerConstants.DEFAULT_PRIORITY && workItems.Count > 1 && timestamp < workItems.Keys.ElementAt(1)) wig.PriorityContext.Deadline = deadline;
@@ -239,9 +239,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     timestampsToDeadlines[windowId] = new[] { SchedulerConstants.DEFAULT_PRIORITY, SchedulerConstants.DEFAULT_PRIORITY };
                 }
             }
-#if PQ_DEBUG
-            _logger.Info($"{workItemGroup} Creating New Timestamp, Task: {task},  Priority: {physicalTime}, WindowID: {windowId}, Window Size: {WindowSize}, SLA: {DataflowSLA} DownstreamPathCost: {maximumDownStreamPathCost} mappedPriority: {timestampsToDeadlines[windowId][0]}, {timestampsToDeadlines[windowId][1]}");
-#endif
+//#if PQ_DEBUG
+            _logger.Info($"{workItemGroup} Creating New Timestamp, Task: {task},  Priority: {priority}, WindowID: {windowId}, Window Size: {WindowSize}, SLA: {DataflowSLA} mappedPriority: {timestampsToDeadlines[windowId][0]}, {timestampsToDeadlines[windowId][1]}");
+//#endif
 
 
 #if EDF_TRACKING
@@ -395,7 +395,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return string.Join(Environment.NewLine,
                 workItems.Select(x =>
                     "~~" + x.Key + ":" +
-                    "Deadline " + timestampsToDeadlines[x.Key] + " " +
+                    $"Deadline  <{timestampsToDeadlines[x.Key][0]} : {timestampsToDeadlines[x.Key][1]}>" +
                     string.Join(",",
                         x.Value.Select(y =>
                             {

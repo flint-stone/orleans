@@ -1,5 +1,5 @@
-﻿// #define PQ_DEBUG
-#define PQ_DEBUG_DETAILED
+﻿//#define PQ_DEBUG
+//#define PQ_DEBUG_DETAILED
 using Orleans.Runtime.Scheduler.SchedulerUtility;
 using System;
 using System.Collections.Concurrent;
@@ -58,25 +58,20 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} Upstream: {upstream} " +
                          $"StatsUpdate collection: {string.Join(",", StatsUpdatesCollection.Select(kv => kv.Key + "-><" + kv.Value.Item1 + "," + kv.Value.Item2 + '>'))}");
 #endif
-            if (!upstream.IsClient)
+
+            if ((UpstreamOpSet.Contains(upstream) || !DownstreamOpToCost.Keys.Contains(upstream)) &&
+                StatsUpdatesCollection.TryGetValue(upstream, out tuple))
             {
-                if ((UpstreamOpSet.Contains(upstream) || !DownstreamOpToCost.Keys.Contains(upstream)) &&
-                    StatsUpdatesCollection.TryGetValue(upstream, out tuple))
-                {
-                    return new DownstreamContext(
-                        tuple.Item2,
-                        (long) tuple.Item1,
-                        SchedulerConstants.DEFAULT_WIG_EXECUTION_COST,
-                        Convert.ToInt64(metrics.InboundAverageWaitingTime),
-                        metrics.InboundAverageTripTimeBySource.ContainsKey(upstream.IdentityString)
-                            ? Convert.ToInt64(metrics.InboundAverageTripTimeBySource[upstream.IdentityString])
-                            : SchedulerConstants.DEFAULT_WIG_EXECUTION_COST);
-                }
+                return new DownstreamContext(
+                    tuple.Item2,
+                    (long) tuple.Item1,
+                    SchedulerConstants.DEFAULT_WIG_EXECUTION_COST,
+                    Convert.ToInt64(metrics.InboundAverageWaitingTime),
+                    metrics.InboundAverageTripTimeBySource.ContainsKey(upstream.IdentityString)
+                        ? Convert.ToInt64(metrics.InboundAverageTripTimeBySource[upstream.IdentityString])
+                        : SchedulerConstants.DEFAULT_WIG_EXECUTION_COST);
             }
-            else
-            {
-                
-            }
+
             
             return null;
         }
@@ -94,14 +89,14 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     // TODO: update max per message cost - per upstream
                     var statsUpdate = _execTimeCounters[address].Average();
 #if PQ_DEBUG_DETAILED
-                    _logger.Info($"{workItemGroup} exec time counters {address} : {statsUpdate}");
+                    _logger.Info($"{workItemGroup} : {_execTimeCounters[address].ToLongString()}");
 #endif
                     ExecTimeSummaries.AddOrUpdate(address, statsUpdate, (k, v) => statsUpdate);
                     var downstreamCost = DownstreamOpToCost.Values.Any()
                         ? DownstreamOpToCost.Values.Max()
                         : SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
 #if PQ_DEBUG
-                    _logger.Info($"{workItemGroup} : {_execTimeCounters[address].ToLongString()}");
+                    _logger.Info($"{workItemGroup} exec time counters {address} : {statsUpdate}");
                     _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup.Name} -> {address} local cost from target address: {statsUpdate} down stream: {downstreamCost}");
 #endif
                     var tup = new Tuple<double, long>(statsUpdate, downstreamCost);
@@ -165,6 +160,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         
         public void Increment(long id, long requestId, long ticks)
         {
+            if (requestId == SchedulerConstants.DEFAULT_REQUEST_ID) return;
             if (!Counters.ContainsKey(requestId))
             {
                 Counters.Add(requestId, ticks);
@@ -181,6 +177,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         
         public double Average()
         {
+            if (!Counters.Any()) return 0;
             return Counters.Values.Average(); 
         }
         
