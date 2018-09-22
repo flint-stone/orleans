@@ -1,4 +1,6 @@
-﻿using Orleans.Runtime.Scheduler.SchedulerUtility;
+﻿//#define PQ_DEBUG
+//#define PRIORITY_DEBUG
+using Orleans.Runtime.Scheduler.SchedulerUtility;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -239,9 +241,14 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     timestampsToDeadlines[windowId] = new[] { SchedulerConstants.DEFAULT_PRIORITY, SchedulerConstants.DEFAULT_PRIORITY };
                 }
             }
-//#if PQ_DEBUG
-            _logger.Info($"{workItemGroup} Creating New Timestamp, Task: {task},  Priority: {priority}, WindowID: {windowId}, Window Size: {WindowSize}, SLA: {DataflowSLA} mappedPriority: {timestampsToDeadlines[windowId][0]}, {timestampsToDeadlines[windowId][1]}");
-//#endif
+#if PRIORITY_DEBUG
+            _logger.Info($"{workItemGroup} Creating New Timestamp, Task: {task},  " +
+                         $"Priority: {priority}, " +
+                         $"WindowID: {windowId}, " +
+                         $"Window Size: {WindowSize}, " +
+                         $"SLA: {DataflowSLA} " +
+                         $"mappedPriority: {timestampsToDeadlines[windowId][0]}, {timestampsToDeadlines[windowId][1]}");
+#endif
 
 
 #if EDF_TRACKING

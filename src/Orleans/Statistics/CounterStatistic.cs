@@ -1,3 +1,5 @@
+//#define COUNTER_DEBUG
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -499,10 +501,12 @@ namespace Orleans.Runtime
         public long GetCurrentValue()
         {
             long val = specificStatisticFromAllThreads.Sum(a => Convert.ToInt64(a.Values.Average()));
+#if COUNTER_DEBUG
             foreach (var x in specificStatisticFromAllThreads)
             {
                 Console.WriteLine($"{string.Join(", ", x.Values)}");
             }
+#endif
 
             lock (lockable)
             {

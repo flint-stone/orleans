@@ -53,7 +53,7 @@ namespace Orleans.Runtime
 
         public override string ToString()
         {
-            return String.Format("{0}{1}{2}", Silo, Grain, Activation);
+            return String.Format("{0}{1}{2} {3}", Silo, Grain, Activation, Grain.Key.N1);
         }
 
         public string ToFullString()
