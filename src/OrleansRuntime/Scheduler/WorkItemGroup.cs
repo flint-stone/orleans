@@ -267,6 +267,8 @@ namespace Orleans.Runtime.Scheduler
                 StringBuilder sb = new StringBuilder();
                 masterScheduler.RunQueue.DumpStatus(sb);
                 log.Info("ReAdd: WorkItem Queue Status {0}, RunQueue Contents {1}: {2}", ((BoundaryBasedEDFWorkItemManager)WorkItemManager).GetWorkItemQueueStatus(), this, sb.ToString());
+                //log.Info("ReAdd: WorkItem Queue Length {0}",((PBWorkQueue)masterScheduler.RunQueue).QueueLength);
+
 #endif
             }
         }
@@ -484,7 +486,7 @@ namespace Orleans.Runtime.Scheduler
 #if PQ_DEBUG
                 //log.Info("Dumping Queue Status From Execute {0}", DumpStatus());
                 //log.Info("Dumping Execution time counters From Execute: {0}", string.Join(" | ", execTimeCounters.Select(x => x.Key.Grain==null?x.Key.ToString():x.Key.Grain.Key.N1 + " : " + x.Value.ToString())));
-                log.Info("Dumping Status From Execute after executing {0} tasks {1}:{2} with {3} millis", count, SchedulingContext, PriorityContext, stopwatch.Elapsed);
+                log.Info("Dumping Status From Execute after executing {0} tasks {1}:{2} with {3} millis, {4} queue size {5} ", count, SchedulingContext, PriorityContext, stopwatch.Elapsed, stopwatch.ElapsedTicks, masterScheduler.RunQueue.Length);
 #endif
             }
             catch (Exception ex)
@@ -513,6 +515,7 @@ namespace Orleans.Runtime.Scheduler
                             StringBuilder sb = new StringBuilder();
                             masterScheduler.RunQueue.DumpStatus(sb);
                             log.Info("ReAdd: WorkItem Queue Status {0}, RunQueue Contents {1}: {2}", ((BoundaryBasedEDFWorkItemManager)WorkItemManager).GetWorkItemQueueStatus(), this, sb.ToString());
+                            //log.Info("ReAdd: WorkItem Queue Length {0}", ((PBWorkQueue)masterScheduler.RunQueue).QueueLength);
 #endif
                         }
                         else

@@ -27,22 +27,22 @@ namespace Orleans.Runtime
 
         public void Start()
         {
-            this.Item2.Start();
+            Item2?.Start();
         }
 
         public void Stop()
         {
-            this.Item2.Stop();
+            this.Item2?.Stop();
         }
 
         public void Restart()
         {
-            this.Item2.Start();
+            this.Item2?.Start();
         }
 
         public TimeSpan Elapsed
         {
-            get { return this.Item2.Elapsed; }
+            get { return this.Item2!=null?Item2.Elapsed:new TimeSpan(0); }
         }
     }
 }

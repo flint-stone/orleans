@@ -1,10 +1,12 @@
+//#define EDF_TRACKING_DEBUG
+
+using Orleans.Runtime;
+using Orleans.Runtime.Configuration;
+using Orleans.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
-using Orleans.Runtime;
-using Orleans.Runtime.Configuration;
-using Orleans.Serialization;
 
 
 namespace Orleans.Messaging
@@ -49,10 +51,23 @@ namespace Orleans.Messaging
              */
             if (StatisticsCollector.CollectEDFSchedulerStats)
             {
-                if (msg.Category == Message.Categories.Application)
+                //if (MessagingStatisticsGroup.MessagesSentTotal.GetCurrentValue()%100==0 && (msg.Category == Message.Categories.Application || msg.Category == Message.Categories.Ping))
+                if(!msg.SendingGrain.IsClient && (msg.Category == Message.Categories.Application || msg.Category == Message.Categories.Ping))
                 {
                     if (msg.RequestContextData == null) msg.RequestContextData = new Dictionary<string, object>();
-                    if (!msg.RequestContextData.ContainsKey("DepartingTicks")) msg.RequestContextData.Add("DepartingTicks", DateTime.Now.Ticks);
+                    var currentTicks = DateTime.Now.Ticks;
+#if EDF_TRACKING_DEBUG
+                    Log.Info($"{this} {GetSocketDirection()} {msg} {currentTicks} ");
+                    Console.WriteLine($"{this} {GetSocketDirection()} {msg} {currentTicks} ");
+#endif
+                    if (!msg.RequestContextData.ContainsKey("DepartingTicks"))
+                    {
+                        msg.RequestContextData.Add("DepartingTicks", currentTicks);
+                    }
+                    else
+                    {
+                        msg.RequestContextData["DepartingTicks"] = currentTicks;
+                    }
                 }
             }
             

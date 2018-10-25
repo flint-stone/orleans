@@ -1,3 +1,5 @@
+//#define EDF_TRACKING_DEBUG 
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -515,6 +517,38 @@ namespace Orleans.Runtime.Messaging
                 }
                 else
                 {
+#if EDF_TRACKING
+                    /**
+                     * Record end time in RequestContext
+                     * if contains departing ticks, collect stats
+                     */
+                    if (StatisticsCollector.CollectEDFSchedulerStats)
+                    {
+                        if (msg.RequestContextData != null && msg.RequestContextData.ContainsKey("DepartingTicks"))
+                        {
+                            // Collect this time
+                            var nowTicks = DateTime.Now.Ticks;
+                            var trip = nowTicks - ((long)msg.RequestContextData["DepartingTicks"]);
+                            var source = msg.SendingAddress;
+                            var sourceName = new StatisticName(StatisticNames.MESSAGE_ACCEPTOR_INBOUND_MESSAGE_TRIPTIME_BYSOURCE, source.Silo.ToString());
+                            if (!IncomingMessageTripTimeBySource.ContainsKey(source.Silo.ToString()))
+                            {
+                                // IncomingMessageTripTimeBySource.TryAdd(source.Grain.IdentityString, new SingleThreadedFixedSizedAverageValueStatistic(sourceName));
+                                IncomingMessageTripTimeBySource.TryAdd(source.Silo.ToString(),
+                                    new SingleThreadedFixedSizedAverageValueStatistic(sourceName));
+                            }
+                            //IncomingMessageTripTimeBySource[source.Grain.IdentityString].AddValue(trip);
+#if EDF_TRACKING_DEBUG
+                            Log.Info($"{source} -> {msg.TargetAddress} message: {msg} ticks: {nowTicks} - {((long)msg.RequestContextData["DepartingTicks"])} ={trip} ");
+                            IncomingMessageTripTimeBySource[source.Silo.ToString()].AddValue(trip);
+#endif
+
+                            // Stop propagating
+                            msg.RequestContextData.Remove("DepartingTicks");
+                        }
+                    }
+#endif
+
                     var response = this.MessageFactory.CreateResponseMessage(msg);
                     response.BodyObject = Response.Done;
                     MessageCenter.SendMessage(response);
@@ -558,18 +592,21 @@ namespace Orleans.Runtime.Messaging
                  */
                 if (StatisticsCollector.CollectEDFSchedulerStats)
                 {
-                    if (msg.RequestContextData != null && msg.RequestContextData.ContainsKey("DepartingTicks"))
+                    if (msg.RequestContextData != null  && msg.RequestContextData.ContainsKey("DepartingTicks"))
                     {
                         // Collect this time
-                        var trip = DateTime.Now.Ticks - ((long)msg.RequestContextData["DepartingTicks"]);
+                        var nowTicks = DateTime.Now.Ticks;
+                        var trip = nowTicks - ((long)msg.RequestContextData["DepartingTicks"]);
                         var source = msg.SendingAddress;
                         var sourceName = new StatisticName(StatisticNames.MESSAGE_ACCEPTOR_INBOUND_MESSAGE_TRIPTIME_BYSOURCE, source.Grain.IdentityString);
                         if (!IncomingMessageTripTimeBySource.ContainsKey(source.ToString()))
                         {
                             IncomingMessageTripTimeBySource.TryAdd(source.Grain.IdentityString, new SingleThreadedFixedSizedAverageValueStatistic(sourceName));
                         }
+#if EDF_TRACKING_DEBUG
                         IncomingMessageTripTimeBySource[source.Grain.IdentityString].AddValue(trip);
-
+                        Log.Info($"{source} -> {msg.TargetAddress} message: {msg} ticks: {nowTicks} - {((long)msg.RequestContextData["DepartingTicks"])} ={trip} ");
+#endif
                         // Stop propagating
                         msg.RequestContextData.Remove("DepartingTicks");
                     }

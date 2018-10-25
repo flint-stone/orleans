@@ -241,6 +241,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     timestampsToDeadlines[windowId] = new[] { SchedulerConstants.DEFAULT_PRIORITY, SchedulerConstants.DEFAULT_PRIORITY };
                 }
             }
+
 #if PRIORITY_DEBUG
             _logger.Info($"{workItemGroup} Creating New Timestamp, Task: {task},  " +
                          $"Priority: {priority}, " +
