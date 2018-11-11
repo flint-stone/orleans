@@ -178,7 +178,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public double Average()
         {
             if (!Counters.Any()) return 0;
-            return Counters.Values.Average(); 
+            return Counters.Values.ToArray().Average(); 
         }
         
         public override string ToString()
