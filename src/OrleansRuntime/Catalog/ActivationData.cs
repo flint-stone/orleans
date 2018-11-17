@@ -12,6 +12,7 @@ using Orleans.Core;
 using Orleans.GrainDirectory;
 using Orleans.Runtime.Configuration;
 using Orleans.Runtime.Scheduler;
+using Orleans.Runtime.Scheduler.SchedulerUtility;
 using Orleans.Storage;
 
 namespace Orleans.Runtime
@@ -839,7 +840,7 @@ namespace Orleans.Runtime
                  Grain,
                  ActivationId,
                  GetActivationInfoString(),
-                 Grain.Key.N1,
+                 DataflowNamingHelper.GetReadableGrainKey((long)Grain.Key.N1),
                  State);
 #else
             return String.Format("[Activation: {0}{1}{2}{3} State={4}]",
@@ -880,7 +881,7 @@ namespace Orleans.Runtime
                      Grain,
                      ActivationId,
                      GetActivationInfoString(),
-                     Grain.Key.N1);
+                    DataflowNamingHelper.GetReadableGrainKey((long)Grain.Key.N1));
 #else
                 return String.Format("[Activation: {0}{1}{2}{3}]",
                      Silo,

@@ -1,5 +1,6 @@
 ﻿//#define PQ_DEBUG
 //#define PRIORITY_DEBUG
+//#define DDL_FETCH
 using Orleans.Runtime.Scheduler.SchedulerUtility;
 using System;
 using System.Collections.Concurrent;
@@ -115,17 +116,15 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         }
 
 
-        public long PeekNextDeadline()
+        public IWorkItem PeekNextDeadline()
         {
             var workItem = ((PriorityBasedTaskScheduler)Scheduler).NextInRunQueue();
             if (workItem != null)
             {
-#if PQ_DEBUG
-                _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItem}");
-#endif
-                return workItem.PriorityContext.Priority;
+               return workItem;//.PriorityContext.Priority;
             }
-            return SchedulerConstants.DEFAULT_PRIORITY;
+            //return SchedulerConstants.DEFAULT_PRIORITY;
+            return null;
         }
 
     }
@@ -304,8 +303,18 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #if PQ_DEBUG
             _logger.Info($"Dequeue priority {kv.Key}");
 #endif
-
-            var nextDeadline = strategy.PeekNextDeadline();
+            var nextDeadline = SchedulerConstants.DEFAULT_PRIORITY;
+            var nextItem = strategy.PeekNextDeadline();
+            if (nextItem != null)
+            {
+#if DDL_FETCH
+                _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} " +
+                             $"CurrentRunning: {workItemGroup} " +
+                             $"NextItem: {nextItem} " +
+                             $"Priority: {nextItem.PriorityContext.Priority}");
+#endif
+                nextDeadline = nextItem.PriorityContext.Priority;
+            }
 
             while (workItems.Any() && workItems.First().Value.Count == 0)
             {
@@ -331,9 +340,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 workItems.Remove(workItems.Keys.First());
             }
 
-//            if (WindowedGrain)
-//            {
-                if (workItems.Count > 0 && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || timestampsToDeadlines[workItems.First().Key][1] <= nextDeadline || dequeuedFlag))
+            //            if (WindowedGrain)
+            //            {
+
+            if (workItems.Count > 0 && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || timestampsToDeadlines[workItems.First().Key][1] <= nextDeadline || dequeuedFlag))
                 //if (workItems.Any())
                 {
                     var item = workItems.First().Value.Dequeue();
@@ -350,27 +360,34 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #endif
                     return item;
                 }
-//            }
-//            else
-//            {
-//                if (workItems.Any())
-//                {
-//                    var item = workItems.First().Value.Dequeue();
-//                    dequeuedFlag = false;
-//
-//#if EDF_TRACKING
-//                if (item.Id == currentlyTracking)
-//                {
-//                    var elapsed = stopwatch.Elapsed.Ticks;
-//                    queuingDelays.Enqueue(elapsed);
-//                    currentlyTracking = SchedulerConstants.DEFAULT_TASK_TRACKING_ID;
-//                    stopwatch.Stop();
-//                }              
-//#endif
-//                    return item;
-//                }
-//            }
-            
+            else
+            {
+#if DDL_FETCH
+                if( timestampsToDeadlines[workItems.First().Key][1] > nextDeadline)
+                    _logger.Info($"Giving up CPU from with {workItemGroup} priority {timestampsToDeadlines[workItems.First().Key][1]}  to next ddl {nextDeadline}");
+#endif
+            }
+            //            }
+            //            else
+            //            {
+            //                if (workItems.Any())
+            //                {
+            //                    var item = workItems.First().Value.Dequeue();
+            //                    dequeuedFlag = false;
+            //
+            //#if EDF_TRACKING
+            //                if (item.Id == currentlyTracking)
+            //                {
+            //                    var elapsed = stopwatch.Elapsed.Ticks;
+            //                    queuingDelays.Enqueue(elapsed);
+            //                    currentlyTracking = SchedulerConstants.DEFAULT_TASK_TRACKING_ID;
+            //                    stopwatch.Stop();
+            //                }              
+            //#endif
+            //                    return item;
+            //                }
+            //            }
+
             return null;
         }
 

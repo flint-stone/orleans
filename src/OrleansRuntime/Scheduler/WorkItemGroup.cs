@@ -1,5 +1,7 @@
 //#define RUNQUEUE_DEBUG
 //#define TIMED_EXECUTION
+//#define EXECUTION_TRACE
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -266,9 +268,9 @@ namespace Orleans.Runtime.Scheduler
 #if RUNQUEUE_DEBUG
                 StringBuilder sb = new StringBuilder();
                 masterScheduler.RunQueue.DumpStatus(sb);
-                log.Info("ReAdd: WorkItem Queue Status {0}, RunQueue Contents {1}: {2}", ((BoundaryBasedEDFWorkItemManager)WorkItemManager).GetWorkItemQueueStatus(), this, sb.ToString());
-                //log.Info("ReAdd: WorkItem Queue Length {0}",((PBWorkQueue)masterScheduler.RunQueue).QueueLength);
-
+                log.Info("Add: WorkItem Queue Status {0}, RunQueue Contents {1}: {2}", ((BoundaryBasedEDFWorkItemManager)WorkItemManager).GetWorkItemQueueStatus(), this, sb.ToString());
+                //log.Info("Add: WorkItem Queue Length {0}",((PBWorkQueue)masterScheduler.RunQueue).QueueLength);
+                //log.Info("Add: WorkItem Queue Length {0}", (masterScheduler.RunQueue).Length);
 #endif
             }
         }
@@ -359,7 +361,8 @@ namespace Orleans.Runtime.Scheduler
                 // Process multiple items -- drain the applicationMessageQueue (up to max items) for this physical activation
                 int count = 0;
 #if PQ_DEBUG
-                log.Info("Dumping Status From Execute before polling: {0}:{1}", DumpStatus(), PriorityContext);
+                //log.Info("Dumping Status From Execute before polling: {0}:{1}", DumpStatus(), PriorityContext);
+                log.Info($"Thread {thread.Name} WIG: {this} {PriorityContext}");
 #endif
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
@@ -425,7 +428,7 @@ namespace Orleans.Runtime.Scheduler
 #endif
                     var contextObj = task.AsyncState as PriorityContext;
 #if PQ_DEBUG
-                    var priority = contextObj?.Timestamp ?? 0.0;
+                    var priority = contextObj?.Priority ?? 0.0;
                     log.Info("Dumping Status : About to execute task {0}:{1}:{2} in SchedulingContext={3} with priority of {4}", task, task.Id, contextObj, SchedulingContext.DetailedStatus(), priority);
 
                     if (log.IsVerbose2) log.Verbose2("About to execute task {0} in SchedulingContext={1}", task, SchedulingContext);
@@ -473,6 +476,9 @@ namespace Orleans.Runtime.Scheduler
                             log.Warn(ErrorCode.SchedulerTurnTooLong3, "Task {0} in WorkGroup {1} took elapsed time {2:g} for execution, which is longer than {3}. Running on thread {4}",
                                 OrleansTaskExtentions.ToString(task), SchedulingContext.ToString(), taskLength, masterScheduler.TurnWarningLength, thread.ToString());
                         }
+#if EXECUTION_TRACE
+                        log.Info($"Execution Thread: {thread.Name} ; WIG: {this.Name} ; Execution Time: {taskLength.Ticks}");
+#endif
                         thread.CurrentTask = null;
                     }
                     count++;
@@ -516,6 +522,7 @@ namespace Orleans.Runtime.Scheduler
                             masterScheduler.RunQueue.DumpStatus(sb);
                             log.Info("ReAdd: WorkItem Queue Status {0}, RunQueue Contents {1}: {2}", ((BoundaryBasedEDFWorkItemManager)WorkItemManager).GetWorkItemQueueStatus(), this, sb.ToString());
                             //log.Info("ReAdd: WorkItem Queue Length {0}", ((PBWorkQueue)masterScheduler.RunQueue).QueueLength);
+                            //log.Info("ReAdd: WorkItem Queue Length {0}", ((masterScheduler.RunQueue).Length));
 #endif
                         }
                         else
