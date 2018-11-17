@@ -37,7 +37,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
         public TimeSpan DelayWarningThreshold { get; private set; }
         public TaskScheduler Instance => this;
         TimeSpan IOrleansTaskScheduler.TurnWarningLength => TurnWarningLengthThreshold;
-        public int RunQueueLength => RunQueue.Length;
+        public int RunQueueLength => ((PBWorkQueue)RunQueue).QueueLength;
         public int WorkItemGroupCount => workgroupDirectory.Count;
         public override int MaximumConcurrencyLevel => Pool.MaxActiveThreads;
         public ICorePerformanceMetrics Metrics => metrics;
