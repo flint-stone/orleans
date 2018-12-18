@@ -166,7 +166,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 Counters.Add(requestId, ticks);
                 if (Counters.Count > SchedulerConstants.STATS_COUNTER_QUEUE_SIZE)
                 {
-                    Counters.Remove(Counters.Keys.First());
+                    Counters.Remove(Counters.Keys.ToArray().First());
                 }
             }
             else

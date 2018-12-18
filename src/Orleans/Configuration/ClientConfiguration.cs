@@ -218,7 +218,7 @@ namespace Orleans.Runtime.Configuration
             StatisticsPerfCountersWriteInterval = DEFAULT_STATS_PERF_COUNTERS_WRITE_PERIOD;
             StatisticsLogWriteInterval = DEFAULT_STATS_LOG_WRITE_PERIOD;
             StatisticsWriteLogStatisticsToTable = true;
-            StatisticsCollectionLevel = NodeConfiguration.DEFAULT_STATS_COLLECTION_LEVEL;
+            StatisticsCollectionLevel = StatisticsLevel.Info;//NodeConfiguration.DEFAULT_STATS_COLLECTION_LEVEL;
             LimitManager = new LimitManager();
             ProviderConfigurations = new Dictionary<string, ProviderCategoryConfiguration>();
         }

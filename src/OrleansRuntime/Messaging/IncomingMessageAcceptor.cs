@@ -28,6 +28,7 @@ namespace Orleans.Runtime.Messaging
         private readonly CounterStatistic checkedInSocketEventArgsCounter;
         private readonly SerializationManager serializationManager;
 
+
         internal ConcurrentDictionary<string, AverageValueStatistic> IncomingMessageTripTimeBySource { get; }
 
         public Action<Message> SniffIncomingMessage
@@ -668,6 +669,7 @@ namespace Orleans.Runtime.Messaging
         {
             private readonly MessageFactory messageFactory;
             private readonly IncomingMessageBuffer _buffer;
+            private readonly ConcurrentDictionary<int, ThreadTrackingStatistic> trackers;
             private Socket socket;
 
             public Socket Socket {
@@ -687,6 +689,7 @@ namespace Orleans.Runtime.Messaging
                 this.messageFactory = messageFactory;
                 SaeaPoolWrapper = poolWrapper;
                 _buffer = new IncomingMessageBuffer(LogManager.GetLogger(nameof(IncomingMessageBuffer), LoggerType.Runtime), serializationManager);
+                trackers = new ConcurrentDictionary<int, ThreadTrackingStatistic>();
             }
 
             public void ProcessReceived(SocketAsyncEventArgs e)

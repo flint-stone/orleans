@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Orleans.Runtime.Scheduler.SchedulerUtility
 {
-    public static class DataflowNamingHelper
+    public static class DataflowNamingUtility
     {
         public static long GetStageGrainKey(short dataflowId, short stageIdx, int positionIdx)
         {

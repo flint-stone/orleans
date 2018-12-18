@@ -28,7 +28,7 @@ namespace Orleans.Runtime.Scheduler
         private readonly QueueTrackingStatistic tasksQueueTracking;
         private ConcurrentPriorityWorkQueueAlternative cpq;
 
-        public int Length { get { return mainQueue.Count + systemQueue.Count; } }
+        public int Length { get { return cpq.Count + systemQueue.Count; } }
         public int QueueLength { get { return cpq.Count + systemQueue.Count; } }
 
 

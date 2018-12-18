@@ -30,7 +30,7 @@ namespace Orleans.Runtime.Scheduler
         // For status reporting
         private IWorkItem currentWorkItem;
         private Task currentTask;
-        private DateTime currentWorkItemStarted;
+        internal DateTime currentWorkItemStarted;
         private DateTime currentTaskStarted;
 
         private Stopwatch dequeueStopwatch;
@@ -235,7 +235,7 @@ namespace Orleans.Runtime.Scheduler
                                     if (StatisticsCollector.CollectTurnsStats)
                                     {
                                         //SchedulerStatisticsGroup.OnTurnExecutionEnd(CurrentStateTime.Elapsed);
-                                        SchedulerStatisticsGroup.OnTurnExecutionEnd(Utils.Since(CurrentStateStarted));
+                                        SchedulerStatisticsGroup.OnTurnExecutionEnd(Utils.Since(currentWorkItemStarted));
                                     }
                                     if (StatisticsCollector.CollectThreadTimeTrackingStats)
                                     {

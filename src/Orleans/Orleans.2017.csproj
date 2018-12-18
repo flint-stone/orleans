@@ -70,7 +70,7 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DefineConstants>TRACE;EXCLUDE_ASSEMBLYINFO;EXCLUDEFSHARP;</DefineConstants>
+    <DefineConstants>TRACE;EXCLUDE_ASSEMBLYINFO;EXCLUDEFSHARP</DefineConstants>
   </PropertyGroup>
   <Import Project="$(ProjectDir)..\Orleans.SDK.targets" Condition="'$(Bootstrap)' != 'true'" />
   <!--End Orleans -->

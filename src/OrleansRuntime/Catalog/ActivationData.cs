@@ -840,7 +840,7 @@ namespace Orleans.Runtime
                  Grain,
                  ActivationId,
                  GetActivationInfoString(),
-                 DataflowNamingHelper.GetReadableGrainKey((long)Grain.Key.N1),
+                 DataflowNamingUtility.GetReadableGrainKey((long)Grain.Key.N1),
                  State);
 #else
             return String.Format("[Activation: {0}{1}{2}{3} State={4}]",
@@ -881,7 +881,7 @@ namespace Orleans.Runtime
                      Grain,
                      ActivationId,
                      GetActivationInfoString(),
-                    DataflowNamingHelper.GetReadableGrainKey((long)Grain.Key.N1));
+                    DataflowNamingUtility.GetReadableGrainKey((long)Grain.Key.N1));
 #else
                 return String.Format("[Activation: {0}{1}{2}{3}]",
                      Silo,
