@@ -23,8 +23,9 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
         {
             if (obj == null) return 1;
             var compareTo = (PriorityObject)obj;
-            if (Priority != compareTo.Priority) return Priority.CompareTo(compareTo.Priority);
-            return Ticks.CompareTo(compareTo.Ticks);
+//            if (Priority != compareTo.Priority)
+                return Priority.CompareTo(compareTo.Priority);
+//            return Ticks.CompareTo(compareTo.Ticks);
         }
 
         public override String ToString()

@@ -26,7 +26,7 @@ namespace Orleans.Runtime.Scheduler
         private readonly QueueTrackingStatistic mainQueueTracking;
         private readonly QueueTrackingStatistic systemQueueTracking;
         private readonly QueueTrackingStatistic tasksQueueTracking;
-        private ConcurrentPriorityWorkQueueAlternative cpq;
+        private ConcurrentPriorityWorkQueueTwoLevel cpq;
 
         public int Length { get { return cpq.Count + systemQueue.Count; } }
         public int QueueLength { get { return cpq.Count + systemQueue.Count; } }
@@ -37,7 +37,7 @@ namespace Orleans.Runtime.Scheduler
         {
             //cpq = new ConcurrentPriorityQueue<CPQItem>(15, new WorkItemComparer());
             //cpq = new ConcurrentPriorityWorkQueue(new CPQItemComparer());
-            cpq = new ConcurrentPriorityWorkQueueAlternative();
+            cpq = new ConcurrentPriorityWorkQueueTwoLevel();
             mainQueue = new BlockingCollection<CPQItem>(cpq);
             systemQueue = new BlockingCollection<CPQItem>(new ConcurrentQueue<CPQItem>());
             //systemQueue = new BlockingCollection<IWorkItem>(new ConcurrentPriorityQueue<IWorkItem>(15, new WorkItemComparer()));
