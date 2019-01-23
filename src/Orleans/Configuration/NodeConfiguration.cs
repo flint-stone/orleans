@@ -169,6 +169,10 @@ namespace Orleans.Runtime.Configuration
         public int BulkMessageLimit { get; set; }
 
         /// <summary>
+        /// Speciies granularity of scheduling in terms of ticks
+        /// </summary>
+        public long SchedulingGranularity { get; set; }
+        /// <summary>
         /// Specifies the name of the Startup class in the configuration file.
         /// </summary>
         public string StartupTypeName { get; set; }
@@ -227,7 +231,7 @@ namespace Orleans.Runtime.Configuration
         private static readonly int DEFAULT_MAX_ACTIVE_THREADS = 1;//Math.Max(4, System.Environment.ProcessorCount);
         private const int DEFAULT_MIN_DOT_NET_THREAD_POOL_SIZE = 200;
         private static readonly int DEFAULT_MIN_DOT_NET_CONNECTION_LIMIT = DEFAULT_MIN_DOT_NET_THREAD_POOL_SIZE;
-        private static readonly TimeSpan DEFAULT_ACTIVATION_SCHEDULING_QUANTUM = TimeSpan.FromMilliseconds(100);
+        private static readonly TimeSpan DEFAULT_ACTIVATION_SCHEDULING_QUANTUM = TimeSpan.FromMilliseconds(200);
         internal const bool ENABLE_WORKER_THREAD_INJECTION = false;
 
         public NodeConfiguration()
@@ -308,6 +312,7 @@ namespace Orleans.Runtime.Configuration
             PropagateActivityId = other.PropagateActivityId;
             BulkMessageLimit = other.BulkMessageLimit;
 
+            SchedulingGranularity = other.SchedulingGranularity;
             StatisticsProviderName = other.StatisticsProviderName;
             StatisticsMetricsTableWriteInterval = other.StatisticsMetricsTableWriteInterval;
             StatisticsPerfCountersWriteInterval = other.StatisticsPerfCountersWriteInterval;

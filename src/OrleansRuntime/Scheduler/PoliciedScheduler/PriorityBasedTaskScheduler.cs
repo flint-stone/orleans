@@ -54,19 +54,20 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
                 TimeSpan.FromMilliseconds(100),
                 NodeConfiguration.ENABLE_WORKER_THREAD_INJECTION,
                 LimitManager.GetDefaultLimit(LimitNames.LIMIT_MAX_PENDING_ITEMS),
-                performanceMetrics);
+                performanceMetrics,
+                SchedulerConstants.DEFAULT_PRIORITY_GRANULARITY_TICKS);
         }
 
         public PriorityBasedTaskScheduler(NodeConfiguration config, ICorePerformanceMetrics performanceMetrics)
             : this(config.MaxActiveThreads, config.DelayWarningThreshold, config.ActivationSchedulingQuantum,
                     config.TurnWarningLengthThreshold, config.EnableWorkerThreadInjection, config.LimitManager.GetLimit(LimitNames.LIMIT_MAX_PENDING_ITEMS),
-                    performanceMetrics)
+                    performanceMetrics, config.SchedulingGranularity)
         {
 
         }
 
         private PriorityBasedTaskScheduler(int maxActiveThreads, TimeSpan delayWarningThreshold, TimeSpan activationSchedulingQuantum,
-            TimeSpan turnWarningLengthThreshold, bool injectMoreWorkerThreads, LimitValue maxPendingItemsLimit, ICorePerformanceMetrics performanceMetrics)
+            TimeSpan turnWarningLengthThreshold, bool injectMoreWorkerThreads, LimitValue maxPendingItemsLimit, ICorePerformanceMetrics performanceMetrics, long SchedulingGranularity)
         {
             DelayWarningThreshold = delayWarningThreshold;
             WorkItemGroup.ActivationSchedulingQuantum = activationSchedulingQuantum;
@@ -74,9 +75,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             metrics = performanceMetrics;
             applicationTurnsStopped = false;
             MaxPendingItemsLimit = maxPendingItemsLimit;
+            SchedulerParams.PRIORITY_GRANULARITY_TICKS = SchedulingGranularity;
             workgroupDirectory = new ConcurrentDictionary<ISchedulingContext, WorkItemGroup>();
             RunQueue = new PBWorkQueue();
-            logger.Info("Starting IPriorityBasedTaskScheduler with {0} Max Active application Threads and 1 system thread.", maxActiveThreads);
+            logger.Info("Starting IPriorityBasedTaskScheduler with {0} Max Active application Threads and 1 system thread. Scheduling Granularity {1}", maxActiveThreads, SchedulerParams.PRIORITY_GRANULARITY_TICKS);
             Pool = new WorkerPool(this, performanceMetrics, maxActiveThreads, injectMoreWorkerThreads);
             IntValueStatistic.FindOrCreate(StatisticNames.SCHEDULER_WORKITEMGROUP_COUNT, () => WorkItemGroupCount);
             IntValueStatistic.FindOrCreate(new StatisticName(StatisticNames.QUEUES_QUEUE_SIZE_INSTANTANEOUS_PER_QUEUE, "Scheduler.LevelOne"), () => RunQueueLength);

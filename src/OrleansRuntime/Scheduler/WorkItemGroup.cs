@@ -259,8 +259,8 @@ namespace Orleans.Runtime.Scheduler
 #if RUNQUEUE_DEBUG
                 StringBuilder sb = new StringBuilder();
                 masterScheduler.RunQueue.DumpStatus(sb);
-                log.Info("Add: RunQueue Contents {0}: {1}", this, sb.ToString());
-                //log.Info("Add: WorkItem Queue Status {0}, RunQueue Contents {1}: {2}", ((BoundaryBasedEDFWorkItemManager)WorkItemManager).GetWorkItemQueueStatus(), this, sb.ToString());
+                //log.Info("Add: RunQueue Contents {0}: {1}", this, sb.ToString());
+                log.Info("Add: WorkItem Queue Status {0}, RunQueue Contents {1}: {2}", ((BoundaryBasedEDFWorkItemManager)WorkItemManager).GetWorkItemQueueStatus(), this, sb.ToString());
                 //log.Info("Add: WorkItem Queue Length {0}",((PBWorkQueue)masterScheduler.RunQueue).QueueLength);
                 //log.Info("Add: WorkItem Queue Length {0}", (masterScheduler.RunQueue).Length);
 #endif
@@ -507,8 +507,8 @@ namespace Orleans.Runtime.Scheduler
                             //log.Info("Changing WIG {0} priority to : {1} with context {2}", this, PriorityContext, contextObj);
                             StringBuilder sb = new StringBuilder();
                             masterScheduler.RunQueue.DumpStatus(sb);
-                            log.Info("ReAdd: RunQueue Contents {0}:{1}",  this, sb.ToString());
-                            //log.Info("ReAdd: WorkItem Queue Status {0}, RunQueue Contents {1}: {2}", ((BoundaryBasedEDFWorkItemManager)WorkItemManager).GetWorkItemQueueStatus(), this, sb.ToString());
+                            //log.Info("ReAdd: RunQueue Contents {0}:{1}",  this, sb.ToString());
+                            log.Info("ReAdd: WorkItem Queue Status {0}, RunQueue Contents {1}: {2}", ((BoundaryBasedEDFWorkItemManager)WorkItemManager).GetWorkItemQueueStatus(), this, sb.ToString());
                             //log.Info("ReAdd: WorkItem Queue Length {0}", ((PBWorkQueue)masterScheduler.RunQueue).QueueLength);
                             //log.Info("ReAdd: WorkItem Queue Length {0}", ((masterScheduler.RunQueue).Length));
 #endif
