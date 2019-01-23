@@ -240,11 +240,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             dequeuedFlag = true;
             var priority = PeekNextDeadline();
-            priority = priority / SchedulerConstants.PRIORITY_GRANULARITY_TICKS * SchedulerConstants.PRIORITY_GRANULARITY_TICKS;
+            priority = priority / SchedulerParams.PRIORITY_GRANULARITY_TICKS * SchedulerParams.PRIORITY_GRANULARITY_TICKS;
             var oldPriority = wig.PriorityContext.Priority;
             
 #if PQ_DEBUG
-            _logger.Info($"OnAddWIGToRunQueue: {wig}:{wig.PriorityContext.Priority}:{wig.PriorityContext.Ticks}");
+            _logger.Info($"OnAddWIGToRunQueue: {wig}:{wig.PriorityContext.Priority}:{wig.PriorityContext.Ticks} : {oldPriority} {priority}");
 #endif
             wig.PriorityContext = new PriorityObject(priority, Environment.TickCount);
             if (oldPriority == priority) return false;
@@ -404,7 +404,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void OnReAddWIGToRunQueue(WorkItemGroup wig)
         {
             var priority = PeekNextDeadline();
-            priority = priority / SchedulerConstants.PRIORITY_GRANULARITY_TICKS * SchedulerConstants.PRIORITY_GRANULARITY_TICKS;
+            priority = priority / SchedulerParams.PRIORITY_GRANULARITY_TICKS * SchedulerParams.PRIORITY_GRANULARITY_TICKS;
 
             wig.PriorityContext = new PriorityObject(priority, Environment.TickCount);
 #if PQ_DEBUG
