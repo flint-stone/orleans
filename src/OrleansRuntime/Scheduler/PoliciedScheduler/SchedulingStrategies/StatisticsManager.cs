@@ -16,7 +16,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private int statCollectionCounter;
         private readonly WorkItemGroup workItemGroup;
         private readonly ICorePerformanceMetrics metrics;
-        private ConcurrentDictionary<GrainId, ExecTimeCounter> _execTimeCounters;
+        private ConcurrentDictionary<ActivationAddress, ExecTimeCounter> _execTimeCounters;
         private ConcurrentDictionary<GrainId, Tuple<double, long>> StatsUpdatesCollection { get; set; }
 
         internal ConcurrentBag<GrainId> UpstreamOpSet { get; set; } // upstream Ops, populated during initialization
@@ -35,7 +35,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
             UpstreamOpSet = new ConcurrentBag<GrainId>();
             DownstreamOpToCost = new ConcurrentDictionary<GrainId, long>();
-            _execTimeCounters = new ConcurrentDictionary<GrainId, ExecTimeCounter>();
+            _execTimeCounters = new ConcurrentDictionary<ActivationAddress, ExecTimeCounter>();
             ExecTimeSummaries = new ConcurrentDictionary<GrainId, double>();
         }
         public void GetDownstreamContext(ActivationAddress downstreamActivation, DownstreamContext downstreamContext)
@@ -91,7 +91,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #if PQ_DEBUG_DETAILED
                     _logger.Info($"{workItemGroup} : {_execTimeCounters[address].ToLongString()}");
 #endif
-                    ExecTimeSummaries.AddOrUpdate(address, statsUpdate, (k, v) => statsUpdate);
+                    ExecTimeSummaries.AddOrUpdate(address.Grain, statsUpdate, (k, v) => statsUpdate);
                     var downstreamCost = DownstreamOpToCost.Values.Any()
                         ? DownstreamOpToCost.Values.Max()
                         : SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
@@ -100,7 +100,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup.Name} -> {address} local cost from target address: {statsUpdate} down stream: {downstreamCost}");
 #endif
                     var tup = new Tuple<double, long>(statsUpdate, downstreamCost);
-                    StatsUpdatesCollection.AddOrUpdate(address, tup, (k, v) => tup);
+                    StatsUpdatesCollection.AddOrUpdate(address.Grain, tup, (k, v) => tup);
                 }
 #if PQ_DEBUG
                 _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} StatsUpdate collection {string.Join(",", StatsUpdatesCollection.Select(kv => kv.Key + "-><" + kv.Value.Item1 + "," + kv.Value.Item2 + '>'))}");
@@ -111,11 +111,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void Add(PriorityContext context, TimeSpan span)
         {
-            if (!_execTimeCounters.ContainsKey(context.SourceActivation.Grain))
+            if (!_execTimeCounters.ContainsKey(context.SourceActivation))
             {
-                _execTimeCounters.TryAdd(context.SourceActivation.Grain, new ExecTimeCounter(context.SourceActivation.Grain));
+                _execTimeCounters.TryAdd(context.SourceActivation, new ExecTimeCounter(context.SourceActivation.Grain));
             }
-            _execTimeCounters[context.SourceActivation.Grain].Increment(context.WindowID, context.RequestId, span.Ticks);
+            _execTimeCounters[context.SourceActivation].Increment(context.WindowID, context.RequestId, span.Ticks);
         }
 
         public void ReportStats()
