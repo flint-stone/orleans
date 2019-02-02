@@ -5,7 +5,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
@@ -13,24 +12,26 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
     {
 
         private LoggerImpl _logger;
-        private int statCollectionCounter;
-        private readonly WorkItemGroup workItemGroup;
-        private readonly ICorePerformanceMetrics metrics;
-        private ConcurrentDictionary<ActivationAddress, ExecTimeCounter> _execTimeCounters;
+        private int _statCollectionCounter;
+        private readonly WorkItemGroup _workItemGroup;
+        private readonly ICorePerformanceMetrics _metrics;
+        private readonly ConcurrentDictionary<ActivationAddress, ExecTimeCounter> _execTimeCounters;
+
         private ConcurrentDictionary<GrainId, Tuple<double, long>> StatsUpdatesCollection { get; set; }
 
-        internal ConcurrentBag<GrainId> UpstreamOpSet { get; set; } // upstream Ops, populated during initialization
-        internal ConcurrentDictionary<GrainId, long> DownstreamOpToCost { get; set; } // downstream Ops, populated while downstream message flows back
+        internal ConcurrentBag<GrainId> UpstreamOpSet { get; }
+
+        internal ConcurrentDictionary<GrainId, long> DownstreamOpToCost { get; }
 
         // Cached results
-        internal ConcurrentDictionary<GrainId, double> ExecTimeSummaries { get; set; }
+        internal ConcurrentDictionary<GrainId, double> ExecTimeSummaries { get; }
 
         public StatisticsManager(WorkItemGroup wig, ICorePerformanceMetrics perfMetrics)
         {           
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
-            statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
-            workItemGroup = wig;
-            metrics = perfMetrics;
+            _statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
+            _workItemGroup = wig;
+            _metrics = perfMetrics;
             StatsUpdatesCollection = new ConcurrentDictionary<GrainId, Tuple<double, long>>();
 
             UpstreamOpSet = new ConcurrentBag<GrainId>();
@@ -40,7 +41,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         }
         public void GetDownstreamContext(ActivationAddress downstreamActivation, DownstreamContext downstreamContext)
         {
-            // TODO: FIX LATER
 #if PQ_DEBUG
                     _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} <- {downstreamActivation} {downstreamContext}");
 #endif
@@ -54,7 +54,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             Tuple<double, long> tuple;
 #if PQ_DEBUG
-            //ReportDetailedStats();
             _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} Upstream: {upstream} " +
                          $"StatsUpdate collection: {string.Join(",", StatsUpdatesCollection.Select(kv => kv.Key + "-><" + kv.Value.Item1 + "," + kv.Value.Item2 + '>'))}");
 #endif
@@ -66,9 +65,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     tuple.Item2,
                     (long) tuple.Item1,
                     SchedulerConstants.DEFAULT_WIG_EXECUTION_COST,
-                    Convert.ToInt64(metrics.InboundAverageWaitingTime),
-                    metrics.InboundAverageTripTimeBySource.ContainsKey(upstream.IdentityString)
-                        ? Convert.ToInt64(metrics.InboundAverageTripTimeBySource[upstream.IdentityString])
+                    Convert.ToInt64(_metrics.InboundAverageWaitingTime),
+                    _metrics.InboundAverageTripTimeBySource.ContainsKey(upstream.IdentityString)
+                        ? Convert.ToInt64(_metrics.InboundAverageTripTimeBySource[upstream.IdentityString])
                         : SchedulerConstants.DEFAULT_WIG_EXECUTION_COST);
             }
 
@@ -79,11 +78,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void UpdateWIGStatistics()
         {
             // Only update statistics here
-            if (--statCollectionCounter <= 0)
+            if (--_statCollectionCounter <= 0)
             {
-                statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
-                // workItemGroup.CollectStats();
-                // var statsToReport = workItemGroup.WorkItemGroupStats;
+                _statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
                 foreach (var address in _execTimeCounters.Keys)
                 {
                     // TODO: update max per message cost - per upstream
@@ -122,19 +119,19 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             _logger.Info($"Average ticks per msg: {ExecTimeSummaries.Values.Average()}" +
                          $"Downstream exec cost average: {DownstreamOpToCost.Values.Average()}" +
-                         $"Inbound average: {metrics.InboundAverageWaitingTime}"+
-                         $"Remote delivery: {metrics.InboundAverageTripTimeBySource.Values.Average()}" +
-                         $"Outbound average: {metrics.OutboundAverageWaitingTime}");
+                         $"Inbound average: {_metrics.InboundAverageWaitingTime}"+
+                         $"Remote delivery: {_metrics.InboundAverageTripTimeBySource.Values.Average()}" +
+                         $"Outbound average: {_metrics.OutboundAverageWaitingTime}");
         }
 
         public void ReportDetailedStats()
         {
-             _logger.Info($"============================{workItemGroup}================================== \n" +
+             _logger.Info($"============================{_workItemGroup}================================== \n" +
                           $"Average ticks per msg: {string.Join(";", ExecTimeSummaries.Select(kv => kv.Key + "->" + kv.Value).ToArray())} \n" +
                          $"Downstream exec cost average: {string.Join(";", DownstreamOpToCost.Select(kv => kv.Key + "->" + kv.Value).ToArray())} \n" +
-                         $"Inbound average: {metrics.InboundAverageWaitingTime} \n"+
-                         $"Remote delivery: {string.Join(";", metrics.InboundAverageTripTimeBySource.Select(kv => kv.Key + "->" + kv.Value))}" +
-                         $"Outbound average: {metrics.OutboundAverageWaitingTime} \n" +
+                         $"Inbound average: {_metrics.InboundAverageWaitingTime} \n"+
+                         $"Remote delivery: {string.Join(";", _metrics.InboundAverageTripTimeBySource.Select(kv => kv.Key + "->" + kv.Value))}" +
+                         $"Outbound average: {_metrics.OutboundAverageWaitingTime} \n" +
                           $"============================================================== \n");
         }
 
@@ -142,43 +139,36 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
     internal class ExecTimeCounter
     {
-        private long _currentId;
-        //private HashSet<long> _currentRequestsSeen;
-        
-        private long _currentTicksSum;
-        //internal Queue<double> Counters;
-        internal SortedDictionary<long, double> Counters;
-        //private ActivationAddress _source;
-        private GrainId _source;
+        private readonly SortedDictionary<long, double> _counters;
+        private readonly GrainId _source;
         
         public ExecTimeCounter(GrainId source)
         {
             _source = source;
-            Counters = new SortedDictionary<long, double>();
-            _currentId = Int64.MinValue;
+            _counters = new SortedDictionary<long, double>();
         }
         
         public void Increment(long id, long requestId, long ticks)
         {
             if (requestId == SchedulerConstants.DEFAULT_REQUEST_ID) return;
-            if (!Counters.ContainsKey(requestId))
+            if (!_counters.ContainsKey(requestId))
             {
-                Counters.Add(requestId, ticks);
-                if (Counters.Count > SchedulerConstants.STATS_COUNTER_QUEUE_SIZE)
+                _counters.Add(requestId, ticks);
+                if (_counters.Count > SchedulerConstants.STATS_COUNTER_QUEUE_SIZE)
                 {
-                    Counters.Remove(Counters.Keys.ToArray().First());
+                    _counters.Remove(_counters.Keys.ToArray().First());
                 }
             }
             else
             {
-                Counters[requestId] += ticks;
+                _counters[requestId] += ticks;
             }
         }
         
         public double Average()
         {
-            if (!Counters.Any()) return 0;
-            return Counters.Values.ToArray().Average(); 
+            if (!_counters.Any()) return 0;
+            return _counters.Values.ToArray().Average(); 
         }
         
         public override string ToString()
@@ -188,61 +178,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         
         public string ToLongString()
         {
-            //            return $"Execution counter source {_source}:{_source.Grain.Key.N1}; " +
-            //                   $"Counters: {string.Join(",", Counters.Select(kv => kv.Key + "->" + kv.Value))}; ";
             return $"Execution counter source {_source}:{_source.Key.N1}; " +
-                   $"Counters: {string.Join(",", Counters.Select(kv => kv.Key + "->" + kv.Value))}; ";
+                   $"Counters: {string.Join(",", _counters.Select(kv => kv.Key + "->" + kv.Value))}; ";
         }
-
-        //        private long _currentId;
-        //        private HashSet<long> _currentRequestsSeen;
-        //
-        //        private long _currentTicksSum;
-        //        internal Queue<double> Counters;
-        //
-        //        private ActivationAddress _source;
-        //
-        //        public ExecTimeCounter(ActivationAddress source)
-        //        {
-        //            _source = source;
-        //            Counters = new Queue<double>(SchedulerConstants.STATS_COUNTER_QUEUE_SIZE);
-        //            _currentRequestsSeen = new HashSet<long>();
-        //            _currentId = Int64.MinValue;
-        //        }
-        //
-        //        public void Increment(long id, long requestId, long ticks)
-        //        {
-        //            if (id > _currentId)
-        //            {
-        //                Counters.Enqueue(_currentRequestsSeen.Any()?_currentTicksSum/ _currentRequestsSeen.Count:0);
-        //                _currentId = id;
-        //                _currentRequestsSeen.Clear();
-        //                _currentRequestsSeen.Add(requestId);
-        //                _currentTicksSum = ticks;
-        //                return;
-        //            }
-        //
-        //            if (requestId > 0) _currentRequestsSeen.Add(requestId);
-        //            _currentTicksSum += ticks;
-        //        }
-        //
-        //        public double Average()
-        //        {
-        //            return Counters.Average();
-        //        }
-        //
-        //        public override string ToString()
-        //        {
-        //            return $"{Average()}";
-        //        }
-        //
-        //        public string ToLongString()
-        //        {
-        //            return $"Execution counter source {_source}:{_source.Grain.Key.N1}; " +
-        //                   $"Counters: {string.Join(",", Counters)}; " +
-        //                   $"Tick Sum: {_currentTicksSum}; " +
-        //                   $"Requests Seen: <{string.Join(",",_currentRequestsSeen)}>; " +
-        //                   $"Window Id: {_currentId}";
-        //        }
     }
 }

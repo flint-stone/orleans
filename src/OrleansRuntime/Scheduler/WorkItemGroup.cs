@@ -39,9 +39,6 @@ namespace Orleans.Runtime.Scheduler
         private TimeSpan totalQueuingDelay;
         private readonly long quantumExpirations;
         private readonly int workItemGroupStatisticsNumber;
-        // private Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>> execTimeCounters;
-
-        // ITimeInterval
         private readonly Stopwatch stopwatch;
 
 
@@ -49,8 +46,6 @@ namespace Orleans.Runtime.Scheduler
         
         internal ActivationTaskScheduler TaskRunner { get; private set; }
 
-        // internal Dictionary<ActivationAddress, Dictionary<string, long>> WorkItemGroupStats { get; set; }
-        
         public DateTime TimeQueued { get; set; }
 
         public override TimeSpan TimeSinceQueued
@@ -162,8 +157,6 @@ namespace Orleans.Runtime.Scheduler
             totalQueuingDelay = TimeSpan.Zero;
             quantumExpirations = 0;
             TaskRunner = new ActivationTaskScheduler(this);
-            // WorkItemGroupStats = new Dictionary<ActivationAddress, Dictionary<string, long>>();
-            // execTimeCounters = new Dictionary<ActivationAddress, Dictionary<string, FixedSizedQueue<long>>>();
             log = IsSystemPriority ? LogManager.GetLogger("Scheduler." + Name + ".WorkItemGroup", LoggerType.Runtime) : appLogger;
 
             if (StatisticsCollector.CollectShedulerQueuesStats)
@@ -241,7 +234,6 @@ namespace Orleans.Runtime.Scheduler
                 var changedPriority = WorkItemManager.OnAddWIGToRunQueue(task, this);
 
                 if (state!= WorkGroupStatus.Waiting &&  !(state==WorkGroupStatus.Runnable  && changedPriority)) return;
-                //if (state != WorkGroupStatus.Waiting) return;
                 
                 state = WorkGroupStatus.Runnable;
                 TimeQueued = DateTime.UtcNow;
@@ -276,20 +268,14 @@ namespace Orleans.Runtime.Scheduler
             }
         }
 
-        public void Start()
-        {
-            throw new NotImplementedException();
-        }
+        public void Start() { }
 
         void ITimeInterval.Stop()
         {
             Stop();
         }
 
-        public void Restart()
-        {
-            throw new NotImplementedException();
-        }
+        public void Restart() { }
 
         public TimeSpan Elapsed { get; }
 
@@ -598,31 +584,6 @@ namespace Orleans.Runtime.Scheduler
             var msg = string.Format("{0} {1}", what, DumpStatus());
             log.Warn(errorCode, msg);
         }
-
-//        public void CollectStats()
-//        {
-//            //return execTimeCounters.Select(x => x.Value.Any()?x.Value.Average():0).Any()? execTimeCounters.Select(x => x.Value.Any() ? x.Value.Average() : 0).Average():0;
-//            //return execTimeCounters.ToDictionary(kv => kv.Key, kv => 10000.0);
-//            // TODO: HACKING AROUND
-//            /*
-//            if (((SchedulingContext)SchedulingContext).Activation != null)
-//            {
-//                var keyLong = (long)(((SchedulingContext)SchedulingContext).Activation.Grain.Key.N1);
-//                if (GetStageId(keyLong) == 9)
-//                {
-//                    return execTimeCounters.ToDictionary(kv => kv.Key, kv => 15000.0);
-//                }
-//                if (GetStageId(keyLong) == 10)
-//                {
-//                    return execTimeCounters.ToDictionary(kv => kv.Key, kv => 80000.0);
-//                }
-//            }
-//            */
-//            WorkItemGroupStats = execTimeCounters.ToDictionary(kv => kv.Key, kv => kv.Value.ToDictionary(tq => tq.Key, tq=>Convert.ToInt64(tq.Value.Average())));
-//#if PQ_DEBUG
-//            LogExecTimeCounters();
-//#endif
-//        }
 
         public static short GetStageId(long grainKey)
         {

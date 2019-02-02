@@ -5,7 +5,6 @@ using Orleans.Runtime.Scheduler.SchedulerUtility;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -121,9 +120,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             var workItem = ((PriorityBasedTaskScheduler)Scheduler).NextInRunQueue();
             if (workItem != null)
             {
-               return workItem;//.PriorityContext.Priority;
+               return workItem;
             }
-            //return SchedulerConstants.DEFAULT_PRIORITY;
             return null;
         }
 
@@ -141,11 +139,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private long wid;
         private long pace = Int64.MinValue;
 
-#if EDF_TRACKING
-        private int currentlyTracking;
-        private readonly FixedSizedQueue<long> queuingDelays;
-        private readonly Stopwatch stopwatch;
-#endif
         internal long DataflowSLA { get; set; }
         public StatisticsManager StatManager { get; set; }
         public bool WindowedGrain { get; set; }
@@ -161,11 +154,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             dequeuedFlag = false;
             wid = 0L;
 
-#if EDF_TRACKING
-            currentlyTracking = SchedulerConstants.DEFAULT_TASK_TRACKING_ID;
-            queuingDelays = new FixedSizedQueue<long>(SchedulerConstants.STATS_COUNTER_QUEUE_SIZE);
-            stopwatch = new Stopwatch();
-#endif
+
             DataflowSLA = SchedulerConstants.DEFAULT_DATAFLOW_SLA;
             StatManager = new StatisticsManager(wig, ((PriorityBasedTaskScheduler)this.strategy.Scheduler).Metrics);
         }
@@ -193,30 +182,20 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 workItems.Add(windowId, new Queue<Task>());
             }
 #if PQ_DEBUG
-            // _logger.Info($"{workItemGroup} Adding task {task} with timestamp {originalTS}");
+            _logger.Info($"{workItemGroup} Adding task {task} with timestamp {priority}");
 #endif
-            
+
             workItems[windowId].Enqueue(task);
 
             // Add timestamp mapping to map
             var maximumDownStreamPathCost = SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
             if (windowId != SchedulerConstants.DEFAULT_WINDOW_ID)
             {
-                /*
-                if (StatManager.DownstreamOpToCost.Any()) maximumDownStreamPathCost = StatManager.DownstreamOpToCost.Values.Max();
-
-                var execTimeSummaries = StatManager.ExecTimeSummaries;
-                if (contextObj?.SourceActivation != null && execTimeSummaries.ContainsKey(contextObj.SourceActivation))
-                {
-//                    maximumDownStreamPathCost +=
-//                        Convert.ToInt64(execTimeSummaries[contextObj.SourceActivation])* RequestIdSeen.Count(id => id< requestId);
-                    maximumDownStreamPathCost += Convert.ToInt64(execTimeSummaries[contextObj.SourceActivation]);
-                }*/
 
                 // ***
                 // Setting priority of the task
                 // ***
-                var deadline = priority; // + DataflowSLA; // - maximumDownStreamPathCost;
+                var deadline = priority;
 
                 if (!timestampsToDeadlines.ContainsKey(windowId))
                 {
@@ -226,8 +205,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 {
                     timestampsToDeadlines[windowId] = new[] { priority, deadline };
                 }
-                // If timestamp is not default and earlier than the earliest non-zero deadline, update deadline accordingly
-                // if (timestamp != SchedulerConstants.DEFAULT_PRIORITY && workItems.Count > 1 && timestamp < workItems.Keys.ElementAt(1)) wig.PriorityContext.Deadline = deadline;
             }
             else
             {
@@ -250,15 +227,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                          $"mappedPriority: {timestampsToDeadlines[windowId][0]}, {timestampsToDeadlines[windowId][1]}");
 #endif
 
-
-#if EDF_TRACKING
-            if (currentlyTracking == SchedulerConstants.DEFAULT_TASK_TRACKING_ID)
-            {
-                currentlyTracking = task.Id;
-                stopwatch.Start();
-            }
-            // _logger.Info($"{string.Join(",", queuingDelays)}");
-#endif
 #if PQ_DEBUG
             _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup}"+ 
                 Environment.NewLine+
@@ -340,24 +308,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 workItems.Remove(workItems.Keys.First());
             }
 
-            //            if (WindowedGrain)
-            //            {
 
             if (workItems.Count > 0 && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || timestampsToDeadlines[workItems.First().Key][1] <= nextDeadline || dequeuedFlag))
                 //if (workItems.Any())
                 {
                     var item = workItems.First().Value.Dequeue();
                     dequeuedFlag = false;
-
-#if EDF_TRACKING
-                if (item.Id == currentlyTracking)
-                {
-                    var elapsed = stopwatch.Elapsed.Ticks;
-                    queuingDelays.Enqueue(elapsed);
-                    currentlyTracking = SchedulerConstants.DEFAULT_TASK_TRACKING_ID;
-                    stopwatch.Stop();
-                }              
-#endif
                     return item;
                 }
             else
@@ -367,26 +323,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     _logger.Info($"Giving up CPU from with {workItemGroup} priority {timestampsToDeadlines[workItems.First().Key][1]}  to next ddl {nextDeadline}");
 #endif
             }
-            //            }
-            //            else
-            //            {
-            //                if (workItems.Any())
-            //                {
-            //                    var item = workItems.First().Value.Dequeue();
-            //                    dequeuedFlag = false;
-            //
-            //#if EDF_TRACKING
-            //                if (item.Id == currentlyTracking)
-            //                {
-            //                    var elapsed = stopwatch.Elapsed.Ticks;
-            //                    queuingDelays.Enqueue(elapsed);
-            //                    currentlyTracking = SchedulerConstants.DEFAULT_TASK_TRACKING_ID;
-            //                    stopwatch.Stop();
-            //                }              
-            //#endif
-            //                    return item;
-            //                }
-            //            }
 
             return null;
         }
