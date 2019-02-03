@@ -268,21 +268,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public Task GetNextTaskForExecution()
         {
+            var elapsed = workItemGroup.QuantumElapsed;
 #if PQ_DEBUG
             _logger.Info($"Dequeue priority {kv.Key}");
 #endif
             var nextDeadline = SchedulerConstants.DEFAULT_PRIORITY;
-            var nextItem = strategy.PeekNextDeadline();
-            if (nextItem != null)
-            {
-#if DDL_FETCH
-                _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} " +
-                             $"CurrentRunning: {workItemGroup} " +
-                             $"NextItem: {nextItem} " +
-                             $"Priority: {nextItem.PriorityContext.Priority}");
-#endif
-                nextDeadline = nextItem.PriorityContext.Priority;
-            }
+            
 
             while (workItems.Any() && workItems.First().Value.Count == 0)
             {
@@ -306,6 +297,17 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     }
                 }
                 workItems.Remove(workItems.Keys.First());
+                var nextItem = strategy.PeekNextDeadline();
+                if (nextItem != null)
+                {
+#if DDL_FETCH
+                _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} " +
+                             $"CurrentRunning: {workItemGroup} " +
+                             $"NextItem: {nextItem} " +
+                             $"Priority: {nextItem.PriorityContext.Priority}");
+#endif
+                    nextDeadline = nextItem.PriorityContext.Priority;
+                }
             }
 
 

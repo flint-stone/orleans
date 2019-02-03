@@ -53,6 +53,8 @@ namespace Orleans.Runtime.Scheduler
             get { return Utils.Since(TimeQueued); } 
         }
 
+        public long QuantumElapsed => stopwatch.ElapsedMilliseconds;
+
         public ISchedulingContext SchedulingContext { get; set; }
 
         public bool IsSystemPriority
@@ -142,10 +144,6 @@ namespace Orleans.Runtime.Scheduler
         // will result in a TooManyWaitersException being thrown.
         //private static readonly int MaxWaitingThreads = 500;
 
-
-        private long lastRecord;
-        private Stopwatch enqueueStopwatch;
-
         internal WorkItemGroup(IOrleansTaskScheduler sched, ISchedulingContext schedulingContext)
         {
             masterScheduler = sched;
@@ -158,6 +156,7 @@ namespace Orleans.Runtime.Scheduler
             quantumExpirations = 0;
             TaskRunner = new ActivationTaskScheduler(this);
             log = IsSystemPriority ? LogManager.GetLogger("Scheduler." + Name + ".WorkItemGroup", LoggerType.Runtime) : appLogger;
+            stopwatch = new Stopwatch();
 
             if (StatisticsCollector.CollectShedulerQueuesStats)
             {
@@ -351,7 +350,8 @@ namespace Orleans.Runtime.Scheduler
                 //log.Info("Dumping Status From Execute before polling: {0}:{1}", DumpStatus(), PriorityContext);
                 log.Info($"Thread {thread.Name} WIG: {this} {PriorityContext}");
 #endif
-                var stopwatch = new Stopwatch();
+                //var stopwatch = new Stopwatch();
+                //stopwatch.Start();
                 stopwatch.Start();
                 do 
                 {
