@@ -268,7 +268,6 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public Task GetNextTaskForExecution()
         {
-            var elapsed = workItemGroup.QuantumElapsed;
 #if PQ_DEBUG
             _logger.Info($"Dequeue priority {kv.Key}");
 #endif
@@ -296,22 +295,29 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                         }
                     }
                 }
+               
                 workItems.Remove(workItems.Keys.First());
-                var nextItem = strategy.PeekNextDeadline();
-                if (nextItem != null)
-                {
-#if DDL_FETCH
-                _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} " +
-                             $"CurrentRunning: {workItemGroup} " +
-                             $"NextItem: {nextItem} " +
-                             $"Priority: {nextItem.PriorityContext.Priority}");
-#endif
-                    nextDeadline = nextItem.PriorityContext.Priority;
-                }
+//                var elapsed = workItemGroup.QuantumElapsed;
+//                if (elapsed > SchedulerConstants.SCHEDULING_QUANTUM_MINIMUM_MILLIS)
+//                {
+//                    var nextItem = strategy.PeekNextDeadline();
+//                    if (nextItem != null)
+//                    {
+//#if DDL_FETCH
+//                _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} " +
+//                             $"CurrentRunning: {workItemGroup} " +
+//                             $"NextItem: {nextItem} " +
+//                             $"Priority: {nextItem.PriorityContext.Priority}");
+//#endif
+//                        nextDeadline = nextItem.PriorityContext.Priority;
+//                    }
+//                }              
             }
 
 
-            if (workItems.Count > 0 && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || timestampsToDeadlines[workItems.First().Key][1] <= nextDeadline || dequeuedFlag))
+            if (workItems.Count > 0 && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY 
+                                        || timestampsToDeadlines[workItems.First().Key][1] <= nextDeadline 
+                                        || dequeuedFlag))
                 //if (workItems.Any())
                 {
                     var item = workItems.First().Value.Dequeue();

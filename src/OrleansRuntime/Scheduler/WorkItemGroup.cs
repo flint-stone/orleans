@@ -352,7 +352,7 @@ namespace Orleans.Runtime.Scheduler
 #endif
                 //var stopwatch = new Stopwatch();
                 //stopwatch.Start();
-                stopwatch.Start();
+                stopwatch.Restart();
                 do 
                 {
                     lock (lockable)
