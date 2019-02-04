@@ -272,7 +272,25 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             _logger.Info($"Dequeue priority {kv.Key}");
 #endif
             var nextDeadline = SchedulerConstants.DEFAULT_PRIORITY;
-            
+
+            var elapsed = workItemGroup.QuantumElapsed;
+            if (elapsed > SchedulerConstants.SCHEDULING_QUANTUM_MINIMUM_MILLIS)
+            {
+                var nextItem = strategy.PeekNextDeadline();
+                if (nextItem != null)
+                {
+#if DDL_FETCH
+                _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} " +
+                             $"CurrentRunning: {workItemGroup} " +
+                             $"NextItem: {nextItem} " +
+                             $"Priority: {nextItem.PriorityContext.Priority}" +
+                             $"Remove Priority {first}" +
+                             $"Current Queue {GetWorkItemQueueStatus()}" +
+                             $"elapsed {elapsed}");
+#endif
+                    nextDeadline = nextItem.PriorityContext.Priority;
+                }
+            }
 
             while (workItems.Any() && workItems.First().Value.Count == 0)
             {
@@ -295,8 +313,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                         }
                     }
                 }
-               
-                workItems.Remove(workItems.Keys.First());
+                var first = workItems.Keys.First();
+                workItems.Remove(first);
 //                var elapsed = workItemGroup.QuantumElapsed;
 //                if (elapsed > SchedulerConstants.SCHEDULING_QUANTUM_MINIMUM_MILLIS)
 //                {
@@ -307,7 +325,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 //                _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} " +
 //                             $"CurrentRunning: {workItemGroup} " +
 //                             $"NextItem: {nextItem} " +
-//                             $"Priority: {nextItem.PriorityContext.Priority}");
+//                             $"Priority: {nextItem.PriorityContext.Priority}" +
+//                             $"Remove Priority {first}" +
+//                             $"Current Queue {GetWorkItemQueueStatus()}" +
+//                             $"elapsed {elapsed}");
 //#endif
 //                        nextDeadline = nextItem.PriorityContext.Priority;
 //                    }
@@ -327,8 +348,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             else
             {
 #if DDL_FETCH
-                if( timestampsToDeadlines[workItems.First().Key][1] > nextDeadline)
-                    _logger.Info($"Giving up CPU from with {workItemGroup} priority {timestampsToDeadlines[workItems.First().Key][1]}  to next ddl {nextDeadline}");
+                if( workItems.Count > 0 && timestampsToDeadlines[workItems.First().Key][1] > nextDeadline)
+                    _logger.Info($"Giving up CPU from {workItemGroup} " +
+                                 $"priority {timestampsToDeadlines[workItems.First().Key][1]}  " +
+                                 $"to next ddl {nextDeadline}");
 #endif
             }
 
