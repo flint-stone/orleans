@@ -16,7 +16,7 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
         internal const int STATS_COUNTER_QUEUE_SIZE = 100;
         internal const int DEFAULT_TASK_TRACKING_ID = -1;
         internal const int PRIORITY_GRANULARITY_TICKS = 10;
-        internal const int SCHEDULING_QUANTUM_MINIMUM_MILLIS = 50;
+        internal const int SCHEDULING_QUANTUM_MINIMUM_MILLIS = 200;
         internal const long DEFAULT_PRIORITY_GRANULARITY_TICKS = 10;
 
         // internal const long TASK_LENGTH_SAMPLING_INTERVAL
