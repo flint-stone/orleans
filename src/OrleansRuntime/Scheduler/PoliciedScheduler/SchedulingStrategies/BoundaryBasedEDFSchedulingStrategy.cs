@@ -136,11 +136,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private readonly LoggerImpl _logger;
         private readonly WorkItemGroup workItemGroup;
         private bool dequeuedFlag;
-        private long wid;
-        private long pace = Int64.MinValue;
+        private long lastSearch;
 
         internal long DataflowSLA { get; set; }
-        public StatisticsManager StatManager { get; set; }
+        public StatisticsManager StatManager { get; }
         public bool WindowedGrain { get; set; }
         public long WindowSize { get; set; }
 
@@ -152,7 +151,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             _logger = LogManager.GetLogger(this.GetType().FullName, LoggerType.Runtime);
             workItemGroup = wig;
             dequeuedFlag = false;
-            wid = 0L;
+            lastSearch = Int64.MinValue;
 
 
             DataflowSLA = SchedulerConstants.DEFAULT_DATAFLOW_SLA;
@@ -217,6 +216,10 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     timestampsToDeadlines[windowId] = new[] { SchedulerConstants.DEFAULT_PRIORITY, SchedulerConstants.DEFAULT_PRIORITY };
                 }
             }
+#if PQ_DEBUG
+            _logger.Info($"{workItemGroup} Creating New Timestamp, Task: {task},  Priority: {priority}, WindowID: {windowId}, Window Size: {WindowSize}, SLA: {DataflowSLA} mappedPriority: {timestampsToDeadlines[windowId][0]}, {timestampsToDeadlines[windowId][1]}");
+#endif
+
 
 #if PRIORITY_DEBUG
             _logger.Info($"{workItemGroup} Creating New Timestamp, Task: {task},  " +
@@ -274,8 +277,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             var nextDeadline = SchedulerConstants.DEFAULT_PRIORITY;
 
             var elapsed = workItemGroup.QuantumElapsed;
-            if (elapsed > SchedulerConstants.SCHEDULING_QUANTUM_MINIMUM_MILLIS)
+            if (elapsed - lastSearch > SchedulerConstants.SCHEDULING_QUANTUM_MINIMUM_MILLIS)
             {
+                lastSearch = elapsed;
                 var nextItem = strategy.PeekNextDeadline();
                 if (nextItem != null)
                 {
@@ -337,8 +341,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
 
             if (workItems.Count > 0 && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY 
-                                        || timestampsToDeadlines[workItems.First().Key][1] <= nextDeadline 
-                                        || dequeuedFlag))
+                                        || timestampsToDeadlines[workItems.First().Key][1] <= nextDeadline ))
                 //if (workItems.Any())
                 {
                     var item = workItems.First().Value.Dequeue();
