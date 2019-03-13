@@ -268,7 +268,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 workItems.Remove(kv.Key);
             }
         }
-
+        
         public Task GetNextTaskForExecution()
         {
 #if PQ_DEBUG
@@ -277,6 +277,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             var nextDeadline = SchedulerConstants.DEFAULT_PRIORITY;
 
             var elapsed = workItemGroup.QuantumElapsed;
+            if(dequeuedFlag) lastSearch = elapsed;
             if (elapsed - lastSearch > SchedulerConstants.SCHEDULING_QUANTUM_MINIMUM_MILLIS)
             {
                 lastSearch = elapsed;
@@ -340,9 +341,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
 
 
-            if (workItems.Count > 0 && (nextDeadline == SchedulerConstants.DEFAULT_PRIORITY 
+            if (workItems.Count > 0 && (dequeuedFlag || nextDeadline == SchedulerConstants.DEFAULT_PRIORITY 
                                         || timestampsToDeadlines[workItems.First().Key][1] <= nextDeadline ))
-                //if (workItems.Any())
+//                if (workItems.Any())
                 {
                     var item = workItems.First().Value.Dequeue();
                     dequeuedFlag = false;

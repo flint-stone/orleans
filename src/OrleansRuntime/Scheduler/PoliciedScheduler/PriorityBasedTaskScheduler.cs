@@ -62,7 +62,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
                     config.TurnWarningLengthThreshold, config.EnableWorkerThreadInjection, config.LimitManager.GetLimit(LimitNames.LIMIT_MAX_PENDING_ITEMS),
                     performanceMetrics)
         {
-
+            logger.Info($"Starting scheduler with minimum rescheduling quantum {config.MinimumReschedulingQuantum}");
+            SchedulerConstants.SCHEDULING_QUANTUM_MINIMUM_MILLIS = config.MinimumReschedulingQuantum;
         }
 
         private PriorityBasedTaskScheduler(int maxActiveThreads, TimeSpan delayWarningThreshold, TimeSpan activationSchedulingQuantum,
@@ -76,7 +77,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             MaxPendingItemsLimit = maxPendingItemsLimit;
             workgroupDirectory = new ConcurrentDictionary<ISchedulingContext, WorkItemGroup>();
             RunQueue = new PBWorkQueue();
-            logger.Info("Starting IPriorityBasedTaskScheduler with {0} Max Active application Threads and 1 system thread.", maxActiveThreads);
+            logger.Info("Starting IPriorityBasedTaskScheduler with {0} Max Active application Threads and 1 system thread. Rescheduling Quantum {1}", maxActiveThreads, SchedulerConstants.SCHEDULING_QUANTUM_MINIMUM_MILLIS);
             Pool = new WorkerPool(this, performanceMetrics, maxActiveThreads, injectMoreWorkerThreads);
             IntValueStatistic.FindOrCreate(StatisticNames.SCHEDULER_WORKITEMGROUP_COUNT, () => WorkItemGroupCount);
             IntValueStatistic.FindOrCreate(new StatisticName(StatisticNames.QUEUES_QUEUE_SIZE_INSTANTANEOUS_PER_QUEUE, "Scheduler.LevelOne"), () => RunQueueLength);

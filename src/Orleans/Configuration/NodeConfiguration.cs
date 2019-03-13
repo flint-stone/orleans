@@ -135,6 +135,8 @@ namespace Orleans.Runtime.Configuration
         public LimitManager LimitManager { get; private set; }
 
         private string traceFilePattern;
+        private int _minimumRescSchedhedulingQuantum;
+
         /// <summary>
         /// </summary>
         public Severity DefaultTraceLevel { get; set; }
@@ -211,6 +213,8 @@ namespace Orleans.Runtime.Configuration
         /// </summary>
         public bool UseNagleAlgorithm { get; set; }
 
+        public int MinimumReschedulingQuantum { get; set; }
+
         public Dictionary<string, SearchOption> AdditionalAssemblyDirectories { get; set; }
 
         public List<string> ExcludedGrainTypes { get; set; }
@@ -220,8 +224,8 @@ namespace Orleans.Runtime.Configuration
         public SchedulerType SchedulerType { get; set; }
 
         internal const string DEFAULT_NODE_NAME = "default";
-        private static readonly TimeSpan DEFAULT_STATS_METRICS_TABLE_WRITE_PERIOD = TimeSpan.FromSeconds(30);
-        private static readonly TimeSpan DEFAULT_STATS_PERF_COUNTERS_WRITE_PERIOD = TimeSpan.FromSeconds(30);
+        private static readonly TimeSpan DEFAULT_STATS_METRICS_TABLE_WRITE_PERIOD = TimeSpan.FromSeconds(300);
+        private static readonly TimeSpan DEFAULT_STATS_PERF_COUNTERS_WRITE_PERIOD = TimeSpan.FromSeconds(300);
         private static readonly TimeSpan DEFAULT_STATS_LOG_WRITE_PERIOD = TimeSpan.FromMinutes(5);
         internal static readonly StatisticsLevel DEFAULT_STATS_COLLECTION_LEVEL = StatisticsLevel.Info;
         private static readonly int DEFAULT_MAX_ACTIVE_THREADS = 1;//Math.Max(4, System.Environment.ProcessorCount);
@@ -229,7 +233,7 @@ namespace Orleans.Runtime.Configuration
         private static readonly int DEFAULT_MIN_DOT_NET_CONNECTION_LIMIT = DEFAULT_MIN_DOT_NET_THREAD_POOL_SIZE;
         private static readonly TimeSpan DEFAULT_ACTIVATION_SCHEDULING_QUANTUM = TimeSpan.FromMilliseconds(100);
         internal const bool ENABLE_WORKER_THREAD_INJECTION = false;
-
+        
         public NodeConfiguration()
         {
             creationTimestamp = DateTime.UtcNow;
@@ -276,6 +280,8 @@ namespace Orleans.Runtime.Configuration
 
             AdditionalAssemblyDirectories = new Dictionary<string, SearchOption>();
             ExcludedGrainTypes = new List<string>();
+
+            MinimumReschedulingQuantum = 0;
         }
 
         public NodeConfiguration(NodeConfiguration other)
@@ -327,6 +333,8 @@ namespace Orleans.Runtime.Configuration
             StartupTypeName = other.StartupTypeName;
             AdditionalAssemblyDirectories = new Dictionary<string, SearchOption>(other.AdditionalAssemblyDirectories);
             ExcludedGrainTypes = other.ExcludedGrainTypes.ToList();
+
+            MinimumReschedulingQuantum = other.MinimumReschedulingQuantum;
         }
 
         public override string ToString()
