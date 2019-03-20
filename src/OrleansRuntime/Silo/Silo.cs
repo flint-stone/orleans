@@ -200,8 +200,9 @@ namespace Orleans.Runtime
             LogManager.MyIPEndPoint = localEndpoint;
             logger = LogManager.GetLogger("Silo", LoggerType.Runtime);
 
+           // GCSettings.LatencyMode = GCLatencyMode.LowLatency;
             logger.Info(ErrorCode.SiloGcSetting, "Silo starting with GC settings: ServerGC={0} GCLatencyMode={1}", GCSettings.IsServerGC, Enum.GetName(typeof(GCLatencyMode), GCSettings.LatencyMode));
-            // GCSettings.LatencyMode = GCLatencyMode.LowLatency;
+            
             if (!GCSettings.IsServerGC || !GCSettings.LatencyMode.Equals(GCLatencyMode.Batch))
             {
                 logger.Warn(ErrorCode.SiloGcWarning, "Note: Silo not running with ServerGC turned on or with GCLatencyMode.Batch enabled - recommend checking app config : <configuration>-<runtime>-<gcServer enabled=\"true\"> and <configuration>-<runtime>-<gcConcurrent enabled=\"false\"/>");

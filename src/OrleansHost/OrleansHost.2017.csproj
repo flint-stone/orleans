@@ -17,6 +17,10 @@
   <PropertyGroup Condition="'$(TargetFramework)' == 'net461'">
     <RuntimeIdentifier>win</RuntimeIdentifier>
   </PropertyGroup>
+  <PropertyGroup>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Orleans\Orleans.2017.csproj" />
     <ProjectReference Include="..\OrleansRuntime\OrleansRuntime.2017.csproj" />
