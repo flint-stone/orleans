@@ -13,6 +13,7 @@ namespace Orleans.Streams
     internal interface IStreamSubscriptionHandle
     {
         Task<StreamHandshakeToken> DeliverItem(object item, StreamSequenceToken currentToken, StreamHandshakeToken handshakeToken);
+        Task DeliverItem(object item);
         Task<StreamHandshakeToken> DeliverBatch(IBatchContainer item, StreamHandshakeToken handshakeToken);
         Task CompleteStream();
         Task ErrorInStream(Exception exc);
@@ -73,12 +74,12 @@ namespace Orleans.Streams
             return allStreamObservers.TryRemove(subscriptionId, out ignore);
         }
 
-        public Task<StreamHandshakeToken> DeliverImmutable(GuidId subscriptionId, StreamId streamId, Immutable<object> item, StreamSequenceToken currentToken, StreamHandshakeToken handshakeToken)
+        public Task<StreamHandshakeToken> DeliverImmutable(GuidId subscriptionId, StreamId streamId, Immutable<object> item, StreamSequenceToken currentToken, StreamHandshakeToken handshakeToken, bool fireAndForgetDelivery)
         {
-            return DeliverMutable(subscriptionId, streamId, item.Value, currentToken, handshakeToken);
+            return DeliverMutable(subscriptionId, streamId, item.Value, currentToken, handshakeToken, fireAndForgetDelivery);
         }
 
-        public async Task<StreamHandshakeToken> DeliverMutable(GuidId subscriptionId, StreamId streamId, object item, StreamSequenceToken currentToken, StreamHandshakeToken handshakeToken)
+        public async Task<StreamHandshakeToken> DeliverMutable(GuidId subscriptionId, StreamId streamId, object item, StreamSequenceToken currentToken, StreamHandshakeToken handshakeToken, bool fireAndForgetDelivery)
         {
             if (logger.IsVerbose3)
             {
@@ -97,7 +98,17 @@ namespace Orleans.Streams
                 //check if an observer were attached after handling the new subscription, deliver on it if attached
                 if (allStreamObservers.TryGetValue(subscriptionId, out observer))
                 {
-                    return await observer.DeliverItem(item, currentToken, handshakeToken);
+                    if (!fireAndForgetDelivery)
+                    {
+                        return await observer.DeliverItem(item, currentToken, handshakeToken);
+                    }
+                    else
+                    {
+                        await observer.DeliverItem(item);
+                        return handshakeToken;
+                    }
+                        
+                        
                 }
             }
 

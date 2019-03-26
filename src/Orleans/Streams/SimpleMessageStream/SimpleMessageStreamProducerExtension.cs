@@ -202,7 +202,7 @@ namespace Orleans.Providers.Streams.SimpleMessageStream
                             continue;
                     }
 
-                    Task task = DeliverToRemote(remoteConsumer, streamId, subscriptionKvp.Key, item, optimizeForImmutableData);
+                    Task task = DeliverToRemote(remoteConsumer, streamId, subscriptionKvp.Key, item, optimizeForImmutableData, fireAndForgetDelivery);
                     if (fireAndForgetDelivery) task.Ignore();
                     else tasks.Add(task);
                 }
@@ -210,14 +210,14 @@ namespace Orleans.Providers.Streams.SimpleMessageStream
                 return fireAndForgetDelivery ? Task.CompletedTask : Task.WhenAll(tasks);
             }
 
-            private async Task DeliverToRemote(IStreamConsumerExtension remoteConsumer, StreamId streamId, GuidId subscriptionId, object item, bool optimizeForImmutableData)
+            private async Task DeliverToRemote(IStreamConsumerExtension remoteConsumer, StreamId streamId, GuidId subscriptionId, object item, bool optimizeForImmutableData, bool fireAndForgetDelivery)
             {
                 try
                 {
                     if (optimizeForImmutableData)
-                        await remoteConsumer.DeliverImmutable(subscriptionId, streamId, new Immutable<object>(item), null, null);
+                        await remoteConsumer.DeliverImmutable(subscriptionId, streamId, new Immutable<object>(item), null, null, fireAndForgetDelivery);
                     else
-                        await remoteConsumer.DeliverMutable(subscriptionId, streamId, item, null, null);
+                        await remoteConsumer.DeliverMutable(subscriptionId, streamId, item, null, null, fireAndForgetDelivery);
                 }
                 catch (ClientNotAvailableException)
                 {

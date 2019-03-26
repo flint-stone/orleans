@@ -112,6 +112,38 @@ namespace Orleans.Streams
             return null;
         }
 
+        public async Task DeliverItem(object item)
+        {
+          
+            await NextItem(item);
+
+            
+        }
+
+        private Task NextItem(object item)
+        {
+            T typedItem;
+            try
+            {
+                typedItem = (T)item;
+            }
+            catch (InvalidCastException)
+            {
+                // We got an illegal item on the stream -- close it with a Cast exception
+                throw new InvalidCastException("Received an item of type " + item.GetType().Name + ", expected " + typeof(T).FullName);
+            }
+
+            // This method could potentially be invoked after Dispose() has been called, 
+            // so we have to ignore the request or we risk breaking unit tests AQ_01 - AQ_04.
+            if (observer == null || !IsValid)
+                return Task.CompletedTask;
+
+            if (filterWrapper != null && !filterWrapper.ShouldReceive(streamImpl, filterWrapper.FilterData, typedItem))
+                return Task.CompletedTask;
+
+            return observer.OnNextAsync(typedItem);
+        }
+
 
         private Task NextItem(object item, StreamSequenceToken token)
         {
