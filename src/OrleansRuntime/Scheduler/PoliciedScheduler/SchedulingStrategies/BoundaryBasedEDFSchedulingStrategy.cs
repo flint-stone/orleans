@@ -337,11 +337,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 //#endif
 //                        nextDeadline = nextItem.PriorityContext.Priority;
 //                    }
-//                }              
+//                }    
+                return null;
             }
 
 
-            if (workItems.Count > 0 && (dequeuedFlag || nextDeadline == SchedulerConstants.DEFAULT_PRIORITY 
+            if (workItems.Count > 0 && (dequeuedFlag  || nextDeadline == SchedulerConstants.DEFAULT_PRIORITY 
                                         || timestampsToDeadlines[workItems.First().Key][1] <= nextDeadline ))
 //                if (workItems.Any())
                 {
