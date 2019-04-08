@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Orleans.Serialization;
 
 namespace Orleans.Runtime
@@ -192,7 +193,7 @@ namespace Orleans.Runtime
             finally
             {
                 MessagingStatisticsGroup.OnMessageReceive(msg, headerLength, bodyLength);
-
+                // Log.Info($"{msg} {headerLength} {bodyLength}");
                 if (headerLength + bodyLength > this.serializationManager.LargeObjectSizeThreshold)
                 {
                     Log.Info(

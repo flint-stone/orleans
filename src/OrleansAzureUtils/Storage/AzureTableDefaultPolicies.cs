@@ -53,7 +53,7 @@ namespace Orleans.AzureUtils
             TableCreationTimeout = PauseBetweenTableCreationRetries.Multiply(MaxTableCreationRetries).Multiply(3);    // 3 min
 
             TableOperationRetryPolicy = new LinearRetry(PauseBetweenTableOperationRetries, MaxTableOperationRetries); // 5 x 100ms
-            TableOperationTimeout = PauseBetweenTableOperationRetries.Multiply(MaxTableOperationRetries).Multiply(6);    // 3 sec
+            TableOperationTimeout = PauseBetweenTableOperationRetries.Multiply(MaxTableOperationRetries).Multiply(12); //.Multiply(6);    // 3 sec
 
             BusyRetriesTimeout = PauseBetweenBusyRetries.Multiply(MaxBusyRetries);  // 1 minute
         }
