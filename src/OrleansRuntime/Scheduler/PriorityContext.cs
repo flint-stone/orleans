@@ -15,18 +15,11 @@ namespace Orleans.Runtime.Scheduler
         }
     }
 
-    [Serializable]
-    public struct TimestampContext
+    public interface RuntimePriorityContext
     {
-        public long RequestId;
-        public long ConvertedPhysicalTime;
-        public long ConvertedLogicalTime;
-        public long SLA;
-        public long Priority;
-
-        public override string ToString()
-        {
-            return $"ID: {RequestId} CPT {ConvertedPhysicalTime}, CLT {ConvertedLogicalTime}, SLA {SLA}, Priority {Priority}";
-        }
+        long Id { get; }
+        long GlobalPriority { get; }
+        long LocalPriority { get; }
     }
+
 }

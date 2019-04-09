@@ -30,8 +30,8 @@ namespace Orleans.Runtime.Scheduler
             // Interpreting Scheduling Context From Application
             if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
             {
-                var tsContext = (TimestampContext)message.RequestContextData["Priority"];
-                PriorityContext = new PriorityObject(tsContext.Priority, default(int), tsContext.RequestId, tsContext.ConvertedLogicalTime);
+                var tsContext = (RuntimePriorityContext)message.RequestContextData["Priority"];
+                PriorityContext = new PriorityObject(tsContext.GlobalPriority, default(int), tsContext.Id, tsContext.LocalPriority);
             }
                 
             ControllerContext =
@@ -77,7 +77,7 @@ namespace Orleans.Runtime.Scheduler
 #endif
                 if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
                 {
-                    var tsContext = (TimestampContext) message.RequestContextData["Priority"];
+                    var tsContext = (RuntimePriorityContext) message.RequestContextData["Priority"];
                     message.RequestContextData["Priority"] = tsContext;
 //                        new TimestampContext
 //                    {
@@ -122,7 +122,7 @@ namespace Orleans.Runtime.Scheduler
 #endif
                 if (message?.RequestContextData != null && message.RequestContextData.ContainsKey("Priority"))
                 {
-                    var tsContext = (TimestampContext)message.RequestContextData["Priority"];
+                    var tsContext = (RuntimePriorityContext)message.RequestContextData["Priority"];
                     message.RequestContextData["Priority"] = tsContext;
 //                        new TimestampContext
 //                    {

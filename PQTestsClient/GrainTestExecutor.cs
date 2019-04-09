@@ -72,10 +72,10 @@ namespace PQTestsClient
                 {
                     var time = DateTime.Now.Ticks;
                     var windowSize = 100 * 10000;
-                    var context = new TimestampContext
+                    var context = new CustomizedRuntimePriorityContext
                     {
-                        ConvertedLogicalTime = time/windowSize,
-                        ConvertedPhysicalTime = time
+                        LP = time/windowSize,
+                        GP = time
                     };
                     RequestContext.Set("Priority", context);
 
@@ -96,5 +96,15 @@ namespace PQTestsClient
             Running = false;
             _timer.Dispose();
         }
+    }
+
+    public struct CustomizedRuntimePriorityContext : RuntimePriorityContext
+    {
+        public long LP;
+        public long GP;
+        public long id;
+        public long Id => id;
+        public long GlobalPriority => GP;
+        public long LocalPriority => LP;
     }
 }
