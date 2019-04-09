@@ -164,8 +164,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
                 var priorityContext = new PriorityContext
                 {
                     RequestId = SchedulerConstants.DEFAULT_REQUEST_ID,
-                    Priority = SchedulerConstants.DEFAULT_PRIORITY,
-                    WindowID = SchedulerConstants.DEFAULT_WINDOW_ID,
+                    GlobalPriority = SchedulerConstants.DEFAULT_PRIORITY,
+                    LocalPriority = SchedulerConstants.DEFAULT_WINDOW_ID,
                     Context = context,
                     SourceActivation = workItem.SourceActivation
                 };
@@ -178,8 +178,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
                 var priorityContext = new PriorityContext
                 {
                     RequestId = workItem.PriorityContext.RequestId,
-                    Priority = workItem.PriorityContext.Priority,
-                    WindowID = workItem.PriorityContext.WindowID,
+                    GlobalPriority = workItem.PriorityContext.GlobalPriority,
+                    LocalPriority = workItem.PriorityContext.LocalPriority,
                     Context = context,
                     SourceActivation = workItem.SourceActivation
                 };

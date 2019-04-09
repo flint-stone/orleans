@@ -5,13 +5,13 @@ namespace Orleans.Runtime.Scheduler
     internal class PriorityContext
     {
         public long RequestId { get; set; }
-        public long Priority { get; set; }
-        public long WindowID { get; set; }
+        public long GlobalPriority { get; set; }
+        public long LocalPriority { get; set; }
         public ISchedulingContext Context { get; set; }
         public ActivationAddress SourceActivation { get; set; }
         public override String ToString()
         {
-            return $"{Context}, RequestId : {RequestId} Priority : {Priority}, WindowID: {WindowID}, Source: {SourceActivation?.ToString() ?? "null"}" ;
+            return $"{Context}, RequestId : {RequestId} GlobalPriority : {GlobalPriority}, LocalPriority: {LocalPriority}, Source: {SourceActivation?.ToString() ?? "null"}" ;
         }
     }
 

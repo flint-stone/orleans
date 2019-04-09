@@ -104,8 +104,8 @@ namespace Orleans.Runtime.Scheduler.SchedulerUtility
                 {
                     item.PriorityContext = new PriorityObject
                     {
-                        Priority = item.PriorityContext.Priority,
-                        WindowID = item.PriorityContext.WindowID,
+                        GlobalPriority = item.PriorityContext.GlobalPriority,
+                        LocalPriority = item.PriorityContext.LocalPriority,
                         Ticks = item.PriorityContext.Ticks + 1
                     };
                 }

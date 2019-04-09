@@ -112,7 +112,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             {
                 _execTimeCounters.TryAdd(context.SourceActivation, new ExecTimeCounter(context.SourceActivation.Grain));
             }
-            _execTimeCounters[context.SourceActivation].Increment(context.WindowID, context.RequestId, span.Ticks);
+            _execTimeCounters[context.SourceActivation].Increment(context.LocalPriority, context.RequestId, span.Ticks);
         }
 
         public void ReportStats()

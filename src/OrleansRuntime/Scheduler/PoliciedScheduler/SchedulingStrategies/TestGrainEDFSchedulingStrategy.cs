@@ -123,7 +123,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #if PQ_DEBUG
                 _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItem}");
 #endif
-                return workItem.PriorityContext.Priority;
+                return workItem.PriorityContext.GlobalPriority;
             }
             return SchedulerConstants.DEFAULT_PRIORITY;
         }
@@ -176,8 +176,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void AddToWorkItemQueue(Task task, WorkItemGroup wig)
         {
             var contextObj = task.AsyncState as PriorityContext;
-            var windowId = contextObj?.WindowID ?? SchedulerConstants.DEFAULT_WINDOW_ID;
-            var physicalTime = contextObj?.Priority ?? SchedulerConstants.DEFAULT_PRIORITY;
+            var windowId = contextObj?.LocalPriority ?? SchedulerConstants.DEFAULT_WINDOW_ID;
+            var physicalTime = contextObj?.GlobalPriority ?? SchedulerConstants.DEFAULT_PRIORITY;
 
             // Remap un-tagged task
             if (windowId == SchedulerConstants.DEFAULT_WINDOW_ID)
@@ -276,7 +276,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             dequeuedFlag = true;
             var priority = PeekNextDeadline();
-            var oldPriority = wig.PriorityContext.Priority;
+            var oldPriority = wig.PriorityContext.GlobalPriority;
 
 #if PQ_DEBUG
             _logger.Info($"OnAddWIGToRunQueue: {wig}:{wig.PriorityContext.Priority}:{wig.PriorityContext.Ticks}");
@@ -422,7 +422,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
                                 var contextObj = y.AsyncState as PriorityContext;
                                 return "<" + y.ToString() + "-" +
-                                       (contextObj?.Priority.ToString() ?? "null") + "-"
+                                       (contextObj?.GlobalPriority.ToString() ?? "null") + "-"
                                        + y.Id +
                                        ">";
                             }

@@ -161,59 +161,59 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void AddToWorkItemQueue(Task task, WorkItemGroup wig)
         {
             var contextObj = task.AsyncState as PriorityContext;
-            var windowId = contextObj?.WindowID ?? SchedulerConstants.DEFAULT_WINDOW_ID;
-            var priority = contextObj?.Priority ?? SchedulerConstants.DEFAULT_PRIORITY;
+            var localPriority = contextObj?.LocalPriority ?? SchedulerConstants.DEFAULT_WINDOW_ID;
+            var globalPriority = contextObj?.GlobalPriority ?? SchedulerConstants.DEFAULT_PRIORITY;
             
             // Remap un-tagged task
-            if (windowId == SchedulerConstants.DEFAULT_WINDOW_ID)
+            if (localPriority == SchedulerConstants.DEFAULT_WINDOW_ID)
             {
                 var tses = workItems.Keys.Except(new[] { SchedulerConstants.DEFAULT_PRIORITY });
                 if (tses.Any())
                 {
-                    windowId = tses.Min();
-                    priority = timestampsToDeadlines[windowId][0];
+                    localPriority = tses.Min();
+                    globalPriority = timestampsToDeadlines[localPriority][0];
                 }
             }
             
             // Add task to queue
-            if (!workItems.ContainsKey(windowId))
+            if (!workItems.ContainsKey(localPriority))
             {
-                workItems.Add(windowId, new Queue<Task>());
+                workItems.Add(localPriority, new Queue<Task>());
             }
 #if PQ_DEBUG
             _logger.Info($"{workItemGroup} Adding task {task} with timestamp {priority}");
 #endif
 
-            workItems[windowId].Enqueue(task);
+            workItems[localPriority].Enqueue(task);
 
             // Add timestamp mapping to map
             var maximumDownStreamPathCost = SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
-            if (windowId != SchedulerConstants.DEFAULT_WINDOW_ID)
+            if (localPriority != SchedulerConstants.DEFAULT_WINDOW_ID)
             {
 
                 // ***
                 // Setting priority of the task
                 // ***
-                var deadline = priority;
+                var deadline = globalPriority;
 
-                if (!timestampsToDeadlines.ContainsKey(windowId))
+                if (!timestampsToDeadlines.ContainsKey(localPriority))
                 {
-                    timestampsToDeadlines.Add(windowId, new []{priority, deadline});
+                    timestampsToDeadlines.Add(localPriority, new []{globalPriority, deadline});
                 }
                 else
                 {
-                    timestampsToDeadlines[windowId] = new[] { priority, deadline };
+                    timestampsToDeadlines[localPriority] = new[] { globalPriority, deadline };
                 }
             }
             else
             {
-                if (!timestampsToDeadlines.ContainsKey(windowId))
+                if (!timestampsToDeadlines.ContainsKey(localPriority))
                 {
-                    timestampsToDeadlines.Add(windowId, new[] { SchedulerConstants.DEFAULT_PRIORITY, SchedulerConstants.DEFAULT_PRIORITY});
+                    timestampsToDeadlines.Add(localPriority, new[] { SchedulerConstants.DEFAULT_PRIORITY, SchedulerConstants.DEFAULT_PRIORITY});
                 }
                 else
                 {
-                    timestampsToDeadlines[windowId] = new[] { SchedulerConstants.DEFAULT_PRIORITY, SchedulerConstants.DEFAULT_PRIORITY };
+                    timestampsToDeadlines[localPriority] = new[] { SchedulerConstants.DEFAULT_PRIORITY, SchedulerConstants.DEFAULT_PRIORITY };
                 }
             }
 #if PQ_DEBUG
@@ -244,7 +244,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             dequeuedFlag = true;
             var priority = PeekNextDeadline();
             priority = priority / SchedulerConstants.PRIORITY_GRANULARITY_TICKS * SchedulerConstants.PRIORITY_GRANULARITY_TICKS;
-            var oldPriority = wig.PriorityContext.Priority;
+            var oldPriority = wig.PriorityContext.GlobalPriority;
             
 #if PQ_DEBUG
             _logger.Info($"OnAddWIGToRunQueue: {wig}:{wig.PriorityContext.Priority}:{wig.PriorityContext.Ticks}");
@@ -293,7 +293,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                              $"Current Queue {GetWorkItemQueueStatus()}" +
                              $"elapsed {elapsed}");
 #endif
-                    nextDeadline = nextItem.PriorityContext.Priority;
+                    nextDeadline = nextItem.PriorityContext.GlobalPriority;
                 }
 //            }
 
@@ -399,7 +399,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
                                 var contextObj = y.AsyncState as PriorityContext;
                                 return "<" + y.ToString() + "-" +
-                                       (contextObj?.Priority.ToString() ?? "null") + "-"
+                                       (contextObj?.GlobalPriority.ToString() ?? "null") + "-"
                                        + y.Id +
                                        ">";
                             }

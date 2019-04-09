@@ -173,9 +173,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void AddToWorkItemQueue(Task task, WorkItemGroup wig)
         {
             var contextObj = task.AsyncState as PriorityContext;
-            if (contextObj != null && contextObj.Priority != SchedulerConstants.DEFAULT_PRIORITY)
+            if (contextObj != null && contextObj.GlobalPriority != SchedulerConstants.DEFAULT_PRIORITY)
             {
-                var timestamp = contextObj.Priority == SchedulerConstants.DEFAULT_PRIORITY ? wig.PriorityContext.Priority : contextObj.Priority;
+                var timestamp = contextObj.GlobalPriority == SchedulerConstants.DEFAULT_PRIORITY ? wig.PriorityContext.GlobalPriority : contextObj.GlobalPriority;
 #if PQ_DEBUG
                 _logger.Info(
                     $"{System.Reflection.MethodBase.GetCurrentMethod().Name} {task}: {timestamp} {wig.PriorityContext}, {contextObj.Timestamp}");
@@ -228,7 +228,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
             else
             {
-                var priority = workItems.Any()?workItems.Keys.First():wig.PriorityContext.Priority;
+                var priority = workItems.Any()?workItems.Keys.First():wig.PriorityContext.GlobalPriority;
                 if (!workItems.ContainsKey(priority))
                 {
 #if PQ_DEBUG
@@ -343,7 +343,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
                                 var contextObj = y.AsyncState as PriorityContext;
                                 return "<" + y.ToString() + "-" +
-                                       (contextObj?.Priority.ToString() ?? "null") + ">";
+                                       (contextObj?.GlobalPriority.ToString() ?? "null") + ">";
                             }
                         ))));
         }
@@ -372,7 +372,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public long PeekNextDeadline()
         {
-            return workItemGroup.PriorityContext.Priority;
+            return workItemGroup.PriorityContext.GlobalPriority;
         }
     }
 
@@ -420,7 +420,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void AddToWorkItemQueue(Task task, WorkItemGroup wig)
         {
             var contextObj = task.AsyncState as PriorityContext;
-            var timestamp = contextObj?.Priority ?? SchedulerConstants.DEFAULT_PRIORITY;
+            var timestamp = contextObj?.GlobalPriority ?? SchedulerConstants.DEFAULT_PRIORITY;
             if (!workItems.ContainsKey(timestamp))
             {
                 workItems.Add(timestamp, new Queue<Task>());
@@ -604,7 +604,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
                                 var contextObj = y.AsyncState as PriorityContext;
                                 return "<" + y.ToString() + "-" +
-                                        (contextObj?.Priority.ToString() ?? "null") + "-"
+                                        (contextObj?.GlobalPriority.ToString() ?? "null") + "-"
                                         + y.Id +
                                         ">";
                             }

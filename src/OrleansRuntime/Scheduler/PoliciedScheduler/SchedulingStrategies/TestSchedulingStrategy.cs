@@ -95,7 +95,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             if (contextObj != null)
             {
                 // TODO: FIX LATER
-                priority = contextObj.Priority == SchedulerConstants.DEFAULT_PRIORITY ? wig.PriorityContext.Priority : contextObj.Priority;
+                priority = contextObj.GlobalPriority == SchedulerConstants.DEFAULT_PRIORITY ? wig.PriorityContext.GlobalPriority : contextObj.GlobalPriority;
             }
             if (!workItems.ContainsKey(priority))
             {
@@ -107,16 +107,16 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public bool OnAddWIGToRunQueue(Task task, WorkItemGroup wig)
         {
             var contextObj = task.AsyncState as PriorityContext;
-            var priority = contextObj?.Priority ?? SchedulerConstants.DEFAULT_PRIORITY;
-            if (wig.PriorityContext.Priority < priority)
+            var priority = contextObj?.GlobalPriority ?? SchedulerConstants.DEFAULT_PRIORITY;
+            if (wig.PriorityContext.GlobalPriority < priority)
             {
 //                wig.PriorityContext.Priority = priority;
 //                wig.PriorityContext.Ticks = Environment.TickCount;
                 wig.PriorityContext = new PriorityObject
                 {
-                    Priority = priority,
+                    GlobalPriority = priority,
                     Ticks = Environment.TickCount,
-                    WindowID = wig.PriorityContext.WindowID
+                    LocalPriority = wig.PriorityContext.LocalPriority
                 };
             }
             return false;
@@ -174,7 +174,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                             {
                                 var contextObj = y.AsyncState as PriorityContext;
                                 return "<" + y.ToString() + "-" +
-                                       (contextObj?.Priority.ToString() ?? "null") + ">";
+                                       (contextObj?.GlobalPriority.ToString() ?? "null") + ">";
                             }
                         ))));
         }

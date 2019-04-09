@@ -65,7 +65,7 @@ namespace CPQTests
                 CPQItem item = new CPQItem();
                 item.PriorityContext = new PriorityObject
                 {
-                    Priority =  i,
+                    GlobalPriority =  i,
                     Ticks = Environment.TickCount
                 };
                 item.Name = Id + ":"+ i.ToString();
@@ -76,7 +76,7 @@ namespace CPQTests
                 CPQItem item = new CPQItem();
                 item.PriorityContext = new PriorityObject
                 {
-                    Priority = i,
+                    GlobalPriority = i,
                     Ticks = Environment.TickCount
                 };
                 item.Name = Id + ":" + i.ToString();
@@ -99,7 +99,7 @@ namespace CPQTests
                         items.Remove(item);
                         item.PriorityContext = new PriorityObject
                         {
-                            Priority = seed.Next(0, 10)+100-count,
+                            GlobalPriority = seed.Next(0, 10)+100-count,
                             Ticks = Environment.TickCount
                         };
                         Console.WriteLine($"{Id} {item.PriorityContext}");
