@@ -181,7 +181,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 workItems.Add(localPriority, new Queue<Task>());
             }
 #if PQ_DEBUG
-            _logger.Info($"{workItemGroup} Adding task {task} with timestamp {priority}");
+            _logger.Info($"{workItemGroup} Adding task {task} with priority {priority}");
 #endif
 
             workItems[localPriority].Enqueue(task);
@@ -217,17 +217,15 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 }
             }
 #if PQ_DEBUG
-            _logger.Info($"{workItemGroup} Creating New Timestamp, Task: {task},  Priority: {priority}, WindowID: {windowId}, Window Size: {WindowSize}, SLA: {DataflowSLA} mappedPriority: {timestampsToDeadlines[windowId][0]}, {timestampsToDeadlines[windowId][1]}");
+            _logger.Info($"{workItemGroup} Creating New Priority Pair, Task: {task},  Priority: {priority}, WindowID: {windowId}, Window Size: {WindowSize}, SLA: {DataflowSLA} mappedPriority: {timestampsToDeadlines[windowId][0]}, {timestampsToDeadlines[windowId][1]}");
 #endif
 
 
 #if PRIORITY_DEBUG
             _logger.Info($"{workItemGroup} Creating New Timestamp, Task: {task},  " +
-                         $"Priority: {priority}, " +
-                         $"WindowID: {windowId}, " +
-                         $"Window Size: {WindowSize}, " +
-                         $"SLA: {DataflowSLA} " +
-                         $"mappedPriority: {timestampsToDeadlines[windowId][0]}, {timestampsToDeadlines[windowId][1]}");
+                         $"Priority: {globalPriority}, " +
+                         $"WindowID: {localPriority}, " +
+                         $"mappedPriority: {timestampsToDeadlines[localPriority][0]}, {timestampsToDeadlines[localPriority][1]}");
 #endif
 
 #if PQ_DEBUG

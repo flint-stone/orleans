@@ -1,3 +1,5 @@
+//#define PQ_DEBUG
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -155,7 +157,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler
             workItem.SchedulingContext = context;
 
 #if PQ_DEBUG
-            logger.Info("Work Item {0} has remaining ticks of {1}, current queue size {2}", workItem, workItem.PriorityContext, RunQueue.Length);
+            logger.Info("Work Item {0} has priority of {1}, current queue size {2}", workItem, workItem.PriorityContext, RunQueue.Length);
 #endif   
             // We must wrap any work item in Task and enqueue it as a task to the right scheduler via Task.Start.
             // This will make sure the TaskScheduler.Current is set correctly on any task that is created implicitly in the execution of this workItem.
