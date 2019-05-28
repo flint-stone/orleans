@@ -278,8 +278,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
             var elapsed = workItemGroup.QuantumElapsed;
             if(dequeuedFlag) lastSearch = elapsed;
-//            if (elapsed - lastSearch > SchedulerConstants.SCHEDULING_QUANTUM_MINIMUM_MILLIS)
-//            {
+            if (elapsed - lastSearch > SchedulerConstants.SCHEDULING_QUANTUM_MINIMUM_MILLIS)
+            {
                 lastSearch = elapsed;
                 var nextItem = strategy.PeekNextDeadline();
                 if (nextItem != null)
@@ -295,7 +295,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #endif
                     nextDeadline = nextItem.PriorityContext.Priority;
                 }
-//            }
+            }
 
             while (workItems.Any() && workItems.First().Value.Count == 0)
             {
