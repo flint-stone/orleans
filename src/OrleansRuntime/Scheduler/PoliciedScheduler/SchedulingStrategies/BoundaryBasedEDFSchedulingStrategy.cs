@@ -278,7 +278,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
             var elapsed = workItemGroup.QuantumElapsed;
             if(dequeuedFlag) lastSearch = elapsed;
-            if (elapsed - lastSearch > SchedulerConstants.SCHEDULING_QUANTUM_MINIMUM_MILLIS)
+            if (elapsed - lastSearch >= SchedulerConstants.SCHEDULING_QUANTUM_MINIMUM_MILLIS)
             {
                 lastSearch = elapsed;
                 var nextItem = strategy.PeekNextDeadline();
