@@ -200,8 +200,9 @@ namespace Orleans.Runtime.Scheduler
                 if (state == WorkGroupStatus.Shutdown)
                 {
                     ReportWorkGroupProblem(
-                        String.Format("Enqueuing task {0} to a stopped work item group. Going to ignore and not execute it. "
-                        + "The likely reason is that the task is not being 'awaited' properly.", task),
+                        String.Format(
+                            "Enqueuing task {0} to a stopped work item group. Going to ignore and not execute it. "
+                            + "The likely reason is that the task is not being 'awaited' properly.", task),
                         ErrorCode.SchedulerNotEnqueuWorkWhenShutdown);
                     task.Ignore(); // Ignore this Task, so in case it is faulted it will not cause UnobservedException.
                     return;
@@ -226,16 +227,19 @@ namespace Orleans.Runtime.Scheduler
                 int maxPendingItemsLimit = masterScheduler.MaxPendingItemsLimit.SoftLimitThreshold;
                 if (maxPendingItemsLimit > 0 && count > maxPendingItemsLimit)
                 {
-                    log.Warn(ErrorCode.SchedulerTooManyPendingItems, String.Format("{0} pending work items for group {1}, exceeding the warning threshold of {2}",
+                    log.Warn(ErrorCode.SchedulerTooManyPendingItems, String.Format(
+                        "{0} pending work items for group {1}, exceeding the warning threshold of {2}",
                         count, Name, maxPendingItemsLimit));
                 }
 
                 var changedPriority = WorkItemManager.OnAddWIGToRunQueue(task, this);
 
-                if (state!= WorkGroupStatus.Waiting &&  !(state==WorkGroupStatus.Runnable  && changedPriority)) return;
-                
-                state = WorkGroupStatus.Runnable;
-                TimeQueued = DateTime.UtcNow;
+                // if (state!= WorkGroupStatus.Waiting &&  !(state==WorkGroupStatus.Runnable  && changedPriority)) return;
+                if (InQueue && changedPriority || state == WorkGroupStatus.Waiting)
+                {
+
+                    state = WorkGroupStatus.Runnable;
+                    TimeQueued = DateTime.UtcNow;
 #if TIMED_EXECUTION
                 if (totalItemsProcessed / 200 > lastRecord)
                 {
@@ -253,7 +257,7 @@ namespace Orleans.Runtime.Scheduler
                     masterScheduler.RunQueue.Add(this);
                 }
 #else
-                masterScheduler.RunQueue.Add(this);
+                    masterScheduler.RunQueue.Add(this);
 #endif
 
 #if RUNQUEUE_DEBUG
@@ -264,6 +268,7 @@ namespace Orleans.Runtime.Scheduler
                 //log.Info("Add: WorkItem Queue Length {0}",((PBWorkQueue)masterScheduler.RunQueue).QueueLength);
                 //log.Info("Add: WorkItem Queue Length {0}", (masterScheduler.RunQueue).Length);
 #endif
+                }
             }
         }
 

@@ -278,12 +278,23 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
             var elapsed = workItemGroup.QuantumElapsed;
             if(dequeuedFlag) lastSearch = elapsed;
-            if (elapsed - lastSearch >= SchedulerConstants.SCHEDULING_QUANTUM_MINIMUM_MILLIS)
+            IWorkItem nextItem = null;
+            if (elapsed - lastSearch > SchedulerConstants.SCHEDULING_QUANTUM_MINIMUM_MILLIS)
             {
                 lastSearch = elapsed;
-                var nextItem = strategy.PeekNextDeadline();
+                nextItem = strategy.PeekNextDeadline();
+
                 if (nextItem != null)
                 {
+#if PQ_DEBUG
+                    _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} " +
+                                 $"CurrentRunning: {workItemGroup} " +
+                                 $"NextItem: {nextItem} " +
+                                 $"Priority: {nextItem.PriorityContext.Priority}" +
+                                 // $"Current Queue {GetWorkItemQueueStatus()}" +
+                                 $"elapsed {elapsed}" +
+                                 $"lastsearch {lastSearch}");
+#endif
 #if DDL_FETCH
                 _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} " +
                              $"CurrentRunning: {workItemGroup} " +
@@ -342,7 +353,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
 
 
-            if (workItems.Count > 0 && (dequeuedFlag  || nextDeadline == SchedulerConstants.DEFAULT_PRIORITY 
+            if (workItems.Count > 0 && (dequeuedFlag  || nextItem == null //nextDeadline == SchedulerConstants.DEFAULT_PRIORITY 
                                         || timestampsToDeadlines[workItems.First().Key][1] <= nextDeadline ))
 //                if (workItems.Any())
                 {
