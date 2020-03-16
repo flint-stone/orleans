@@ -17,7 +17,8 @@ using Orleans.Runtime.Scheduler.SchedulerUtility;
 namespace Orleans.Runtime.Scheduler
 {
     [DebuggerDisplay("WorkItemGroup Name={Name} State={state}")]
-    internal class WorkItemGroup : CPQItem, ITimeInterval// IWorkItem
+    internal class 
+        WorkItemGroup : CPQItem, ITimeInterval// IWorkItem
     {
         private enum WorkGroupStatus
         {

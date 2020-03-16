@@ -299,7 +299,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} " +
                              $"CurrentRunning: {workItemGroup} " +
                              $"NextItem: {nextItem} " +
-                             $"Priority: {nextItem.PriorityContext.Priority}" +
+                             $"Priority: {nextIteqm.PriorityContext.Priority}" +
                              $"Remove Priority {first}" +
                              $"Current Queue {GetWorkItemQueueStatus()}" +
                              $"elapsed {elapsed}");
