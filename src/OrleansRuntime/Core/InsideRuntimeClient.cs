@@ -178,26 +178,32 @@ namespace Orleans.Runtime
             // check for scheduler hint to attach, if exist
             if (sendingActivation != null)
             {
-                var downstreamContext = Scheduler.SchedulingStrategy.CheckForSchedulerHint(sendingActivation.Address, target.GrainId);
-                if (downstreamContext != null)
-                {
-#if DOWNSTREAM_CONTEXT
-                    logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} : {sendingActivation.Address} -> {target.GrainId}");
-#endif
+                
+//                if (downstreamContext != null)
+//                {
+//#if DOWNSTREAM_CONTEXT
+//                    logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} : {sendingActivation.Address} -> {target.GrainId}");
+//#endif
                     // Attach downstream context with the message
                     if (message.RequestContextData == null) message.RequestContextData = new Dictionary<string, object>();
-                    if (!message.RequestContextData.ContainsKey("DownstreamContext"))
-                    {
-#if DOWNSTREAM_CONTEXT
-                        logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} : {sendingActivation.Address} -> {target.GrainId}: {downstreamContext} \n {message}");
-#endif
-                        message.RequestContextData.Add("DownstreamContext", downstreamContext);
-                    }
-                    else
-                    {
-                        message.RequestContextData["DownstreamContext"] = downstreamContext;
-                    }
-                }
+                    Scheduler.SchedulingStrategy.CheckForSchedulerHint(sendingActivation.Address, target.GrainId, message);
+//                if (!message.RequestContextData.ContainsKey("DownstreamContext"))
+//                    {
+//#if DOWNSTREAM_CONTEXT
+//                        logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} : {sendingActivation.Address} -> {target.GrainId}: {downstreamContext} \n {message}");
+//#endif
+//                        //message.RequestContextData.Add("DownstreamContext", downstreamContext);
+//                    }
+//                    else
+//                    {
+//#if DOWNSTREAM_CONTEXT
+//                        logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} : {sendingActivation.Address} -> {target.GrainId}: {downstreamContext} \n {message}");
+//#endif
+//                        //message.RequestContextData["DownstreamContext"] = downstreamContext;
+//                        ((DownstreamContext) message.RequestContextData["DownstreamContext"]).LocalExecutionCost =
+//                            downstreamContext.LocalExecutionCost;
+//                    }
+//                }
             }
             
 

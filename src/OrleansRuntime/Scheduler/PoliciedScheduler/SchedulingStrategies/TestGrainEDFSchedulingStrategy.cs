@@ -104,14 +104,13 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return wig;
         }
 
-        public DownstreamContext CheckForSchedulerHint(ActivationAddress sendingActivationAddress, GrainId upstream)
+        public void CheckForSchedulerHint(ActivationAddress sendingActivationAddress, GrainId upstream, Message msg)
         {
             if (addressToWIG.ContainsKey(sendingActivationAddress))
             {
                 var wim = addressToWIG[sendingActivationAddress].WorkItemManager as TestGrainEDFWorkItemManager;
-                return wim.StatManager.CheckForStatsUpdate(upstream);
+                wim.StatManager.CheckForStatsUpdate(upstream, msg);
             }
-            return null;
         }
 
 

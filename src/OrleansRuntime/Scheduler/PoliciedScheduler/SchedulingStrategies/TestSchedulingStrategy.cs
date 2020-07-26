@@ -16,7 +16,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         private Dictionary<short, long> timeLimitsOnTenants;
         private Dictionary<WorkItemGroup, FixedSizedQueue<double>> tenantStatCounters;
         private const int MaximumStatCounterSize = 100;
-        
+
         #endregion
 
         public IOrleansTaskScheduler Scheduler { get; set; }
@@ -62,7 +62,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void OnReceivingDownstreamInstructions(IWorkItem workItem, ISchedulingContext context)
         {
-            
+
         }
 
         public WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context)
@@ -72,10 +72,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return wig;
         }
 
-        public DownstreamContext CheckForSchedulerHint(ActivationAddress sendingActivationAddress, GrainId upstream)
-        {
-            return null;
-        }
+        public void CheckForSchedulerHint(ActivationAddress sendingActivationAddress, GrainId upstream, Message msg) { }
 
     }
 
@@ -110,8 +107,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             var priority = contextObj?.GlobalPriority ?? SchedulerConstants.DEFAULT_PRIORITY;
             if (wig.PriorityContext.GlobalPriority < priority)
             {
-//                wig.PriorityContext.Priority = priority;
-//                wig.PriorityContext.Ticks = Environment.TickCount;
+                //                wig.PriorityContext.Priority = priority;
+                //                wig.PriorityContext.Ticks = Environment.TickCount;
                 wig.PriorityContext = new PriorityObject
                 {
                     GlobalPriority = priority,

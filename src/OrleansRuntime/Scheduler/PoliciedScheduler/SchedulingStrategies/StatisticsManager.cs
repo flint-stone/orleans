@@ -42,7 +42,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void GetDownstreamContext(ActivationAddress downstreamActivation, DownstreamContext downstreamContext)
         {
 #if PQ_DEBUG
-                    _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} <- {downstreamActivation} {downstreamContext}");
+                    _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {_workItemGroup} <- {downstreamActivation} {downstreamContext}");
 #endif
             // If coming from upstream or client then ignore
             if (UpstreamOpSet.Contains(downstreamActivation.Grain) || downstreamActivation.Grain.IsClient) return;
@@ -50,28 +50,54 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             DownstreamOpToCost.AddOrUpdate(downstreamActivation.Grain, maxDownstreamCost, (k, v) => maxDownstreamCost);
         }
 
-        public DownstreamContext CheckForStatsUpdate(GrainId upstream)
+        public DownstreamContext CheckForStatsUpdate(GrainId upstream, Message msg)
         {
             Tuple<double, long> tuple;
 #if PQ_DEBUG
-            _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} Upstream: {upstream} " +
+            _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {_workItemGroup} Upstream: {upstream} " +
                          $"StatsUpdate collection: {string.Join(",", StatsUpdatesCollection.Select(kv => kv.Key + "-><" + kv.Value.Item1 + "," + kv.Value.Item2 + '>'))}");
 #endif
 
             if ((UpstreamOpSet.Contains(upstream) || !DownstreamOpToCost.Keys.Contains(upstream)) &&
                 StatsUpdatesCollection.TryGetValue(upstream, out tuple))
             {
-                return new DownstreamContext(
-                    tuple.Item2,
-                    (long) tuple.Item1,
-                    SchedulerConstants.DEFAULT_WIG_EXECUTION_COST,
-                    Convert.ToInt64(_metrics.InboundAverageWaitingTime),
-                    _metrics.InboundAverageTripTimeBySource.ContainsKey(upstream.IdentityString)
-                        ? Convert.ToInt64(_metrics.InboundAverageTripTimeBySource[upstream.IdentityString])
-                        : SchedulerConstants.DEFAULT_WIG_EXECUTION_COST);
+
+                //                     var d =  new DownstreamContext(
+                //                    tuple.Item2,
+                //                    (long) tuple.Item1,
+                //                    SchedulerConstants.DEFAULT_WIG_EXECUTION_COST,
+                //                    Convert.ToInt64(_metrics.InboundAverageWaitingTime),
+                //                    _metrics.InboundAverageTripTimeBySource.ContainsKey(upstream.IdentityString)
+                //                        ? Convert.ToInt64(_metrics.InboundAverageTripTimeBySource[upstream.IdentityString])
+                //                        : SchedulerConstants.DEFAULT_WIG_EXECUTION_COST);
+//                var d = new DownstreamContext(
+//                    0,
+//                    (long)tuple.Item1,
+//                    SchedulerConstants.DEFAULT_WIG_EXECUTION_COST,
+//                    Convert.ToInt64(_metrics.InboundAverageWaitingTime),
+//                    _metrics.InboundAverageTripTimeBySource.ContainsKey(upstream.IdentityString)
+//                        ? Convert.ToInt64(_metrics.InboundAverageTripTimeBySource[upstream.IdentityString])
+//                        : SchedulerConstants.DEFAULT_WIG_EXECUTION_COST);
+                if(msg.RequestContextData.ContainsKey("DownstreamContext"))
+                {
+                    ((DownstreamContext) msg.RequestContextData["DownstreamContext"]).LocalExecutionCost =
+                        (long) tuple.Item1;
+
+                    ((DownstreamContext) msg.RequestContextData["DownstreamContext"]).InboundMessageQueueingDelay =
+                        Convert.ToInt64(_metrics.InboundAverageWaitingTime);
+                    ((DownstreamContext)msg.RequestContextData["DownstreamContext"]).RemoteDeliveryDelay =
+                        _metrics.InboundAverageTripTimeBySource.ContainsKey(upstream.IdentityString)
+                            ? Convert.ToInt64(_metrics.InboundAverageTripTimeBySource[upstream.IdentityString])
+                            : SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
+
+                }
+#if PQ_DEBUG
+                _logger.Info(
+                    $"{System.Reflection.MethodBase.GetCurrentMethod().Name} Writing Downstream context {_workItemGroup} Upstream: {upstream}  {d}");
+#endif
             }
 
-            
+
             return null;
         }
 
@@ -86,21 +112,21 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     // TODO: update max per message cost - per upstream
                     var statsUpdate = _execTimeCounters[address].Average();
 #if PQ_DEBUG_DETAILED
-                    _logger.Info($"{workItemGroup} : {_execTimeCounters[address].ToLongString()}");
+                    _logger.Info($"{_workItemGroup} : {_execTimeCounters[address].ToLongString()}");
 #endif
                     ExecTimeSummaries.AddOrUpdate(address.Grain, statsUpdate, (k, v) => statsUpdate);
                     var downstreamCost = DownstreamOpToCost.Values.Any()
                         ? DownstreamOpToCost.Values.Max()
                         : SchedulerConstants.DEFAULT_WIG_EXECUTION_COST;
 #if PQ_DEBUG
-                    _logger.Info($"{workItemGroup} exec time counters {address} : {statsUpdate}");
-                    _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup.Name} -> {address} local cost from target address: {statsUpdate} down stream: {downstreamCost}");
+                    _logger.Info($"{_workItemGroup} exec time counters {address} : {statsUpdate}");
+                    _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {_workItemGroup.Name} -> {address} local cost from target address: {statsUpdate} down stream: {downstreamCost}");
 #endif
                     var tup = new Tuple<double, long>(statsUpdate, downstreamCost);
                     StatsUpdatesCollection.AddOrUpdate(address.Grain, tup, (k, v) => tup);
                 }
 #if PQ_DEBUG
-                _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {workItemGroup} StatsUpdate collection {string.Join(",", StatsUpdatesCollection.Select(kv => kv.Key + "-><" + kv.Value.Item1 + "," + kv.Value.Item2 + '>'))}");
+                _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {_workItemGroup} StatsUpdate collection {string.Join(",", StatsUpdatesCollection.Select(kv => kv.Key + "-><" + kv.Value.Item1 + "," + kv.Value.Item2 + '>'))}");
                 ReportDetailedStats();
 #endif
             }
@@ -113,6 +139,9 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 _execTimeCounters.TryAdd(context.SourceActivation, new ExecTimeCounter(context.SourceActivation.Grain));
             }
             _execTimeCounters[context.SourceActivation].Increment(context.LocalPriority, context.RequestId, span.Ticks);
+#if PQ_DEBUG
+            _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} {context.SourceActivation} -> {_workItemGroup.Name} {span.Ticks} Status {_execTimeCounters[context.SourceActivation].ToLongString()}");
+#endif
         }
 
         public void ReportStats()

@@ -9,7 +9,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 {
     internal class LocalEDFSchedulingStrategy : ISchedulingStrategy
     {
-       private LoggerImpl _logger;
+        private LoggerImpl _logger;
 
         #region Tenancies
         public ConcurrentDictionary<WorkItemGroup, Dictionary<ActivationAddress, Dictionary<string, double>>> TenantCostEstimate { get; set; }
@@ -33,7 +33,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public void OnWorkItemInsert(IWorkItem workItem, WorkItemGroup wig)
         {
             // Collect stat from WIGs
-            if (TenantCostEstimate.Any() && --statCollectionCounter <= 0) 
+            if (TenantCostEstimate.Any() && --statCollectionCounter <= 0)
             {
                 statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
 #if PQ_DEBUG
@@ -41,7 +41,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 #endif
             }
         }
-        
+
         public void OnReceivingControllerInstructions(IWorkItem workItem, ISchedulingContext context)
         {
             // Populate Topology info
@@ -65,16 +65,16 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 _logger.Error(ErrorCode.SchedulerQueueWorkItemWrongCall, error);
                 throw new InvalidOperationException(error);
             }
-            
+
             // Populate info in wig
             var workitemManager = wig.WorkItemManager as LocalEDFWorkItemManager;
-            workitemManager.DataflowSLA = (long) controllerContext.Time;
+            workitemManager.DataflowSLA = (long)controllerContext.Time;
 
-            if (windowedKeys.ContainsKey(((SchedulingContext) wig.SchedulingContext).Activation.Grain.Key.N1))
+            if (windowedKeys.ContainsKey(((SchedulingContext)wig.SchedulingContext).Activation.Grain.Key.N1))
             {
                 workitemManager.WindowedGrain = true;
                 workitemManager.WindowSize =
-                    windowedKeys[((SchedulingContext) wig.SchedulingContext).Activation.Grain.Key.N1];
+                    windowedKeys[((SchedulingContext)wig.SchedulingContext).Activation.Grain.Key.N1];
             }
 
             if (!TenantCostEstimate.ContainsKey(wig)) TenantCostEstimate.TryAdd(wig, new Dictionary<ActivationAddress, Dictionary<string, double>>());
@@ -88,7 +88,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 throw new InvalidOperationException(error);
             }
             // Remove cyclic invokes
-            if (!workitemManager.UpstreamGroups.Contains(wig) && upstreamWig!= wig)
+            if (!workitemManager.UpstreamGroups.Contains(wig) && upstreamWig != wig)
             {
                 workitemManager.UpstreamGroups.Add(upstreamWig);
             }
@@ -111,11 +111,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             foreach (var path in paths)
             {
                 var pre = path.Peek();
-                if (pre.Equals(wig) )
+                if (pre.Equals(wig))
                 {
                     path.Push(toAdd); // acyclic
                     found = true;
-                }             
+                }
             }
             if (!found)
             {
@@ -124,7 +124,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 newPath.Push(toAdd);
                 paths.Add(newPath);
             }
-            foreach(var upstream in workItemManager.UpstreamGroups) PopulateDependencyUpstream(upstream, upstreamWig, toAdd);
+            foreach (var upstream in workItemManager.UpstreamGroups) PopulateDependencyUpstream(upstream, upstreamWig, toAdd);
             // Console.WriteLine("Current upstreamWIG " + upstreamWig + ": " + workItemManager.ExplainDependencies()); 
         }
 
@@ -132,11 +132,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         {
             var wig = new WorkItemGroup(ots, context);
             wig.WorkItemManager = new LocalEDFWorkItemManager(this, wig);
-            if (context.ContextType.Equals(SchedulingContextType.Activation) && windowedKeys.Keys.Contains(((SchedulingContext) context).Activation.Grain.Key.N1))
+            if (context.ContextType.Equals(SchedulingContextType.Activation) && windowedKeys.Keys.Contains(((SchedulingContext)context).Activation.Grain.Key.N1))
             {
                 var wim = wig.WorkItemManager as LocalEDFWorkItemManager;
                 wim.WindowedGrain = true;
-                wim.WindowSize = windowedKeys[((SchedulingContext) context).Activation.Grain.Key.N1];
+                wim.WindowSize = windowedKeys[((SchedulingContext)context).Activation.Grain.Key.N1];
 #if PQ_DEBUG
                 _logger.Info($"{System.Reflection.MethodBase.GetCurrentMethod().Name} Windowed Key {((SchedulingContext)context).Activation.Grain.Key.N1} window size {wim.WindowSize}");
 #endif
@@ -147,10 +147,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return wig;
         }
 
-        public DownstreamContext CheckForSchedulerHint(ActivationAddress sendingActivationAddress, GrainId upstream)
-        {
-            return null;
-        }
+        public void CheckForSchedulerHint(ActivationAddress sendingActivationAddress, GrainId upstream, Message msg) { }
 
         public object FetchWorkItemMetric(WorkItemGroup workItem)
         {
@@ -159,7 +156,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void PutWorkItemMetric(WorkItemGroup workItemGroup, object metric)
         {
-            if(TenantCostEstimate.ContainsKey(workItemGroup)) TenantCostEstimate[workItemGroup] = (Dictionary<ActivationAddress, Dictionary<string, double>>) metric;
+            if (TenantCostEstimate.ContainsKey(workItemGroup)) TenantCostEstimate[workItemGroup] = (Dictionary<ActivationAddress, Dictionary<string, double>>)metric;
         }
 
         public long PeekNextDeadline()
@@ -367,12 +364,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         }
     }
     */
-    
-        
+
+
     internal class LocalEDFWorkItemManager : IWorkItemManager
     {
         private SortedDictionary<long, Queue<Task>> workItems;
-        private readonly LoggerImpl _logger; 
+        private readonly LoggerImpl _logger;
         private readonly WorkItemGroup workItemGroup;
         private bool dequeuedFlag;
         private int statCollectionCounter = SchedulerConstants.MEASUREMENT_PERIOD_WORKITEM_COUNT;
@@ -420,8 +417,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     foreach (var elem in stack)
                     {
                         // TODO: fix later with window information
-                        var statCollection= (Dictionary<ActivationAddress, Dictionary<string, double>>)Strategy.FetchWorkItemMetric(elem);
-                        var address = ((SchedulingContext) workItemGroup.SchedulingContext).Activation.Address;
+                        var statCollection = (Dictionary<ActivationAddress, Dictionary<string, double>>)Strategy.FetchWorkItemMetric(elem);
+                        var address = ((SchedulingContext)workItemGroup.SchedulingContext).Activation.Address;
                         var cost = 0L;
                         if (statCollection.ContainsKey(address) && statCollection[address].ContainsKey(task.ToString())) cost = Convert.ToInt64(statCollection[address][task.ToString()]);
                         pathCost += cost;
@@ -434,8 +431,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                     if (pathCost > maximumDownStreamPathCost) maximumDownStreamPathCost = pathCost;
                 }
 
-                var ownerStats = (Dictionary<ActivationAddress, Dictionary<string, double>>) Strategy.FetchWorkItemMetric(workItemGroup);
-                if (contextObj.SourceActivation!=null && ownerStats.ContainsKey(contextObj.SourceActivation) && ownerStats[contextObj.SourceActivation].ContainsKey(task.ToString()))
+                var ownerStats = (Dictionary<ActivationAddress, Dictionary<string, double>>)Strategy.FetchWorkItemMetric(workItemGroup);
+                if (contextObj.SourceActivation != null && ownerStats.ContainsKey(contextObj.SourceActivation) && ownerStats[contextObj.SourceActivation].ContainsKey(task.ToString()))
                 {
                     maximumDownStreamPathCost += Convert.ToInt64(ownerStats[contextObj.SourceActivation][task.ToString()]);
                 }
@@ -445,11 +442,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 var priority = timestamp + DataflowSLA - maximumDownStreamPathCost;
 
                 if (WindowedGrain)
-                {              
+                {
                     priority = (timestamp / WindowSize + 1) * WindowSize + DataflowSLA - maximumDownStreamPathCost;
                     if (timestamp / WindowSize > wid)
                     {
-                        if(wid!=0L)
+                        if (wid != 0L)
                             priority = (wid + 1) * WindowSize + DataflowSLA - maximumDownStreamPathCost;
                         wid = timestamp / WindowSize;
                     }
@@ -470,7 +467,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
             else
             {
-                var priority = workItems.Any()?workItems.Keys.First():wig.PriorityContext.GlobalPriority;
+                var priority = workItems.Any() ? workItems.Keys.First() : wig.PriorityContext.GlobalPriority;
                 if (!workItems.ContainsKey(priority))
                 {
 #if PQ_DEBUG
@@ -506,7 +503,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             }
 #endif
 
-            wig.PriorityContext = new PriorityObject(priority, Environment.TickCount );
+            wig.PriorityContext = new PriorityObject(priority, Environment.TickCount);
 #if PQ_DEBUG
             _logger.Info($"OnAddWIGToRunQueue: {wig}:{wig.PriorityContext.Priority}:{wig.PriorityContext.Ticks}");
 #endif
@@ -534,8 +531,8 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             _logger.Info($"Dequeue priority {kv.Key}");
 #endif
             var nextDeadline = Strategy.PeekNextDeadline();
-            
-            if (workItems.Any() && workItems.First().Value.Any() && ((nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || workItems.First().Key < nextDeadline) || dequeuedFlag ))
+
+            if (workItems.Any() && workItems.First().Value.Any() && ((nextDeadline == SchedulerConstants.DEFAULT_PRIORITY || workItems.First().Key < nextDeadline) || dequeuedFlag))
             {
                 var item = workItems.First().Value.Dequeue();
 #if PQ_DEBUG
@@ -552,7 +549,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 }
                 return item;
             }
-         
+
             return null;
             /*
             if (workItems.Any() && workItems.First().Value.Any())
@@ -568,7 +565,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void OnCompleteTask(PriorityContext context, TimeSpan taskLength) { }
 
-        public void OnFinishingWIGTurn() {  }
+        public void OnFinishingWIGTurn() { }
 
         public int CountWIGTasks()
         {
@@ -588,7 +585,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
                 workItems.Select(x =>
                     x.Key + ":" + string.Join(",",
                         x.Value.Select(y =>
-                        { 
+                        {
 
                             var contextObj = y.AsyncState as PriorityContext;
                             return "<" + y.ToString() + "-" +
@@ -622,7 +619,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         public string ExplainDependencies()
         {
             return "UpStreamSet: " + string.Join(",", UpstreamGroups) + ". DownStreamPaths: " +
-                   string.Join(";", DownStreamPaths.Select(x => string.Join("-",x)));
+                   string.Join(";", DownStreamPaths.Select(x => string.Join("-", x)));
         }
     }
 }

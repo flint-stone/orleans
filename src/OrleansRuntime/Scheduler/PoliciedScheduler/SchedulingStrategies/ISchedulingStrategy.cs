@@ -14,8 +14,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
         void OnReceivingDownstreamInstructions(IWorkItem workItem, ISchedulingContext context);
 
         WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context);
-        
-        // TODO: return DownstreamContext for now
-        DownstreamContext CheckForSchedulerHint(ActivationAddress sendingActivationAddress, GrainId upstream);
+
+        void CheckForSchedulerHint(ActivationAddress sendingActivationAddress, GrainId upstream, Message msg);
     }
 }

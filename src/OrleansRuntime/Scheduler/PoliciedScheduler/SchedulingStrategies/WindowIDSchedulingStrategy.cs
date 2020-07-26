@@ -36,7 +36,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
 
         public void OnReceivingDownstreamInstructions(IWorkItem workItem, ISchedulingContext context)
         {
-            
+
         }
 
         public WorkItemGroup CreateWorkItemGroup(IOrleansTaskScheduler ots, ISchedulingContext context)
@@ -46,15 +46,12 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return wig;
         }
 
-        public DownstreamContext CheckForSchedulerHint(ActivationAddress sendingActivationAddress, GrainId upstream)
-        {
-            return null;
-        }
+        public void CheckForSchedulerHint(ActivationAddress sendingActivationAddress, GrainId upstream, Message msg) { }
 
     }
 
     internal class WindowIDWorkItemManager : IWorkItemManager
-     {
+    {
         private Queue<Task> workItems { get; set; }
         public ISchedulingStrategy Strategy { get; set; }
         public WindowIDWorkItemManager()
@@ -62,7 +59,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             workItems = new Queue<Task>();
         }
 
-         public void AddToWorkItemQueue(Task task,  WorkItemGroup wig)
+        public void AddToWorkItemQueue(Task task, WorkItemGroup wig)
         {
             workItems.Enqueue(task);
         }
@@ -97,11 +94,11 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return workItems.Dequeue();
         }
 
-         public void OnCompleteTask(PriorityContext context, TimeSpan taskLength)  { }
+        public void OnCompleteTask(PriorityContext context, TimeSpan taskLength) { }
 
-         public void OnFinishingWIGTurn() { }
+        public void OnFinishingWIGTurn() { }
 
-         public int CountWIGTasks()
+        public int CountWIGTasks()
         {
             return workItems.Count();
         }
@@ -116,7 +113,7 @@ namespace Orleans.Runtime.Scheduler.PoliciedScheduler.SchedulingStrategies
             return string.Join(",", workItems);
         }
 
-         public void OnReAddWIGToRunQueue(WorkItemGroup wig) { }
+        public void OnReAddWIGToRunQueue(WorkItemGroup wig) { }
 
-     }
+    }
 }

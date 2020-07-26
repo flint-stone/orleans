@@ -8,11 +8,11 @@ namespace Orleans.Runtime.Scheduler
     [Serializable]
     public class DownstreamContext
     {
-        public long MaximumDownstreamCost { get; }
-        public long LocalExecutionCost { get; }
-        public long ExpectedSchedulerQueuingDelay { get; } // Disabled for now
-        public long InboundMessageQueueingDelay { get; }
-        public long RemoteDeliveryDelay { get; } // Only if it is remote
+        public long MaximumDownstreamCost { get; set; }
+        public long LocalExecutionCost { get; set; }
+        public long ExpectedSchedulerQueuingDelay { get; set; } // Disabled for now
+        public long InboundMessageQueueingDelay { get; set;  }
+        public long RemoteDeliveryDelay { get; set; } // Only if it is remote
 
         public long DownStreamCostSum => MaximumDownstreamCost +
                                          LocalExecutionCost +
