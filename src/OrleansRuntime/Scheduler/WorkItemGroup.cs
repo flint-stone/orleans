@@ -455,7 +455,11 @@ namespace Orleans.Runtime.Scheduler
                             if (!execTimeCounters[contextObj.SourceActivation].ContainsKey(task.ToString())) execTimeCounters[contextObj.SourceActivation].Add(task.ToString(), new FixedSizedQueue<long>(SchedulerConstants.STATS_COUNTER_QUEUE_SIZE));
                             execTimeCounters[contextObj.SourceActivation][task.ToString()].Enqueue(taskLength.Ticks);
                         }*/
-                        WorkItemManager.OnCompleteTask(contextObj, taskLength);
+                        lock (lockable)
+                        {
+                            WorkItemManager.OnCompleteTask(contextObj, taskLength);
+                        }
+                       
                         
                         if (taskLength > masterScheduler.TurnWarningLength)
                         {
